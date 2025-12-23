@@ -1,11 +1,13 @@
 package org.firstinspires.ftc.teamcode.Drivetrain;
 
+import com.acmerobotics.dashboard.FtcDashboard;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.JavaUtil;
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.Robot;
 
@@ -78,5 +80,16 @@ public class Drivetrain {
             rightRear.setVelocity((Forward * Math.abs(Forward) + Strafe * Math.abs(Strafe) + Turn) * GamePad1Speed * 2800);
             leftRear.setVelocity(((Forward * Math.abs(Forward) - Strafe * Math.abs(Strafe)) - Turn) * GamePad1Speed * 2800);
         }
+
+        //TODO move this to periodic
+        FtcDashboard dashboard = FtcDashboard.getInstance();
+        Telemetry dashboardTelemetry = dashboard.getTelemetry();
+
+        dashboardTelemetry.addData("Drivetrain/Drive2", Drive2);
+        dashboardTelemetry.addData("Drivetrain/GamePadDegree", GamePadDegree);
+        dashboardTelemetry.addData("Drivetrain/Movement", Movement);
+        dashboardTelemetry.addData("Drivetrain/Strafe", Strafe);
+        dashboardTelemetry.addData("Drivetrain/Forward", Forward);
+        dashboardTelemetry.addData("Drivetrain/Turn", Turn);
     }
 }
