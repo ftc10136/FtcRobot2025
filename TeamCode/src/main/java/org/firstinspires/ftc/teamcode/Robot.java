@@ -9,9 +9,11 @@ import org.firstinspires.ftc.teamcode.Drivetrain.Drivetrain;
 public class Robot {
     public static OpMode opMode;
     public static Drivetrain drivetrain;
+    public static Controls controls;
 
     public static void Init(OpMode inMode) {
         opMode = inMode;
+        controls = new Controls();
         drivetrain = new Drivetrain();
 
         drivetrain.setDefaultCommand(new Drivetrain.TeleopDrive());

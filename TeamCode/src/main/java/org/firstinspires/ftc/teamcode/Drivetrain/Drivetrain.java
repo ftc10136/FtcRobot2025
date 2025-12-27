@@ -11,7 +11,6 @@ import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 import org.firstinspires.ftc.robotcore.external.JavaUtil;
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.Robot;
@@ -72,7 +71,7 @@ public class Drivetrain extends SubsystemBase {
         packet.put("IMU/Yaw", imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES));
 
         Command curCommand = getCurrentCommand();
-        String commandName = "";
+        String commandName;
         if (curCommand == null) {
             commandName = "None";
         } else {
@@ -83,6 +82,7 @@ public class Drivetrain extends SubsystemBase {
         FtcDashboard.getInstance().sendTelemetryPacket(packet);
     }
 
+    @SuppressWarnings("unused")
     public void RobotCenteredDriving() {
         double vertical;
         double horizontal;
@@ -105,13 +105,13 @@ public class Drivetrain extends SubsystemBase {
         double Forward;
         double Turn;
 
-        Drive2 = Range.clip(Math.sqrt(Math.pow(Robot.opMode.gamepad1.left_stick_y, 2) + Math.pow(Robot.opMode.gamepad1.left_stick_x, 2)), 0, 1);
-        GamePadDegree = Math.atan2(-Math.pow(Robot.opMode.gamepad1.left_stick_y, 3), Math.pow(Robot.opMode.gamepad1.left_stick_x, 3)) / Math.PI * 180;
+        Drive2 = Range.clip(Math.sqrt(Math.pow(Robot.controls.getDriveForward(), 2) + Math.pow(Robot.controls.getDriveRight(), 2)), 0, 1);
+        GamePadDegree = Math.atan2(-Math.pow(Robot.controls.getDriveForward(), 3), Math.pow(Robot.controls.getDriveRight(), 3)) / Math.PI * 180;
         Movement = GamePadDegree - imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
         Strafe = Math.cos(Movement / 180 * Math.PI) * Drive2;
         Forward = Math.sin(Movement / 180 * Math.PI) * Drive2;
-        Turn = Robot.opMode.gamepad1.right_stick_x * -0.5;
-        if (Robot.opMode.gamepad1.left_trigger >= 0.2) {
+        Turn = Robot.controls.getDriveTurn() * -0.5;
+        if (Robot.controls.slowModeActive()) {
             leftFront.setVelocity(((Forward * Math.abs(Forward) + Strafe * Math.abs(Strafe)) - Turn) * 0.15 * 2800);
             rightFront.setVelocity(((Forward * Math.abs(Forward) - Strafe * Math.abs(Strafe)) + Turn) * 0.15 * 2800);
             rightRear.setVelocity((Forward * Math.abs(Forward) + Strafe * Math.abs(Strafe) + Turn) * 0.15 * 2800);
