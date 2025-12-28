@@ -5,6 +5,8 @@ import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.revrobotics.ColorMatch;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 
+import org.firstinspires.ftc.teamcode.RobotUtil;
+
 import java.util.HashMap;
 
 import edu.wpi.first.wpilibj.util.Color;
@@ -63,7 +65,7 @@ public class Spindexer extends SubsystemBase {
             packet.put("Spindexer/" + bay.getKey() + "/Distance", bay.getValue().getDist());
             packet.put("Spindexer/" + bay.getKey() + "/State", bay.getValue().getState());
         }
-
+        packet.put("Spindexer/Command", RobotUtil.getCommandName(getCurrentCommand()));
         FtcDashboard.getInstance().sendTelemetryPacket(packet);
     }
 

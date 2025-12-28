@@ -6,7 +6,6 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.Range;
-import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 
@@ -14,6 +13,7 @@ import org.firstinspires.ftc.robotcore.external.JavaUtil;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.Robot;
+import org.firstinspires.ftc.teamcode.RobotUtil;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -69,15 +69,7 @@ public class Drivetrain extends SubsystemBase {
             packet.put(keyBase + "/Power", motor.getPower());
         }
         packet.put("IMU/Yaw", imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES));
-
-        Command curCommand = getCurrentCommand();
-        String commandName;
-        if (curCommand == null) {
-            commandName = "None";
-        } else {
-            commandName = curCommand.getName();
-        }
-        packet.put("Drivetrain/Command", commandName);
+        packet.put("Drivetrain/Command", RobotUtil.getCommandName(getCurrentCommand()));
 
         FtcDashboard.getInstance().sendTelemetryPacket(packet);
     }

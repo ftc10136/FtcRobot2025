@@ -20,10 +20,10 @@ public class Robot {
         spindexer = new Spindexer();
 
         drivetrain.setDefaultCommand(new Drivetrain.TeleopDrive());
+        FtcDashboard.getInstance().setTelemetryTransmissionInterval(20);
     }
 
     public static void Periodic() {
         CommandScheduler.getInstance().run();
-        FtcDashboard.getInstance().getTelemetry().update();
     }
 }
