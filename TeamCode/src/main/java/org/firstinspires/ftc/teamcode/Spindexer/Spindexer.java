@@ -35,6 +35,7 @@ public class Spindexer extends SubsystemBase {
     }
 
     public enum SpindexerType {
+        @SuppressWarnings("unused")
         Shoot,
         HumanIntake,
         FloorIntake
@@ -120,6 +121,7 @@ public class Spindexer extends SubsystemBase {
         Spindexer.setPosition(pos);
     }
 
+    @SuppressWarnings("unused")
     public Command commandSpindexerPos(double pos) {
         return new SetSpindexerPos(pos);
     }
@@ -134,6 +136,12 @@ public class Spindexer extends SubsystemBase {
         return new ConditionalCommand(new InstantCommand(), commandSpindexerPos(bay, SpindexerType.HumanIntake).perpetually().interruptOn(hasBall(bay)), hasBall(bay));
     }
 
+    public Command commandFloorLoadUntilBall(int bay) {
+        //using conditional command to speed up logic, if true, do nothing (instant command), otherwise
+        //run the indexer until we see a ball
+        return new ConditionalCommand(new InstantCommand(), commandSpindexerPos(bay, SpindexerType.FloorIntake).perpetually().interruptOn(hasBall(bay)), hasBall(bay));
+    }
+
     public BooleanSupplier hasBall(int bay) {
         return new BooleanSupplier() {
             @Override
@@ -143,6 +151,7 @@ public class Spindexer extends SubsystemBase {
         };
     }
 
+    @SuppressWarnings("unused")
     public static double getShootIndexPos(int bay) {
         double rawPos = Robot.RobotConfig.SPINDEXER_OFFSET + ((bay-1) * 0.187);
         return RobotUtil.inputModulus(rawPos, 0,1);

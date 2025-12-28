@@ -27,4 +27,13 @@ public class Controls {
             }
         };
     }
+
+    public Trigger floorLoadActive() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad1.a || Robot.opMode.gamepad2.a;
+            }
+        };
+    }
 }
