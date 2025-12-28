@@ -8,6 +8,7 @@ import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 
+import org.firstinspires.ftc.teamcode.Ballevator.Ballevator;
 import org.firstinspires.ftc.teamcode.Drivetrain.Drivetrain;
 import org.firstinspires.ftc.teamcode.Intake.Intake;
 import org.firstinspires.ftc.teamcode.Spindexer.Spindexer;
@@ -18,6 +19,7 @@ public class Robot {
     public static Controls controls;
     public static Spindexer spindexer;
     public static Intake intake;
+    public static Ballevator ballevator;
 
     public static void Init(OpMode inMode) {
         opMode = inMode;
@@ -25,6 +27,7 @@ public class Robot {
         drivetrain = new Drivetrain();
         spindexer = new Spindexer();
         intake = new Intake();
+        ballevator = new Ballevator();
 
         FtcDashboard.getInstance().setTelemetryTransmissionInterval(20);
     }
@@ -40,6 +43,9 @@ public class Robot {
         //button commands
         controls.hpLoadActive().whileActiveContinuous(commandHumanLoad());
         controls.floorLoadActive().whileActiveContinuous(commandFloorLoad());
+
+        //test commands
+        //new Trigger(()->Robot.opMode.gamepad1.start).whileActiveContinuous(testBallevator());
     }
 
     @Config
@@ -49,6 +55,7 @@ public class Robot {
 
     public static Command commandHumanLoad() {
         return new SequentialCommandGroup(
+                ballevator.commandDown(),
                 spindexer.commandHpLoadUntilBall(1),
                 spindexer.commandHpLoadUntilBall(2),
                 spindexer.commandHpLoadUntilBall(3)
@@ -59,11 +66,10 @@ public class Robot {
         return new ParallelCommandGroup(
                 intake.runIntake(),
                 new SequentialCommandGroup(
+                        ballevator.commandDown(),
                         spindexer.commandFloorLoadUntilBall(1),
                         spindexer.commandFloorLoadUntilBall(2),
                         spindexer.commandFloorLoadUntilBall(3)
                 ));
     }
 }
-
-

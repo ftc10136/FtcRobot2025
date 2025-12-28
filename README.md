@@ -1,7 +1,13 @@
 This repo is based off the default FTC starting repository [FtcRobotController](https://github.com/FIRST-Tech-Challenge/FtcRobotController).  We have added the following repositories:
 * [FtcDashboard](https://acmerobotics.github.io/ftc-dashboard/) - Makes a nice dashboard to check and configure the robot (http://192.168.43.1:8080/dash), but also provides a binding to use the FRC tool [AdvantageScope](https://docs.advantagescope.org/) to view live robot data.
 
-Default message below:
+### Wireless Deploy/Debug
+To wirelessly deploy/debug, run these steps:
+1) Connect to the device's wireless.
+2) Run this command in the terminal `adb connect 192.168.43.1:5555`
+3) Select the device in the dropdown menu.
+
+### Default readme below:
 ## NOTICE
 
 This repository contains the public FTC SDK for the DECODE (2025-2026) competition season.
