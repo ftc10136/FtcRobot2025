@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.seattlesolvers.solverslib.command.button.Trigger;
+
 public class Controls {
     public double getDriveForward() {
         return Robot.opMode.gamepad1.left_stick_y;
@@ -15,5 +17,14 @@ public class Controls {
 
     public boolean slowModeActive() {
         return Robot.opMode.gamepad1.left_trigger >= 0.2;
+    }
+
+    public Trigger hpLoadActive() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad1.x || Robot.opMode.gamepad2.x;
+            }
+        };
     }
 }

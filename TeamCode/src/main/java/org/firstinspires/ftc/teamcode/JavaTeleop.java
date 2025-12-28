@@ -1,10 +1,12 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 
 @TeleOp
+@Disabled
 public class JavaTeleop extends OpMode {
     @Override
     public void init() {
@@ -20,6 +22,7 @@ public class JavaTeleop extends OpMode {
     public void start() {
         //reset all commands that were running
         CommandScheduler.getInstance().cancelAll();
+        Robot.scheduleTeleop();
     }
 
     @Override
