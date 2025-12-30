@@ -8,7 +8,7 @@ import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 import org.firstinspires.ftc.teamcode.Robot;
-import org.firstinspires.ftc.teamcode.RobotUtil;
+import org.livoniawarriors.RobotUtil;
 
 public class Intake extends SubsystemBase {
     private final DcMotor Intake_Motor;

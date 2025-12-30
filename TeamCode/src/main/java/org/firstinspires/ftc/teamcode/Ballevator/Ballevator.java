@@ -13,19 +13,21 @@ import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.button.Trigger;
 
 import org.firstinspires.ftc.teamcode.Robot;
-import org.firstinspires.ftc.teamcode.RobotUtil;
+import org.livoniawarriors.RobotUtil;
 
 public class Ballevator extends SubsystemBase {
     private final TelemetryPacket packet;
     private final AnalogInput BallevatorEncoder;
     private final Servo Ballevator;
 
+    //these are feedback sensor voltages when low or high and can clear the balls passing by
     @SuppressWarnings("FieldCanBeLocal")
     private final double BALLEVATOR_DOWN_VOLTAGE = 2.9;
     @SuppressWarnings("FieldCanBeLocal")
-    private final double BALLEVATOR_DOWN_COMMAND = 0;
-    @SuppressWarnings("FieldCanBeLocal")
     private final double BALLEVATOR_UP_VOLTAGE = 2.297;
+    //servo commands from 0-1 to move the elevator up and down
+    @SuppressWarnings("FieldCanBeLocal")
+    private final double BALLEVATOR_DOWN_COMMAND = 0;
     @SuppressWarnings("FieldCanBeLocal")
     private final double BALLEVATOR_UP_COMMAND = 0.25;
 
