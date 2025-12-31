@@ -71,7 +71,7 @@ public class Ballevator extends SubsystemBase {
 
     private class BallevatorUp extends CommandBase {
         public BallevatorUp() {
-            addRequirements(Robot.intake);
+            addRequirements(Robot.ballevator);
         }
         @Override
         public void execute() {
@@ -85,7 +85,7 @@ public class Ballevator extends SubsystemBase {
 
     private class BallevatorDown extends CommandBase {
         public BallevatorDown() {
-            addRequirements(Robot.intake);
+            addRequirements(Robot.ballevator);
         }
         @Override
         public void execute() {

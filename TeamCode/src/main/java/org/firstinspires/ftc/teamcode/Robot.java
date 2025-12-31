@@ -7,11 +7,13 @@ import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.command.button.Trigger;
 
 import org.firstinspires.ftc.teamcode.Ballevator.Ballevator;
 import org.firstinspires.ftc.teamcode.Drivetrain.Drivetrain;
 import org.firstinspires.ftc.teamcode.Intake.Intake;
 import org.firstinspires.ftc.teamcode.Spindexer.Spindexer;
+import org.firstinspires.ftc.teamcode.Turret.Turret;
 
 public class Robot {
     public static OpMode opMode;
@@ -20,6 +22,7 @@ public class Robot {
     public static Spindexer spindexer;
     public static Intake intake;
     public static Ballevator ballevator;
+    public static Turret turret;
 
     public static void Init(OpMode inMode) {
         opMode = inMode;
@@ -28,12 +31,14 @@ public class Robot {
         spindexer = new Spindexer();
         intake = new Intake();
         ballevator = new Ballevator();
+        turret = new Turret();
 
         FtcDashboard.getInstance().setTelemetryTransmissionInterval(20);
     }
 
     public static void Periodic() {
         CommandScheduler.getInstance().run();
+        opMode.telemetry.update();
     }
 
     public static void scheduleTeleop() {
@@ -45,7 +50,7 @@ public class Robot {
         controls.floorLoadActive().whileActiveContinuous(commandFloorLoad());
 
         //test commands
-        //new Trigger(()->Robot.opMode.gamepad1.start).whileActiveContinuous(testBallevator());
+        //new Trigger(()->Robot.opMode.gamepad1.start).whileActiveContinuous(turret.testTurret());
     }
 
     @Config
