@@ -20,8 +20,8 @@ public class HoodAngle extends SubsystemBase {
 
     @Override
     public void periodic() {
-        packet.put("Ballevator/ServoCommand", hoodAngle.getPosition());
-        packet.put("Ballevator/Command", RobotUtil.getCommandName(getCurrentCommand()));
+        packet.put("HoodAngle/ServoCommand", hoodAngle.getPosition());
+        packet.put("HoodAngle/Command", RobotUtil.getCommandName(getCurrentCommand()));
         FtcDashboard.getInstance().sendTelemetryPacket(packet);
     }
 }
