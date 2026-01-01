@@ -15,6 +15,7 @@ import org.firstinspires.ftc.teamcode.Intake.Intake;
 import org.firstinspires.ftc.teamcode.Shooter.Shooter;
 import org.firstinspires.ftc.teamcode.Spindexer.Spindexer;
 import org.firstinspires.ftc.teamcode.Turret.Turret;
+import org.firstinspires.ftc.teamcode.hoodangle.HoodAngle;
 
 public class Robot {
     public static OpMode opMode;
@@ -25,6 +26,7 @@ public class Robot {
     public static Ballevator ballevator;
     public static Turret turret;
     public static Shooter shooter;
+    public static HoodAngle hoodAngle;
 
     public static void Init(OpMode inMode) {
         opMode = inMode;
@@ -35,6 +37,7 @@ public class Robot {
         ballevator = new Ballevator();
         turret = new Turret();
         shooter = new Shooter();
+        hoodAngle = new HoodAngle();
 
         FtcDashboard.getInstance().setTelemetryTransmissionInterval(20);
     }
