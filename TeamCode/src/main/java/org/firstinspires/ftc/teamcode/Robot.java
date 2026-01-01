@@ -12,6 +12,7 @@ import com.seattlesolvers.solverslib.command.button.Trigger;
 import org.firstinspires.ftc.teamcode.Ballevator.Ballevator;
 import org.firstinspires.ftc.teamcode.Drivetrain.Drivetrain;
 import org.firstinspires.ftc.teamcode.Intake.Intake;
+import org.firstinspires.ftc.teamcode.Shooter.Shooter;
 import org.firstinspires.ftc.teamcode.Spindexer.Spindexer;
 import org.firstinspires.ftc.teamcode.Turret.Turret;
 
@@ -23,6 +24,7 @@ public class Robot {
     public static Intake intake;
     public static Ballevator ballevator;
     public static Turret turret;
+    public static Shooter shooter;
 
     public static void Init(OpMode inMode) {
         opMode = inMode;
@@ -32,6 +34,7 @@ public class Robot {
         intake = new Intake();
         ballevator = new Ballevator();
         turret = new Turret();
+        shooter = new Shooter();
 
         FtcDashboard.getInstance().setTelemetryTransmissionInterval(20);
     }
