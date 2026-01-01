@@ -7,15 +7,14 @@ import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
-import com.seattlesolvers.solverslib.command.button.Trigger;
 
-import org.firstinspires.ftc.teamcode.Ballevator.Ballevator;
-import org.firstinspires.ftc.teamcode.Drivetrain.Drivetrain;
-import org.firstinspires.ftc.teamcode.Intake.Intake;
-import org.firstinspires.ftc.teamcode.Shooter.Shooter;
-import org.firstinspires.ftc.teamcode.Spindexer.Spindexer;
-import org.firstinspires.ftc.teamcode.Turret.Turret;
-import org.firstinspires.ftc.teamcode.hoodangle.HoodAngle;
+import org.firstinspires.ftc.teamcode.subsystems.Ballevator;
+import org.firstinspires.ftc.teamcode.subsystems.Drivetrain;
+import org.firstinspires.ftc.teamcode.subsystems.Intake;
+import org.firstinspires.ftc.teamcode.subsystems.Shooter;
+import org.firstinspires.ftc.teamcode.subsystems.Spindexer;
+import org.firstinspires.ftc.teamcode.subsystems.Turret;
+import org.firstinspires.ftc.teamcode.subsystems.HoodAngle;
 
 public class Robot {
     public static OpMode opMode;

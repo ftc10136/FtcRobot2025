@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.Spindexer;
+package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
