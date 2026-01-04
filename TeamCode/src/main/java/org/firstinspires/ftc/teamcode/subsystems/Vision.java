@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
-import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
@@ -29,7 +28,7 @@ public class Vision extends SubsystemBase {
         packet.put("Vision/IsConnected", limelight.isConnected());
         packet.put("Vision/IsRunning", limelight.isRunning());
         packet.put("Vision/FPS", status.getFps());
-        FtcDashboard.getInstance().sendTelemetryPacket(packet);
+        Robot.logPacket(packet);
     }
 
     private void updateVision() {

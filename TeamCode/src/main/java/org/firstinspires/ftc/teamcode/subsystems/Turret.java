@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
-import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -47,7 +46,7 @@ public class Turret extends SubsystemBase {
         packet.put("Turret/EstimatedAngle", estimatedAngle);
         packet.put("Turret/FeedbackVoltage", voltage);
         packet.put("Turret/Command", RobotUtil.getCommandName(getCurrentCommand()));
-        FtcDashboard.getInstance().sendTelemetryPacket(packet);
+        Robot.logPacket(packet);
         Robot.opMode.telemetry.addData("TurretFeedback", turretEncoder.getVoltage());
     }
 

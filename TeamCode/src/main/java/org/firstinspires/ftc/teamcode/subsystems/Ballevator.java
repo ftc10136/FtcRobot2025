@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
-import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -44,7 +43,7 @@ public class Ballevator extends SubsystemBase {
         packet.put("Ballevator/ServoCommand", Ballevator.getPosition());
         packet.put("Ballevator/FeedbackVoltage", BallevatorEncoder.getVoltage());
         packet.put("Ballevator/Command", RobotUtil.getCommandName(getCurrentCommand()));
-        FtcDashboard.getInstance().sendTelemetryPacket(packet);
+        Robot.logPacket(packet);
     }
 
     public Command commandUp() {

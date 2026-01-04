@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
-import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -96,7 +95,7 @@ public class Spindexer extends SubsystemBase {
         packet.put("Spindexer/FeedbackVoltage", voltage);
         packet.put("Spindexer/PositionFeedback", feedbackPos);
         packet.put("Spindexer/Command", RobotUtil.getCommandName(getCurrentCommand()));
-        FtcDashboard.getInstance().sendTelemetryPacket(packet);
+        Robot.logPacket(packet);
     }
 
     public BayState matchColor(Color color) {

@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
-import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.seattlesolvers.solverslib.command.Command;
@@ -24,7 +23,7 @@ public class Intake extends SubsystemBase {
     public void periodic() {
         packet.put("Intake/Power", Intake_Motor.getPower());
         packet.put("Intake/Command", RobotUtil.getCommandName(getCurrentCommand()));
-        FtcDashboard.getInstance().sendTelemetryPacket(packet);
+        Robot.logPacket(packet);
     }
 
     public Command runIntake() {

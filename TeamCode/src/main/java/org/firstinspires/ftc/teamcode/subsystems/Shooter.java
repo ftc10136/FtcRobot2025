@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
-import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -34,7 +33,7 @@ public class Shooter extends SubsystemBase {
         packet.put("Shooter/Voltage", TurretShooterMotor.getPower());
         packet.put("Shooter/Current", TurretShooterMotor.getCurrent(CurrentUnit.AMPS));
         packet.put("Shooter/Command", RobotUtil.getCommandName(getCurrentCommand()));
-        FtcDashboard.getInstance().sendTelemetryPacket(packet);
+        Robot.logPacket(packet);
     }
 
     private void setRpmMotor(double rpm) {

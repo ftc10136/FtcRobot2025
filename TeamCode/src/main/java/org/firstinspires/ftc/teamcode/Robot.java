@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
@@ -47,6 +48,10 @@ public class Robot {
     public static void Periodic() {
         CommandScheduler.getInstance().run();
         opMode.telemetry.update();
+    }
+
+    public static void logPacket(TelemetryPacket packet) {
+        FtcDashboard.getInstance().sendTelemetryPacket(packet);
     }
 
     public static void scheduleTeleop() {

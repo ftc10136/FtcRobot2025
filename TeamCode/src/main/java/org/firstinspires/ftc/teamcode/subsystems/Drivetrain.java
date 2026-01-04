@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
-import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -71,7 +70,7 @@ public class Drivetrain extends SubsystemBase {
         packet.put("IMU/Yaw", imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES));
         packet.put("Drivetrain/Command", RobotUtil.getCommandName(getCurrentCommand()));
 
-        FtcDashboard.getInstance().sendTelemetryPacket(packet);
+        Robot.logPacket(packet);
     }
 
     @SuppressWarnings("unused")
