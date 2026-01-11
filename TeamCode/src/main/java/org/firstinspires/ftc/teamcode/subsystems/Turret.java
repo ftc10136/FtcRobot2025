@@ -58,6 +58,10 @@ public class Turret extends SubsystemBase {
         return estimatedAngle;
     }
 
+    public Command centerTurretViaVision() {
+        return new CenterTurretViaVision();
+    }
+
     private class CommandTurret extends CommandBase {
         double pos;
         public CommandTurret(double pos) {
@@ -73,6 +77,39 @@ public class Turret extends SubsystemBase {
         @Override
         public boolean isFinished() {
             return Math.abs(pos - estimatedCommand) < 0.01;
+        }
+    }
+
+    private class CenterTurretViaVision extends CommandBase {
+        boolean finished = false;
+        public CenterTurretViaVision() {
+            addRequirements(Robot.turret);
+        }
+
+        @Override
+        public void initialize() {
+            finished = false;
+        }
+
+        @Override
+        public void execute() {
+            double GainFactor;
+            double X_Error = Robot.vision.getTurretError();
+            if (Math.abs(X_Error) < 0.8) {
+                GainFactor = 0;
+                finished = true;
+            } else if (Math.abs(X_Error) < 10) {
+                GainFactor = 0.8;
+            } else {
+                GainFactor = 1;
+            }
+            double CorrectionNeeded = X_Error * -0.005 * GainFactor;
+            setPosition(turretSpin.getPosition() - CorrectionNeeded);
+        }
+
+        @Override
+        public boolean isFinished() {
+            return finished;
         }
     }
 

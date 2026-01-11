@@ -44,6 +44,10 @@ public class Shooter extends SubsystemBase {
         return new SetRpm(rpm);
     }
 
+    public Command calibrateShot() {
+        return new CalibrateShot();
+    }
+
     private class SetRpm extends CommandBase {
         double rpm;
         public SetRpm(double rpm) {
@@ -53,6 +57,20 @@ public class Shooter extends SubsystemBase {
         @Override
         public void execute() {
             setRpmMotor(rpm);
+        }
+    }
+
+    private class CalibrateShot extends CommandBase {
+        public CalibrateShot() {
+            addRequirements(Robot.shooter);
+        }
+        @Override
+        public void execute() {
+            setRpmMotor(Robot.RobotConfig.CALIBRATE_SHOT_RPM);
+        }
+        @Override
+        public void end(boolean interrupted) {
+            setRpmMotor(0);
         }
     }
 }

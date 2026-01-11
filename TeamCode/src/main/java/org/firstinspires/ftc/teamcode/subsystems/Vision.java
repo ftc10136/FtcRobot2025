@@ -11,7 +11,7 @@ import org.firstinspires.ftc.teamcode.Robot;
 public class Vision extends SubsystemBase {
     private final Limelight3A limelight;
     private final TelemetryPacket packet;
-
+    private double turretError = 0;
 
     public Vision() {
         packet = new TelemetryPacket();
@@ -41,6 +41,7 @@ public class Vision extends SubsystemBase {
                 if (tagId == 24) {
                     Pose3D pose = fiducialResult.getCameraPoseTargetSpace();
                     logPose(fiducialResult.getCameraPoseTargetSpace(), "CameraPoseTargetSpace");
+                    turretError = fiducialResult.getTargetXDegrees();
                 }
             }
         }
@@ -108,5 +109,9 @@ public class Vision extends SubsystemBase {
             }
         } else {
         }
+    }
+
+    public double getTurretError() {
+        return turretError;
     }
 }

@@ -2,6 +2,8 @@ package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.seattlesolvers.solverslib.command.Command;
+import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 import org.firstinspires.ftc.teamcode.Robot;
@@ -22,5 +24,19 @@ public class HoodAngle extends SubsystemBase {
         packet.put("HoodAngle/ServoCommand", hoodAngle.getPosition());
         packet.put("HoodAngle/Command", RobotUtil.getCommandName(getCurrentCommand()));
         Robot.logPacket(packet);
+    }
+
+    public Command calibrateShot() {
+        return new CalibrateShot();
+    }
+
+    private class CalibrateShot extends CommandBase {
+        public CalibrateShot() {
+            addRequirements(Robot.hoodAngle);
+        }
+        @Override
+        public void execute() {
+            hoodAngle.setPosition(Robot.RobotConfig.CALIBRATE_SHOT_HOOD);
+        }
     }
 }

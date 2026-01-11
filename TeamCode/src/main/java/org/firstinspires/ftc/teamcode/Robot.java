@@ -7,7 +7,10 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
+import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.command.WaitCommand;
+import com.seattlesolvers.solverslib.command.button.Trigger;
 
 import org.firstinspires.ftc.teamcode.subsystems.Ballevator;
 import org.firstinspires.ftc.teamcode.subsystems.Drivetrain;
@@ -64,11 +67,15 @@ public class Robot {
 
         //test commands
         //new Trigger(()->Robot.opMode.gamepad1.start).whileActiveContinuous(turret.testTurret());
+        Trigger shootCalibration = new Trigger(()->Robot.opMode.gamepad1.back);
+        shootCalibration.toggleWhenActive(calibrateShooter());
     }
 
     @Config
     public static class RobotConfig {
         public static double SPINDEXER_OFFSET = 0.591;
+        public static double CALIBRATE_SHOT_RPM = 1000;
+        public static double CALIBRATE_SHOT_HOOD = 0.3;
     }
 
     public static Command commandHumanLoad() {
@@ -89,5 +96,21 @@ public class Robot {
                         spindexer.commandFloorLoadUntilBall(2),
                         spindexer.commandFloorLoadUntilBall(3)
                 ));
+    }
+
+    public static Command calibrateShooter() {
+        return new ParallelCommandGroup(
+                //intake.runIntake(),
+                turret.centerTurretViaVision().perpetually(),
+                shooter.calibrateShot(),
+                hoodAngle.calibrateShot(),
+                new RepeatCommand(new SequentialCommandGroup(
+                        ballevator.commandDown(),
+                        spindexer.commandHpLoadUntilBall(1),
+                        spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.Shoot),
+                        ballevator.commandUp(),
+                        new WaitCommand(300)
+                ))
+        );
     }
 }
