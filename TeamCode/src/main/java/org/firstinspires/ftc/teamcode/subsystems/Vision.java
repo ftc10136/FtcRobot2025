@@ -12,6 +12,7 @@ public class Vision extends SubsystemBase {
     private final Limelight3A limelight;
     private final TelemetryPacket packet;
     private double turretError = 0;
+    private double distToTarget = 0;
 
     public Vision() {
         packet = new TelemetryPacket();
@@ -51,8 +52,8 @@ public class Vision extends SubsystemBase {
         //dist is in meters
         var dist = Math.sqrt((pose.getPosition().x * pose.getPosition().x) + (pose.getPosition().y * pose.getPosition().y) + (pose.getPosition().z * pose.getPosition().z));
         //convert to inches
-        dist = dist * 39.37;
-        packet.put("Vision/" + name, dist);
+        distToTarget = dist * 39.37;
+        packet.put("Vision/" + name, distToTarget);
     }
 
     public void initScanning() {
@@ -113,5 +114,9 @@ public class Vision extends SubsystemBase {
 
     public double getTurretError() {
         return turretError;
+    }
+
+    public double getDistance() {
+        return distToTarget;
     }
 }
