@@ -16,11 +16,10 @@ public class JavaLinearTeleop extends LinearOpMode {
         }
 
         //reset all commands that were running
-        CommandScheduler.getInstance().cancelAll();
         Robot.scheduleTeleop();
 
         //run while enabled
-        while (opModeIsActive()) {
+        while (!isStopRequested()) {
             Robot.Periodic();
         }
     }

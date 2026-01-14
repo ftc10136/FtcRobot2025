@@ -13,7 +13,7 @@ import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.button.Trigger;
 
 import org.firstinspires.ftc.teamcode.subsystems.Ballevator;
-import org.firstinspires.ftc.teamcode.subsystems.Drivetrain;
+import org.firstinspires.ftc.teamcode.subsystems.DrivetrainPP;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Spindexer;
@@ -23,7 +23,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Vision;
 
 public class Robot {
     public static OpMode opMode;
-    public static Drivetrain drivetrain;
+    public static DrivetrainPP drivetrain;
     public static Controls controls;
     public static Spindexer spindexer;
     public static Intake intake;
@@ -35,15 +35,23 @@ public class Robot {
 
     public static void Init(OpMode inMode) {
         opMode = inMode;
-        controls = new Controls();
-        drivetrain = new Drivetrain();
-        spindexer = new Spindexer();
-        intake = new Intake();
-        ballevator = new Ballevator();
-        turret = new Turret();
-        shooter = new Shooter();
-        hoodAngle = new HoodAngle();
-        vision = new Vision();
+
+        //only allow initialization once
+        if(drivetrain == null) {
+            controls = new Controls();
+            drivetrain = new DrivetrainPP();
+            spindexer = new Spindexer();
+            intake = new Intake();
+            ballevator = new Ballevator();
+            turret = new Turret();
+            shooter = new Shooter();
+            hoodAngle = new HoodAngle();
+            vision = new Vision();
+        } else {
+            //we ran before, clear out all the old stuff running in the schedule
+            CommandScheduler.getInstance().cancelAll();
+            CommandScheduler.getInstance().clearButtons();
+        }
 
         FtcDashboard.getInstance().setTelemetryTransmissionInterval(20);
     }
@@ -58,8 +66,12 @@ public class Robot {
     }
 
     public static void scheduleTeleop() {
+        //clear out auto
+        CommandScheduler.getInstance().cancelAll();
+        CommandScheduler.getInstance().clearButtons();
+
         //default commands that run when the robot is idle
-        drivetrain.setDefaultCommand(new Drivetrain.TeleopDrive());
+        drivetrain.setDefaultCommand(drivetrain.teleopDrive());
 
         //button commands
         controls.hpLoadActive().whileActiveContinuous(commandHumanLoad());
@@ -99,8 +111,8 @@ public class Robot {
     }
 
     public static Command calibrateShooter() {
+        //drop balls in the HP hole and the robot shoots them
         return new ParallelCommandGroup(
-                //intake.runIntake(),
                 turret.centerTurretViaVision().perpetually(),
                 shooter.calibrateShot(),
                 hoodAngle.calibrateShot(),

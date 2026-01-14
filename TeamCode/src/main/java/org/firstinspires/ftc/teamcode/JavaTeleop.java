@@ -5,6 +5,8 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 
+//This was turned off, the issue is the loop has 1ms delays, and was causing issues getting thread
+//priority back.  The LinearOpMode lets us maintain the loop, so we can run faster and more controlled.
 @TeleOp
 @Disabled
 public class JavaTeleop extends OpMode {

@@ -4,7 +4,14 @@ import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
+import com.seattlesolvers.solverslib.geometry.Pose2d;
+import com.seattlesolvers.solverslib.geometry.Rotation2d;
+import com.seattlesolvers.solverslib.geometry.Transform2d;
+import com.seattlesolvers.solverslib.geometry.Translation2d;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.Robot;
 
@@ -25,6 +32,7 @@ public class Vision extends SubsystemBase {
     @Override
     public void periodic() {
         updateVision();
+        getRobotTranslation();
         var status = limelight.getStatus();
         packet.put("Vision/IsConnected", limelight.isConnected());
         packet.put("Vision/IsRunning", limelight.isRunning());
@@ -35,6 +43,7 @@ public class Vision extends SubsystemBase {
     private void updateVision() {
         var result = limelight.getLatestResult();
         if (result != null) {
+            logPose(result.getBotpose(), "BotPose");
             var fiducialResults = result.getFiducialResults();
             for (LLResultTypes.FiducialResult fiducialResult : fiducialResults) {
                 var tagId = fiducialResult.getFiducialId();
@@ -48,12 +57,32 @@ public class Vision extends SubsystemBase {
         }
     }
 
+    private Pose2D getRobotTranslation() {
+        //CONSTANTS
+        var OFFSET_ANGLE_DEG = 7.895;
+        var CAMERA_TURRET_RADIUS_IN = 3.53553;
+
+        //INPUTS
+        var curTurretAngleDeg = 0.;
+
+        //work
+        var curTurretAngleRad = Math.toRadians(curTurretAngleDeg + OFFSET_ANGLE_DEG);
+        var pose = new Pose2d(0,0, Rotation2d.fromDegrees(0));
+        //move it
+        pose = pose.plus(new Transform2d(new Translation2d(-0.25,1.75), Rotation2d.fromDegrees(0)));
+        return new Pose2D(DistanceUnit.METER, pose.getX(), pose.getY(), AngleUnit.RADIANS, pose.getHeading());
+    }
+
     private void logPose(Pose3D pose, String name) {
         //dist is in meters
         var dist = Math.sqrt((pose.getPosition().x * pose.getPosition().x) + (pose.getPosition().y * pose.getPosition().y) + (pose.getPosition().z * pose.getPosition().z));
         //convert to inches
         distToTarget = dist * 39.37;
         packet.put("Vision/" + name, distToTarget);
+
+        packet.put("Drivetrain/" + name + " x", pose.getPosition().x);
+        packet.put("Drivetrain/" + name + " y", pose.getPosition().y);
+        packet.put("Drivetrain/" + name + " heading", pose.getOrientation().getYaw(AngleUnit.RADIANS));
     }
 
     public void initScanning() {
