@@ -76,6 +76,7 @@ public class Robot {
         //button commands
         controls.hpLoadActive().whileActiveContinuous(commandHumanLoad());
         controls.floorLoadActive().whileActiveContinuous(commandFloorLoad());
+        controls.resetFieldOriented().whenActive(drivetrain.resetFieldOriented());
 
         //test commands
         //new Trigger(()->Robot.opMode.gamepad1.start).whileActiveContinuous(turret.testTurret());

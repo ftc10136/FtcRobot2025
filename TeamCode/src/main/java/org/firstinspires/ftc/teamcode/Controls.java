@@ -8,11 +8,11 @@ public class Controls {
     }
 
     public double getDriveRight() {
-        return Robot.opMode.gamepad1.left_stick_x;
+        return -Robot.opMode.gamepad1.left_stick_x;
     }
 
     public double getDriveTurn() {
-        return Robot.opMode.gamepad1.right_stick_x;
+        return -Robot.opMode.gamepad1.right_stick_x;
     }
 
     public boolean slowModeActive() {
@@ -33,6 +33,15 @@ public class Controls {
             @Override
             public boolean get() {
                 return Robot.opMode.gamepad1.a || Robot.opMode.gamepad2.a;
+            }
+        };
+    }
+
+    public Trigger resetFieldOriented() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad1.left_stick_button;
             }
         };
     }
