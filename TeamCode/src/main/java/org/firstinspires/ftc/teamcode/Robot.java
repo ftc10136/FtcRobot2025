@@ -8,6 +8,8 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
+import com.seattlesolvers.solverslib.command.ConditionalCommand;
+import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
@@ -89,6 +91,7 @@ public class Robot {
         controls.flipAlliance().whenActive(flipAlliance());
         controls.bumpSpindexerLeft().whileActiveContinuous(spindexer.bumpSpindexer(true));
         controls.bumpSpindexerRight().whileActiveContinuous(spindexer.bumpSpindexer(false));
+        controls.shootMotif().whileActiveContinuous(shootMotif());
 
         //test commands
         //new Trigger(()->Robot.opMode.gamepad1.start).whileActiveContinuous(turret.testTurret());
@@ -162,6 +165,42 @@ public class Robot {
                         new WaitCommand(100),
                         ballevator.commandUp().withTimeout(500),
                         spindexer.clearBayState(3),
+                        ballevator.commandDown(),
+                        spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.FloorIntake)
+                )
+        );
+    }
+
+    public static Command shootMotif() {
+        return new SequentialCommandGroup(
+                new ConditionalCommand(shootMotif(Spindexer.BayState.Green, Spindexer.BayState.Purple, Spindexer.BayState.Purple),new InstantCommand(), () -> Robot.vision.getSeenMotif() == Vision.Motifs.GPP),
+                new ConditionalCommand(shootMotif(Spindexer.BayState.Purple, Spindexer.BayState.Green, Spindexer.BayState.Purple),new InstantCommand(), () -> Robot.vision.getSeenMotif() == Vision.Motifs.PGP),
+                new ConditionalCommand(shootMotif(Spindexer.BayState.Purple, Spindexer.BayState.Purple, Spindexer.BayState.Green),new InstantCommand(), () -> Robot.vision.getSeenMotif() == Vision.Motifs.PPG)
+        );
+    }
+
+    public static Command shootMotif(Spindexer.BayState color1, Spindexer.BayState color2, Spindexer.BayState color3) {
+        return new ParallelCommandGroup(
+                shooter.autoShotRpm(),
+                hoodAngle.autoShotHood(),
+                turret.centerTurretViaVision(),
+                new SequentialCommandGroup(
+                        new WaitCommand(1000),
+                        ballevator.commandDown(),
+                        spindexer.commandSpindexerColor(color1),
+                        new WaitCommand(100),
+                        ballevator.commandUp().withTimeout(500),
+                        spindexer.clearCurrentBay(),
+                        ballevator.commandDown(),
+                        spindexer.commandSpindexerColor(color2),
+                        new WaitCommand(100),
+                        ballevator.commandUp().withTimeout(500),
+                        spindexer.clearCurrentBay(),
+                        ballevator.commandDown(),
+                        spindexer.commandSpindexerColor(color3),
+                        new WaitCommand(100),
+                        ballevator.commandUp().withTimeout(500),
+                        spindexer.clearCurrentBay(),
                         ballevator.commandDown(),
                         spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.FloorIntake)
                 )

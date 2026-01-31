@@ -129,6 +129,10 @@ public class Spindexer extends SubsystemBase {
         return new SetSpindexerPos(bay, type);
     }
 
+    public Command commandSpindexerColor(BayState color) {
+        return new SetSpindexerColor(color);
+    }
+
     public Command bumpSpindexer(boolean positive) {
         return new BumpSpindexer(positive);
     }
@@ -191,6 +195,40 @@ public class Spindexer extends SubsystemBase {
         }
     }
 
+    private class SetSpindexerColor extends CommandBase {
+        private double pos;
+        private BayState color;
+        private boolean found;
+        public SetSpindexerColor(BayState color) {
+            this.color = color;
+            found = false;
+            addRequirements(Robot.spindexer);
+        }
+        @Override
+        public void initialize() {
+
+        }
+        @Override
+        public void execute() {
+            for(int i=1; i <= 3; i++) {
+                var spinBay = bays.get("Bay" + i);
+                if (spinBay != null && found == false) {
+                    if(spinBay.getState() == color) {
+                        pos = getIndexPos(i, SpindexerType.Shoot);
+                        found = true;
+                    }
+                }
+            }
+            if(found) {
+                setSpindexerPos(pos);
+            }
+        }
+        @Override
+        public boolean isFinished() {
+            return found == false || Math.abs(pos - feedbackPos) < 0.005;
+        }
+    }
+
     private class BumpSpindexer extends CommandBase {
         private final boolean positive;
         private double pos;
@@ -224,6 +262,25 @@ public class Spindexer extends SubsystemBase {
                 var spinBay = bays.get("Bay" + bay);
                 if (spinBay != null) {
                     spinBay.resetBayState();
+                }
+            }
+            @Override
+            public boolean isFinished() {
+                return true;
+            }
+        };
+    }
+
+    public Command clearCurrentBay() {
+        return new CommandBase() {
+            @Override
+            public void execute() {
+                if(Math.abs(getIndexPos(1,SpindexerType.Shoot) - feedbackPos) < 0.03) {
+                    bays.get("Bay1").resetBayState();
+                } else if(Math.abs(getIndexPos(2,SpindexerType.Shoot) - feedbackPos) < 0.03) {
+                    bays.get("Bay2").resetBayState();
+                } else if(Math.abs(getIndexPos(3,SpindexerType.Shoot) - feedbackPos) < 0.03) {
+                    bays.get("Bay3").resetBayState();
                 }
             }
             @Override
