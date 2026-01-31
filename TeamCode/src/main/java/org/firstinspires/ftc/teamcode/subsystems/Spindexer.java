@@ -152,12 +152,12 @@ public class Spindexer extends SubsystemBase {
 
     @SuppressWarnings("unused")
     public static double getShootIndexPos(int bay) {
-        double rawPos = Robot.RobotConfig.SPINDEXER_OFFSET + ((bay-1) * 0.187);
+        double rawPos = Robot.RobotConfig.SPINDEXER_OFFSET + ((bay-1) * 0.188);
         return RobotUtil.inputModulus(rawPos, 0,1);
     }
 
     public static double getIndexPos(int bay, SpindexerType type) {
-        double rawPos = Robot.RobotConfig.SPINDEXER_OFFSET + ((bay-1) * 0.187);
+        double rawPos = Robot.RobotConfig.SPINDEXER_OFFSET + ((bay-1) * 0.188);
         if(type == SpindexerType.HumanIntake) {
             rawPos = rawPos - 0.142;
         } else if (type == SpindexerType.FloorIntake) {
@@ -183,7 +183,7 @@ public class Spindexer extends SubsystemBase {
         }
         @Override
         public boolean isFinished() {
-            return Math.abs(pos - feedbackPos) < 0.01;
+            return Math.abs(pos - feedbackPos) < 0.005;
         }
     }
 }

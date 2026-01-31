@@ -1,6 +1,9 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.pedropathing.ftc.FTCCoordinates;
+import com.pedropathing.geometry.PedroCoordinates;
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
@@ -21,12 +24,19 @@ public class Vision extends SubsystemBase {
     private double turretError = 0;
     private double distToTarget = 0;
 
+    private Motifs seenMotif;
+    public enum Motifs {
+        GPP, //21
+        PGP, //22
+        PPG  //23
+    }
     public Vision() {
         packet = new TelemetryPacket();
         limelight = Robot.opMode.hardwareMap.get(Limelight3A.class, "limelight");
         limelight.start();
         // LimelightPipelines: 1=20/BlueAlliance, 2=24/RedAlliance, 3=20,21,22
         limelight.pipelineSwitch(4);
+        seenMotif = Motifs.PPG;
     }
 
     @Override
@@ -37,7 +47,11 @@ public class Vision extends SubsystemBase {
         packet.put("Vision/IsConnected", limelight.isConnected());
         packet.put("Vision/IsRunning", limelight.isRunning());
         packet.put("Vision/FPS", status.getFps());
+        packet.put("Vision/DistToTarget", distToTarget);
+        packet.put("Vision/Motif", seenMotif.name());
         Robot.logPacket(packet);
+
+        Robot.opMode.telemetry.addData("Motif", seenMotif.name());
     }
 
     private void updateVision() {
@@ -56,6 +70,14 @@ public class Vision extends SubsystemBase {
                     distToTarget = dist * 39.37;
                     logPose(fiducialResult.getCameraPoseTargetSpace(), "CameraPoseTargetSpace");
                     turretError = fiducialResult.getTargetXDegrees();
+                }
+
+                if(tagId == 21) {
+                    seenMotif = Motifs.GPP;
+                } else if(tagId == 22) {
+                    seenMotif = Motifs.PGP;
+                } else if(tagId == 23) {
+                    seenMotif = Motifs.PPG;
                 }
             }
         }
@@ -78,15 +100,15 @@ public class Vision extends SubsystemBase {
     }
 
     private void logPose(Pose3D pose, String name) {
-        //dist is in meters
-        var dist = Math.sqrt((pose.getPosition().x * pose.getPosition().x) + (pose.getPosition().y * pose.getPosition().y) + (pose.getPosition().z * pose.getPosition().z));
-        //convert to inches
-        distToTarget = dist * 39.37;
-        packet.put("Vision/" + name, distToTarget);
+        var pedroPose = new Pose(-pose.getPosition().y, pose.getPosition().x, pose.getOrientation().getYaw(AngleUnit.RADIANS), FTCCoordinates.INSTANCE).getAsCoordinateSystem(PedroCoordinates.INSTANCE);
 
-        packet.put("Drivetrain/" + name + " x", pose.getPosition().x);
-        packet.put("Drivetrain/" + name + " y", pose.getPosition().y);
-        packet.put("Drivetrain/" + name + " heading", pose.getOrientation().getYaw(AngleUnit.RADIANS));
+        packet.put("Vision/" + name + " x", pose.getPosition().x);
+        packet.put("Vision/" + name + " y", pose.getPosition().y);
+        packet.put("Vision/" + name + " heading", pose.getOrientation().getYaw(AngleUnit.RADIANS));
+
+        packet.put("Vision/Pedro " + name + " x", pedroPose.getX()*39.37);
+        packet.put("Vision/Pedro " + name + " y", pedroPose.getY()*39.37);
+        packet.put("Vision/Pedro " + name + " heading", pedroPose.getHeading()+Math.PI);
     }
 
     public void initScanning() {

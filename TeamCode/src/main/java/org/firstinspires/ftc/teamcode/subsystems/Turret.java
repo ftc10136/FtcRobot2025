@@ -50,8 +50,15 @@ public class Turret extends SubsystemBase {
         Robot.opMode.telemetry.addData("TurretFeedback", turretEncoder.getVoltage());
     }
 
-    private void setPosition(double pos) {
-        turretSpin.setPosition(pos);
+    private void setPosition(double servoPos) {
+        turretSpin.setPosition(servoPos);
+    }
+
+    private void setAngle(double angleDeg) {
+        //inverting the voltage to angle formulas
+        double voltage = (angleDeg - 91.67)/-53.93;
+        double command = -0.3377*voltage + 1.058;
+        setPosition(command);
     }
 
     public double getAngle() {
@@ -60,6 +67,10 @@ public class Turret extends SubsystemBase {
 
     public Command centerTurretViaVision() {
         return new CenterTurretViaVision();
+    }
+
+    public Command commandTurretAngle(double angleDeg) {
+        return new CommandTurretAngle(angleDeg);
     }
 
     private class CommandTurret extends CommandBase {
@@ -77,6 +88,25 @@ public class Turret extends SubsystemBase {
         @Override
         public boolean isFinished() {
             return Math.abs(pos - estimatedCommand) < 0.01;
+        }
+    }
+
+    private class CommandTurretAngle extends CommandBase {
+        double angle;
+        public CommandTurretAngle(double angle) {
+            this.angle = angle;
+            addRequirements(Robot.turret);
+        }
+
+        @Override
+        public void execute() {
+            setAngle(angle);
+        }
+
+        @Override
+        public boolean isFinished() {
+            //in degrees
+            return Math.abs(angle - getAngle()) < 3;
         }
     }
 

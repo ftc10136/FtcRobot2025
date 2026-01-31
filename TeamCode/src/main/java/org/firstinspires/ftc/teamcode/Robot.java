@@ -74,11 +74,13 @@ public class Robot {
 
         //default commands that run when the robot is idle
         drivetrain.setDefaultCommand(drivetrain.teleopDrive());
+        turret.setDefaultCommand(turret.commandTurretAngle(0).perpetually());
 
         //button commands
         controls.hpLoadActive().whileActiveContinuous(commandHumanLoad());
         controls.floorLoadActive().whileActiveContinuous(commandFloorLoad());
         controls.resetFieldOriented().whenActive(drivetrain.resetFieldOriented());
+        controls.shootActive().whileActiveContinuous(shootAllBalls());
 
         //test commands
         //new Trigger(()->Robot.opMode.gamepad1.start).whileActiveContinuous(turret.testTurret());
@@ -88,7 +90,7 @@ public class Robot {
 
     @Config
     public static class RobotConfig {
-        public static double SPINDEXER_OFFSET = 0.591;
+        public static double SPINDEXER_OFFSET = 0.587;
         public static double CALIBRATE_SHOT_RPM = 1000;
         public static double CALIBRATE_SHOT_HOOD = 0.3;
     }
@@ -109,7 +111,8 @@ public class Robot {
                         ballevator.commandDown(),
                         spindexer.commandFloorLoadUntilBall(1),
                         spindexer.commandFloorLoadUntilBall(2),
-                        spindexer.commandFloorLoadUntilBall(3)
+                        spindexer.commandFloorLoadUntilBall(3),
+                        spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.Shoot)
                 ));
     }
 
@@ -126,6 +129,30 @@ public class Robot {
                         ballevator.commandUp(),
                         new WaitCommand(300)
                 ))
+        );
+    }
+
+    public static  Command shootAllBalls() {
+        return new ParallelCommandGroup(
+                shooter.autoShotRpm(),
+                hoodAngle.autoShotHood(),
+                turret.centerTurretViaVision(),
+                new SequentialCommandGroup(
+                        new WaitCommand(1000),
+                        ballevator.commandDown(),
+                        spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.Shoot),
+                        new WaitCommand(100),
+                        ballevator.commandUp().withTimeout(500),
+                        ballevator.commandDown(),
+                        spindexer.commandSpindexerPos(2, Spindexer.SpindexerType.Shoot),
+                        new WaitCommand(100),
+                        ballevator.commandUp().withTimeout(500),
+                        ballevator.commandDown(),
+                        spindexer.commandSpindexerPos(3, Spindexer.SpindexerType.Shoot),
+                        new WaitCommand(100),
+                        ballevator.commandUp().withTimeout(500),
+                        ballevator.commandDown()
+                )
         );
     }
 }

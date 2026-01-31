@@ -78,6 +78,10 @@ public class Shooter extends SubsystemBase {
         public void execute() {
             setRpmMotor(rpm);
         }
+        @Override
+        public void end(boolean interrupted) {
+            setRpmMotor(0);
+        }
     }
 
     private class AutoShotRpm extends CommandBase {
