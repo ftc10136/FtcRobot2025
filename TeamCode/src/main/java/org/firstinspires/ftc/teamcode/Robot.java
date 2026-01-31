@@ -4,7 +4,9 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.seattlesolvers.solverslib.command.Command;
+import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.RepeatCommand;
@@ -32,6 +34,7 @@ public class Robot {
     public static Shooter shooter;
     public static HoodAngle hoodAngle;
     public static Vision vision;
+    private static Servo allianceLed;
 
     public static boolean IsRed = false;
 
@@ -49,6 +52,8 @@ public class Robot {
             shooter = new Shooter();
             hoodAngle = new HoodAngle();
             vision = new Vision();
+            allianceLed = opMode.hardwareMap.get(Servo.class, "RGB-Alliance");
+            setLed();
         } else {
             //we ran before, clear out all the old stuff running in the schedule
             CommandScheduler.getInstance().cancelAll();
@@ -81,10 +86,11 @@ public class Robot {
         controls.floorLoadActive().whileActiveContinuous(commandFloorLoad());
         controls.resetFieldOriented().whenActive(drivetrain.resetFieldOriented());
         controls.shootActive().whileActiveContinuous(shootAllBalls());
+        controls.flipAlliance().whenActive(flipAlliance());
 
         //test commands
         //new Trigger(()->Robot.opMode.gamepad1.start).whileActiveContinuous(turret.testTurret());
-        Trigger shootCalibration = new Trigger(()->Robot.opMode.gamepad1.back);
+        Trigger shootCalibration = new Trigger(()->Robot.opMode.gamepad1.start);
         shootCalibration.toggleWhenActive(calibrateShooter());
     }
 
@@ -154,5 +160,26 @@ public class Robot {
                         ballevator.commandDown()
                 )
         );
+    }
+
+    public static Command flipAlliance() {
+        return new CommandBase() {
+            @Override
+            public void execute() {
+                Robot.IsRed = !Robot.IsRed;
+                setLed();
+            }
+            @Override
+            public boolean isFinished() {
+                return true;
+            }
+        };
+    }
+    private static void setLed() {
+        if(Robot.IsRed) {
+            allianceLed.setPosition(0.29);
+        } else {
+            allianceLed.setPosition(0.611);
+        }
     }
 }
