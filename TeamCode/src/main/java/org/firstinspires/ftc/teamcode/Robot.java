@@ -43,26 +43,30 @@ public class Robot {
     public static void Init(OpMode inMode) {
         opMode = inMode;
 
-        //only allow initialization once
-        if(drivetrain == null) {
-            controls = new Controls();
-            drivetrain = new DrivetrainPP();
-            spindexer = new Spindexer();
-            intake = new Intake();
-            ballevator = new Ballevator();
-            turret = new Turret();
-            shooter = new Shooter();
-            hoodAngle = new HoodAngle();
-            vision = new Vision();
-            allianceLed = opMode.hardwareMap.get(Servo.class, "RGB-Alliance");
-            setLed();
-        } else {
-            //we ran before, clear out all the old stuff running in the schedule
-            CommandScheduler.getInstance().cancelAll();
-            CommandScheduler.getInstance().clearButtons();
+        //if we have already run, clear out the old running subsystems
+        if (drivetrain != null) {
+            CommandScheduler.getInstance().unregisterSubsystem(drivetrain, spindexer, intake,
+                    ballevator, turret, shooter, hoodAngle, vision);
         }
+        controls = new Controls();
+        drivetrain = new DrivetrainPP();
+        spindexer = new Spindexer();
+        intake = new Intake();
+        ballevator = new Ballevator();
+        turret = new Turret();
+        shooter = new Shooter();
+        hoodAngle = new HoodAngle();
+        vision = new Vision();
+        allianceLed = opMode.hardwareMap.get(Servo.class, "RGB-Alliance");
+        setLed();
 
+        //we ran before, clear out all the old stuff running in the schedule
+        CommandScheduler.getInstance().cancelAll();
+        CommandScheduler.getInstance().clearButtons();
         FtcDashboard.getInstance().setTelemetryTransmissionInterval(20);
+
+        //buttons that run while disabled
+        controls.flipAlliance().whenActive(flipAlliance());
     }
 
     public static void Periodic() {
@@ -95,7 +99,7 @@ public class Robot {
 
         //test commands
         //new Trigger(()->Robot.opMode.gamepad1.start).whileActiveContinuous(turret.testTurret());
-        Trigger shootCalibration = new Trigger(()->Robot.opMode.gamepad1.start);
+        Trigger shootCalibration = new Trigger(() -> Robot.opMode.gamepad1.start);
         shootCalibration.toggleWhenActive(calibrateShooter());
     }
 
@@ -143,7 +147,7 @@ public class Robot {
         );
     }
 
-    public static  Command shootAllBalls() {
+    public static Command shootAllBalls() {
         return new ParallelCommandGroup(
                 shooter.autoShotRpm(),
                 hoodAngle.autoShotHood(),
@@ -173,9 +177,9 @@ public class Robot {
 
     public static Command shootMotif() {
         return new SequentialCommandGroup(
-                new ConditionalCommand(shootMotif(Spindexer.BayState.Green, Spindexer.BayState.Purple, Spindexer.BayState.Purple),new InstantCommand(), () -> Robot.vision.getSeenMotif() == Vision.Motifs.GPP),
-                new ConditionalCommand(shootMotif(Spindexer.BayState.Purple, Spindexer.BayState.Green, Spindexer.BayState.Purple),new InstantCommand(), () -> Robot.vision.getSeenMotif() == Vision.Motifs.PGP),
-                new ConditionalCommand(shootMotif(Spindexer.BayState.Purple, Spindexer.BayState.Purple, Spindexer.BayState.Green),new InstantCommand(), () -> Robot.vision.getSeenMotif() == Vision.Motifs.PPG)
+                new ConditionalCommand(shootMotif(Spindexer.BayState.Green, Spindexer.BayState.Purple, Spindexer.BayState.Purple), new InstantCommand(), () -> Robot.vision.getSeenMotif() == Vision.Motifs.GPP),
+                new ConditionalCommand(shootMotif(Spindexer.BayState.Purple, Spindexer.BayState.Green, Spindexer.BayState.Purple), new InstantCommand(), () -> Robot.vision.getSeenMotif() == Vision.Motifs.PGP),
+                new ConditionalCommand(shootMotif(Spindexer.BayState.Purple, Spindexer.BayState.Purple, Spindexer.BayState.Green), new InstantCommand(), () -> Robot.vision.getSeenMotif() == Vision.Motifs.PPG)
         );
     }
 
@@ -214,14 +218,16 @@ public class Robot {
                 Robot.IsRed = !Robot.IsRed;
                 setLed();
             }
+
             @Override
             public boolean isFinished() {
                 return true;
             }
         };
     }
+
     private static void setLed() {
-        if(Robot.IsRed) {
+        if (Robot.IsRed) {
             allianceLed.setPosition(0.29);
         } else {
             allianceLed.setPosition(0.611);
