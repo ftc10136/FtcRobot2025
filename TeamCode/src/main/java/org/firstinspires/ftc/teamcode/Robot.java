@@ -151,15 +151,19 @@ public class Robot {
                         spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.Shoot),
                         new WaitCommand(100),
                         ballevator.commandUp().withTimeout(500),
+                        spindexer.clearBayState(1),
                         ballevator.commandDown(),
                         spindexer.commandSpindexerPos(2, Spindexer.SpindexerType.Shoot),
                         new WaitCommand(100),
                         ballevator.commandUp().withTimeout(500),
+                        spindexer.clearBayState(2),
                         ballevator.commandDown(),
                         spindexer.commandSpindexerPos(3, Spindexer.SpindexerType.Shoot),
                         new WaitCommand(100),
                         ballevator.commandUp().withTimeout(500),
-                        ballevator.commandDown()
+                        spindexer.clearBayState(3),
+                        ballevator.commandDown(),
+                        spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.FloorIntake)
                 )
         );
     }

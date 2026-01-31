@@ -216,4 +216,20 @@ public class Spindexer extends SubsystemBase {
             return Math.abs(pos - feedbackPos) < 0.005;
         }
     }
+
+    public Command clearBayState(int bay) {
+        return new CommandBase() {
+            @Override
+            public void execute() {
+                var spinBay = bays.get("Bay" + bay);
+                if (spinBay != null) {
+                    spinBay.resetBayState();
+                }
+            }
+            @Override
+            public boolean isFinished() {
+                return true;
+            }
+        };
+    }
 }
