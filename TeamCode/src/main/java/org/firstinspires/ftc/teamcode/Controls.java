@@ -4,11 +4,19 @@ import com.seattlesolvers.solverslib.command.button.Trigger;
 
 public class Controls {
     public double getDriveForward() {
-        return Robot.opMode.gamepad1.left_stick_y;
+        double speed = Robot.opMode.gamepad1.left_stick_y;
+        if (!Robot.IsRed) {
+            speed = speed * -1;
+        }
+        return speed;
     }
 
     public double getDriveRight() {
-        return -Robot.opMode.gamepad1.left_stick_x;
+        double speed = Robot.opMode.gamepad1.left_stick_x;
+        if (!Robot.IsRed) {
+            speed = speed * -1;
+        }
+        return speed;
     }
 
     public double getDriveTurn() {

@@ -48,8 +48,12 @@ public class Vision extends SubsystemBase {
             for (LLResultTypes.FiducialResult fiducialResult : fiducialResults) {
                 var tagId = fiducialResult.getFiducialId();
                 packet.put("Vision/TagId", tagId);
-                if (tagId == 24) {
+                if ((tagId == 24 && Robot.IsRed) || (tagId == 20 && !Robot.IsRed)) {
                     Pose3D pose = fiducialResult.getCameraPoseTargetSpace();
+                    //dist is in meters
+                    var dist = Math.sqrt((pose.getPosition().x * pose.getPosition().x) + (pose.getPosition().y * pose.getPosition().y) + (pose.getPosition().z * pose.getPosition().z));
+                    //convert to inches
+                    distToTarget = dist * 39.37;
                     logPose(fiducialResult.getCameraPoseTargetSpace(), "CameraPoseTargetSpace");
                     turretError = fiducialResult.getTargetXDegrees();
                 }

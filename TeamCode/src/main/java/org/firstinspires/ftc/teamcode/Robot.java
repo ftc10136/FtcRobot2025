@@ -33,6 +33,8 @@ public class Robot {
     public static HoodAngle hoodAngle;
     public static Vision vision;
 
+    public static boolean IsRed = false;
+
     public static void Init(OpMode inMode) {
         opMode = inMode;
 
