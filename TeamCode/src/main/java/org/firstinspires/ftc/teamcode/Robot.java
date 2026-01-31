@@ -87,6 +87,8 @@ public class Robot {
         controls.resetFieldOriented().whenActive(drivetrain.resetFieldOriented());
         controls.shootActive().whileActiveContinuous(shootAllBalls());
         controls.flipAlliance().whenActive(flipAlliance());
+        controls.bumpSpindexerLeft().whileActiveContinuous(spindexer.bumpSpindexer(true));
+        controls.bumpSpindexerRight().whileActiveContinuous(spindexer.bumpSpindexer(false));
 
         //test commands
         //new Trigger(()->Robot.opMode.gamepad1.start).whileActiveContinuous(turret.testTurret());

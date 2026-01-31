@@ -71,4 +71,22 @@ public class Controls {
             }
         };
     }
+
+    public Trigger bumpSpindexerLeft() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad1.left_bumper;
+            }
+        };
+    }
+
+    public Trigger bumpSpindexerRight() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad1.right_bumper;
+            }
+        };
+    }
 }

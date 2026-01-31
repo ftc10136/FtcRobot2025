@@ -129,6 +129,10 @@ public class Spindexer extends SubsystemBase {
         return new SetSpindexerPos(bay, type);
     }
 
+    public Command bumpSpindexer(boolean positive) {
+        return new BumpSpindexer(positive);
+    }
+
     public Command commandHpLoadUntilBall(int bay) {
         //using conditional command to speed up logic, if true, do nothing (instant command), otherwise
         //run the indexer until we see a ball
@@ -176,6 +180,32 @@ public class Spindexer extends SubsystemBase {
         public SetSpindexerPos(int bay, SpindexerType locType) {
             pos = getIndexPos(bay, locType);
             addRequirements(Robot.spindexer);
+        }
+        @Override
+        public void execute() {
+            setSpindexerPos(pos);
+        }
+        @Override
+        public boolean isFinished() {
+            return Math.abs(pos - feedbackPos) < 0.005;
+        }
+    }
+
+    private class BumpSpindexer extends CommandBase {
+        private final boolean positive;
+        private double pos;
+        public BumpSpindexer(boolean positive) {
+            this.positive = positive;
+            addRequirements(Robot.spindexer);
+        }
+        @Override
+        public void initialize() {
+            pos = Spindexer.getPosition();
+            if(positive) {
+                pos = pos + 0.02;
+            } else {
+                pos = pos - 0.02;
+            }
         }
         @Override
         public void execute() {
