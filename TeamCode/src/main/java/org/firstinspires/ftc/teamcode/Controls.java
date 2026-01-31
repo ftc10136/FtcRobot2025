@@ -13,7 +13,7 @@ public class Controls {
 
     public double getDriveRight() {
         double speed = Robot.opMode.gamepad1.left_stick_x;
-        if (!Robot.IsRed) {
+        if (Robot.IsRed) {
             speed = speed * -1;
         }
         return speed;
@@ -59,6 +59,33 @@ public class Controls {
             @Override
             public boolean get() {
                 return Robot.opMode.gamepad1.left_stick_button;
+            }
+        };
+    }
+
+    public Trigger flipAlliance() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad1.back;
+            }
+        };
+    }
+
+    public Trigger bumpSpindexerLeft() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad1.left_bumper;
+            }
+        };
+    }
+
+    public Trigger bumpSpindexerRight() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad1.right_bumper;
             }
         };
     }
