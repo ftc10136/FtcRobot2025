@@ -174,4 +174,8 @@ public class Vision extends SubsystemBase {
     public double getDistance() {
         return distToTarget;
     }
+
+    public Motifs getSeenMotif() {
+        return seenMotif;
+    }
 }

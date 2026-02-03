@@ -30,11 +30,12 @@ public class SpinBay {
         //do 1 sensor read for the color
         dist = distSensor.getDistance(DistanceUnit.CM);
         color = new Color(colorSensor.red()/4096., colorSensor.green()/4096., colorSensor.blue()/4096.);
+        var sensedState = Robot.spindexer.matchColor(color);
 
-        if(dist > 2) {
+        if (sensedState == Spindexer.BayState.Green || sensedState == Spindexer.BayState.Purple) {
+            state = sensedState;
+        } else if (state == Spindexer.BayState.None || state == Spindexer.BayState.Something) {
             state = Spindexer.BayState.None;
-        } else {
-            state = Robot.spindexer.matchColor(color);
         }
         led.setPosition(Robot.spindexer.getLedColor(state));
     }
@@ -49,5 +50,9 @@ public class SpinBay {
 
     public double getDist() {
         return dist;
+    }
+
+    public void resetBayState() {
+        state = Spindexer.BayState.None;
     }
 }

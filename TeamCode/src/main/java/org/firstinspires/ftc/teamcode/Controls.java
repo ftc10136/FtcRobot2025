@@ -54,6 +54,15 @@ public class Controls {
         };
     }
 
+    public Trigger shootMotif() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad1.right_trigger > 0.75;
+            }
+        };
+    }
+
     public Trigger resetFieldOriented() {
         return new Trigger() {
             @Override

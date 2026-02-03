@@ -8,6 +8,8 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
+import com.seattlesolvers.solverslib.command.ConditionalCommand;
+import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
@@ -41,26 +43,30 @@ public class Robot {
     public static void Init(OpMode inMode) {
         opMode = inMode;
 
-        //only allow initialization once
-        if(drivetrain == null) {
-            controls = new Controls();
-            drivetrain = new DrivetrainPP();
-            spindexer = new Spindexer();
-            intake = new Intake();
-            ballevator = new Ballevator();
-            turret = new Turret();
-            shooter = new Shooter();
-            hoodAngle = new HoodAngle();
-            vision = new Vision();
-            allianceLed = opMode.hardwareMap.get(Servo.class, "RGB-Alliance");
-            setLed();
-        } else {
-            //we ran before, clear out all the old stuff running in the schedule
-            CommandScheduler.getInstance().cancelAll();
-            CommandScheduler.getInstance().clearButtons();
+        //if we have already run, clear out the old running subsystems
+        if (drivetrain != null) {
+            CommandScheduler.getInstance().unregisterSubsystem(drivetrain, spindexer, intake,
+                    ballevator, turret, shooter, hoodAngle, vision);
         }
+        controls = new Controls();
+        drivetrain = new DrivetrainPP();
+        spindexer = new Spindexer();
+        intake = new Intake();
+        ballevator = new Ballevator();
+        turret = new Turret();
+        shooter = new Shooter();
+        hoodAngle = new HoodAngle();
+        vision = new Vision();
+        allianceLed = opMode.hardwareMap.get(Servo.class, "RGB-Alliance");
+        setLed();
 
+        //we ran before, clear out all the old stuff running in the schedule
+        CommandScheduler.getInstance().cancelAll();
+        CommandScheduler.getInstance().clearButtons();
         FtcDashboard.getInstance().setTelemetryTransmissionInterval(20);
+
+        //buttons that run while disabled
+        controls.flipAlliance().whenActive(flipAlliance());
     }
 
     public static void Periodic() {
@@ -89,10 +95,11 @@ public class Robot {
         controls.flipAlliance().whenActive(flipAlliance());
         controls.bumpSpindexerLeft().whileActiveContinuous(spindexer.bumpSpindexer(true));
         controls.bumpSpindexerRight().whileActiveContinuous(spindexer.bumpSpindexer(false));
+        controls.shootMotif().whileActiveContinuous(shootMotif());
 
         //test commands
         //new Trigger(()->Robot.opMode.gamepad1.start).whileActiveContinuous(turret.testTurret());
-        Trigger shootCalibration = new Trigger(()->Robot.opMode.gamepad1.start);
+        Trigger shootCalibration = new Trigger(() -> Robot.opMode.gamepad1.start);
         shootCalibration.toggleWhenActive(calibrateShooter());
     }
 
@@ -140,7 +147,7 @@ public class Robot {
         );
     }
 
-    public static  Command shootAllBalls() {
+    public static Command shootAllBalls() {
         return new ParallelCommandGroup(
                 shooter.autoShotRpm(),
                 hoodAngle.autoShotHood(),
@@ -151,15 +158,55 @@ public class Robot {
                         spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.Shoot),
                         new WaitCommand(100),
                         ballevator.commandUp().withTimeout(500),
+                        spindexer.clearBayState(1),
                         ballevator.commandDown(),
                         spindexer.commandSpindexerPos(2, Spindexer.SpindexerType.Shoot),
                         new WaitCommand(100),
                         ballevator.commandUp().withTimeout(500),
+                        spindexer.clearBayState(2),
                         ballevator.commandDown(),
                         spindexer.commandSpindexerPos(3, Spindexer.SpindexerType.Shoot),
                         new WaitCommand(100),
                         ballevator.commandUp().withTimeout(500),
-                        ballevator.commandDown()
+                        spindexer.clearBayState(3),
+                        ballevator.commandDown(),
+                        spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.FloorIntake)
+                )
+        );
+    }
+
+    public static Command shootMotif() {
+        return new SequentialCommandGroup(
+                new ConditionalCommand(shootMotif(Spindexer.BayState.Green, Spindexer.BayState.Purple, Spindexer.BayState.Purple), new InstantCommand(), () -> Robot.vision.getSeenMotif() == Vision.Motifs.GPP),
+                new ConditionalCommand(shootMotif(Spindexer.BayState.Purple, Spindexer.BayState.Green, Spindexer.BayState.Purple), new InstantCommand(), () -> Robot.vision.getSeenMotif() == Vision.Motifs.PGP),
+                new ConditionalCommand(shootMotif(Spindexer.BayState.Purple, Spindexer.BayState.Purple, Spindexer.BayState.Green), new InstantCommand(), () -> Robot.vision.getSeenMotif() == Vision.Motifs.PPG)
+        );
+    }
+
+    public static Command shootMotif(Spindexer.BayState color1, Spindexer.BayState color2, Spindexer.BayState color3) {
+        return new ParallelCommandGroup(
+                shooter.autoShotRpm(),
+                hoodAngle.autoShotHood(),
+                turret.centerTurretViaVision(),
+                new SequentialCommandGroup(
+                        new WaitCommand(1000),
+                        ballevator.commandDown(),
+                        spindexer.commandSpindexerColor(color1),
+                        new WaitCommand(100),
+                        ballevator.commandUp().withTimeout(500),
+                        spindexer.clearCurrentBay(),
+                        ballevator.commandDown(),
+                        spindexer.commandSpindexerColor(color2),
+                        new WaitCommand(100),
+                        ballevator.commandUp().withTimeout(500),
+                        spindexer.clearCurrentBay(),
+                        ballevator.commandDown(),
+                        spindexer.commandSpindexerColor(color3),
+                        new WaitCommand(100),
+                        ballevator.commandUp().withTimeout(500),
+                        spindexer.clearCurrentBay(),
+                        ballevator.commandDown(),
+                        spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.FloorIntake)
                 )
         );
     }
@@ -171,14 +218,16 @@ public class Robot {
                 Robot.IsRed = !Robot.IsRed;
                 setLed();
             }
+
             @Override
             public boolean isFinished() {
                 return true;
             }
         };
     }
+
     private static void setLed() {
-        if(Robot.IsRed) {
+        if (Robot.IsRed) {
             allianceLed.setPosition(0.29);
         } else {
             allianceLed.setPosition(0.611);
