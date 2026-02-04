@@ -69,7 +69,7 @@ public class DrivetrainPP extends SubsystemBase {
             //this logic mostly works without AprilTags, might break when the robot knows where it is...
             double Drive2 = Range.clip(Math.sqrt(Math.pow(Robot.controls.getDriveForward(), 2) + Math.pow(Robot.controls.getDriveRight(), 2)), 0, 1);
             double GamePadDegree = Math.atan2(-Math.pow(Robot.controls.getDriveForward(), 3), Math.pow(Robot.controls.getDriveRight(), 3)) / Math.PI * 180;
-            double Movement = RobotUtil.inputModulus(GamePadDegree + Math.toDegrees(follower.getHeading()-headingZeroRad),-179.9999, 180);
+            double Movement = RobotUtil.inputModulus(GamePadDegree + Math.toDegrees(follower.getHeading()-headingZeroRad),0, 360);
             double Strafe = Math.cos(Movement / 180 * Math.PI) * Drive2;
             double Forward = Math.sin(Movement / 180 * Math.PI) * Drive2;
             var turn = Robot.controls.getDriveTurn();
