@@ -2,11 +2,14 @@ package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.util.Range;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
+import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
@@ -26,21 +29,32 @@ public class DrivetrainPP extends SubsystemBase {
         headingZeroRad = 0;
     }
 
+    public Follower getFollower() {
+        return follower;
+    }
+
     @Override
     public void periodic() {
         follower.update();
 
         packet.put("Drivetrain/Command", RobotUtil.getCommandName(getCurrentCommand()));
-        var pose = follower.getPose();
-        packet.put("Drivetrain/Pose x", pose.getX());
-        packet.put("Drivetrain/Pose y", pose.getY());
-        packet.put("Drivetrain/Pose heading", pose.getHeading());
+        var pose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
+        packet.put("Drivetrain/Pose x", -pose.getX());
+        packet.put("Drivetrain/Pose y", -pose.getY());
+        packet.put("Drivetrain/Pose heading", pose.getHeading()+Math.PI);
 
         Robot.logPacket(packet);
     }
 
+    public void setPose(Pose pose) {
+        follower.setPose(pose);
+    }
+
     public Command teleopDrive() {
         return new TeleopDrive();
+    }
+    public Command followPath(PathChain path) {
+        return new FollowPathCommand(follower, path);
     }
 
     public Command resetFieldOriented() {
@@ -74,6 +88,30 @@ public class DrivetrainPP extends SubsystemBase {
             double Forward = Math.sin(Movement / 180 * Math.PI) * Drive2;
             var turn = Robot.controls.getDriveTurn();
             follower.setTeleOpDrive(Forward, Strafe, turn, true);
+        }
+    }
+
+    class DrivePath extends CommandBase {
+        private final PathChain path;
+        public DrivePath(PathChain path) {
+            this.path = path;
+            addRequirements(Robot.drivetrain);
+        }
+        @Override
+        public void initialize() {
+            follower.followPath(path,true);
+        }
+        @Override
+        public void execute() {
+            follower.update();
+        }
+        @Override
+        public boolean isFinished() {
+            return !follower.isBusy();
+        }
+        @Override
+        public void end(boolean interrupted) {
+            follower.breakFollowing();
         }
     }
 }

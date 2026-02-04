@@ -103,6 +103,13 @@ public class Robot {
         shootCalibration.toggleWhenActive(calibrateShooter());
     }
 
+    public static void setAutonomous(Command autoSequence) {
+        //clear out auto
+        CommandScheduler.getInstance().cancelAll();
+        CommandScheduler.getInstance().clearButtons();
+        CommandScheduler.getInstance().schedule(autoSequence);
+    }
+
     @Config
     public static class RobotConfig {
         public static double SPINDEXER_OFFSET = 0.587;
