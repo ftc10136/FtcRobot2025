@@ -32,10 +32,10 @@ public class RedTriangleTest extends LinearOpMode {
 
     private Command getAutoSequence() {
         Paths paths = new Paths(Robot.drivetrain.getFollower());
-        Robot.drivetrain.setPose(paths.Path1.getPose(new PathChain.PathT(0,0)));
+        Robot.drivetrain.setPose(paths.Path2.getPose(new PathChain.PathT(0,0)));
         return new SequentialCommandGroup(
-                Robot.drivetrain.followPath(paths.Path1),
-                new WaitCommand(5000),
+                //Robot.drivetrain.followPath(paths.Path1),
+                //new WaitCommand(5000),
                 Robot.drivetrain.followPath(paths.Path2),
                 new WaitCommand(5000),
                 Robot.drivetrain.followPath(paths.Path3)
