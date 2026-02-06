@@ -5,6 +5,7 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.util.Range;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
@@ -19,12 +20,14 @@ public class DrivetrainPP extends SubsystemBase {
     public final Follower follower;
     private final TelemetryPacket packet;
     private double headingZeroRad;
+    private final GoBildaPinpointDriver odo;
 
     public DrivetrainPP() {
         super();
         packet = new TelemetryPacket();
         follower = Constants.createFollower(Robot.opMode.hardwareMap);
-        follower.setStartingPose(new Pose());
+        odo = Robot.opMode.hardwareMap.get(GoBildaPinpointDriver.class,"pinpoint");
+        follower.setStartingPose(new Pose(0,0,0,FTCCoordinates.INSTANCE));
         follower.startTeleopDrive(true);
         headingZeroRad = 0;
     }
@@ -42,6 +45,8 @@ public class DrivetrainPP extends SubsystemBase {
         packet.put("Drivetrain/Pose x", -pose.getX());
         packet.put("Drivetrain/Pose y", -pose.getY());
         packet.put("Drivetrain/Pose heading", pose.getHeading()+Math.PI);
+        packet.put("Drivetrain/EncoderX", odo.getEncoderX());
+        packet.put("Drivetrain/EncoderY", odo.getEncoderY());
 
         Robot.logPacket(packet);
     }
