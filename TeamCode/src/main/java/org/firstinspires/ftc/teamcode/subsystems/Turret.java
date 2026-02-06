@@ -16,6 +16,7 @@ public class Turret extends SubsystemBase {
     private final TelemetryPacket packet;
     private final AnalogInput turretEncoder;
     private final Servo turretSpin;
+    private final Servo topLight;
     private double estimatedCommand;
     private double estimatedAngle;
 
@@ -24,6 +25,7 @@ public class Turret extends SubsystemBase {
         turretEncoder = Robot.opMode.hardwareMap.get(AnalogInput.class, "TurretEncoder");
         turretSpin = Robot.opMode.hardwareMap.get(Servo.class, "TurretSpin");
         turretSpin.setDirection(Servo.Direction.FORWARD);
+        topLight = Robot.opMode.hardwareMap.get(Servo.class, "RGB_VisionAcquired");
         //during HP load, move turret to 1, then reset back to started position
 
         /* Limelight Tracking
@@ -71,6 +73,20 @@ public class Turret extends SubsystemBase {
 
     public Command commandTurretAngle(double angleDeg) {
         return new CommandTurretAngle(angleDeg);
+    }
+
+    public Command setLed() {
+        return new CommandBase() {
+            @Override
+            public void execute() {
+                topLight.setPosition(0.5);
+            }
+
+            @Override
+            public boolean isFinished() {
+                return true;
+            }
+        };
     }
 
     private class CommandTurret extends CommandBase {

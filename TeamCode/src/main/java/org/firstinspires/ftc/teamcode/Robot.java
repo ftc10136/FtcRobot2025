@@ -11,8 +11,10 @@ import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.ConditionalCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
+import com.seattlesolvers.solverslib.command.ParallelDeadlineGroup;
+import com.seattlesolvers.solverslib.command.ParallelRaceGroup;
 import com.seattlesolvers.solverslib.command.RepeatCommand;
-import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.command.SelectCommand;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.button.Trigger;
 
@@ -24,6 +26,9 @@ import org.firstinspires.ftc.teamcode.subsystems.Spindexer;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 import org.firstinspires.ftc.teamcode.subsystems.HoodAngle;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
+import org.livoniawarriors.SequentialCommandGroup;
+
+import java.util.HashMap;
 
 public class Robot {
     public static OpMode opMode;
@@ -127,15 +132,15 @@ public class Robot {
     }
 
     public static Command commandFloorLoad() {
-        return new ParallelCommandGroup(
-                intake.runIntake(),
+        return new ParallelDeadlineGroup(
                 new SequentialCommandGroup(
                         ballevator.commandDown(),
                         spindexer.commandFloorLoadUntilBall(1),
                         spindexer.commandFloorLoadUntilBall(2),
                         spindexer.commandFloorLoadUntilBall(3),
                         spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.Shoot)
-                ));
+                ),
+                intake.runIntake());
     }
 
     public static Command calibrateShooter() {
@@ -183,18 +188,15 @@ public class Robot {
     }
 
     public static Command shootMotif() {
-        return new SequentialCommandGroup(
-                new ConditionalCommand(shootMotif(Spindexer.BayState.Green, Spindexer.BayState.Purple, Spindexer.BayState.Purple), new InstantCommand(), () -> Robot.vision.getSeenMotif() == Vision.Motifs.GPP),
-                new ConditionalCommand(shootMotif(Spindexer.BayState.Purple, Spindexer.BayState.Green, Spindexer.BayState.Purple), new InstantCommand(), () -> Robot.vision.getSeenMotif() == Vision.Motifs.PGP),
-                new ConditionalCommand(shootMotif(Spindexer.BayState.Purple, Spindexer.BayState.Purple, Spindexer.BayState.Green), new InstantCommand(), () -> Robot.vision.getSeenMotif() == Vision.Motifs.PPG)
-        );
+        var map = new HashMap<Object, Command>();
+        map.put(Vision.Motifs.GPP, shootMotif(Spindexer.BayState.Green, Spindexer.BayState.Purple, Spindexer.BayState.Purple));
+        map.put(Vision.Motifs.PGP, shootMotif(Spindexer.BayState.Purple, Spindexer.BayState.Green, Spindexer.BayState.Purple));
+        map.put(Vision.Motifs.PPG, shootMotif(Spindexer.BayState.Purple, Spindexer.BayState.Purple, Spindexer.BayState.Green));
+        return new SelectCommand(map,() -> Robot.vision.getSeenMotif());
     }
 
     public static Command shootMotif(Spindexer.BayState color1, Spindexer.BayState color2, Spindexer.BayState color3) {
-        return new ParallelCommandGroup(
-                shooter.autoShotRpm(),
-                hoodAngle.autoShotHood(),
-                turret.centerTurretViaVision(),
+        return new ParallelDeadlineGroup(
                 new SequentialCommandGroup(
                         new WaitCommand(1000),
                         ballevator.commandDown(),
@@ -214,7 +216,10 @@ public class Robot {
                         spindexer.clearCurrentBay(),
                         ballevator.commandDown(),
                         spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.FloorIntake)
-                )
+                ),
+                shooter.autoShotRpm(),
+                hoodAngle.autoShotHood(),
+                turret.centerTurretViaVision()
         );
     }
 

@@ -191,7 +191,7 @@ public class Spindexer extends SubsystemBase {
         }
         @Override
         public boolean isFinished() {
-            return Math.abs(pos - feedbackPos) < 0.005;
+            return Math.abs(pos - feedbackPos) < 0.01;
         }
     }
 
@@ -225,7 +225,7 @@ public class Spindexer extends SubsystemBase {
         }
         @Override
         public boolean isFinished() {
-            return found == false || Math.abs(pos - feedbackPos) < 0.005;
+            return found == false || Math.abs(pos - feedbackPos) < 0.01;
         }
     }
 
@@ -251,7 +251,7 @@ public class Spindexer extends SubsystemBase {
         }
         @Override
         public boolean isFinished() {
-            return Math.abs(pos - feedbackPos) < 0.005;
+            return Math.abs(pos - feedbackPos) < 0.01;
         }
     }
 
