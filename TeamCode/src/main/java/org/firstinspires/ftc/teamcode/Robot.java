@@ -217,9 +217,9 @@ public class Robot {
                         ballevator.commandDown(),
                         spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.FloorIntake)
                 ),
-                shooter.autoShotRpm(),
-                hoodAngle.autoShotHood(),
-                turret.centerTurretViaVision()
+                shooter.autoShotRpm().perpetually(),
+                hoodAngle.autoShotHood().perpetually(),
+                turret.centerTurretViaVision().perpetually()
         );
     }
 

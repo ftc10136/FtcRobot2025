@@ -60,7 +60,7 @@ public class Paths {
                         new BezierLine(
                                 new Pose(41.793, 35.586),
 
-                                new Pose(8.828, 34.724)
+                                new Pose(15.828, 34.724)
                         )
                 ).setTangentHeadingInterpolation()
 

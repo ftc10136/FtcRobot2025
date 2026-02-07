@@ -59,7 +59,13 @@ public class DrivetrainPP extends SubsystemBase {
         return new TeleopDrive();
     }
     public Command followPath(PathChain path) {
-        var command = new FollowPathCommand(follower, path);
+        return followPath(path, true);
+    }
+    public Command followPath(PathChain path, boolean stopAtEnd) {
+        return followPath(path, stopAtEnd, 0.8);
+    }
+    public Command followPath(PathChain path, boolean stopAtEnd, double maxSpeed) {
+        var command = new FollowPathCommand(follower, path, stopAtEnd, maxSpeed);
         command.addRequirements(Robot.drivetrain);
         return command;
     }
