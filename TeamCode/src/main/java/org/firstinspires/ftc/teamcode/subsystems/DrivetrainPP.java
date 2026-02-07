@@ -28,13 +28,23 @@ public class DrivetrainPP extends SubsystemBase {
         packet = new TelemetryPacket();
         follower = Constants.createFollower(Robot.opMode.hardwareMap);
         odo = Robot.opMode.hardwareMap.get(GoBildaPinpointDriver.class,"pinpoint");
-        follower.setStartingPose(new Pose(0,0,0,FTCCoordinates.INSTANCE));
-        follower.startTeleopDrive(true);
         headingZeroRad = 0;
     }
 
     public Follower getFollower() {
         return follower;
+    }
+
+    public Pose getPose() {
+        return follower.getPose();
+    }
+
+    public void startTeleopDrive(boolean isTeleop) {
+        if(isTeleop) {
+            follower.startTeleopDrive(true);
+        } else {
+            follower.breakFollowing();
+        }
     }
 
     @Override

@@ -3,16 +3,15 @@ package org.firstinspires.ftc.teamcode;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.pedropathing.geometry.PedroCoordinates;
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
-import com.seattlesolvers.solverslib.command.ConditionalCommand;
-import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.ParallelDeadlineGroup;
-import com.seattlesolvers.solverslib.command.ParallelRaceGroup;
 import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.SelectCommand;
 import com.seattlesolvers.solverslib.command.WaitCommand;
@@ -47,9 +46,10 @@ public class Robot {
 
     public static void Init(OpMode inMode) {
         opMode = inMode;
-
+        var pose = new Pose(72,72,Math.PI/2, PedroCoordinates.INSTANCE);
         //if we have already run, clear out the old running subsystems
         if (drivetrain != null) {
+            pose = drivetrain.getPose();
             CommandScheduler.getInstance().unregisterSubsystem(drivetrain, spindexer, intake,
                     ballevator, turret, shooter, hoodAngle, vision);
         }
@@ -64,6 +64,7 @@ public class Robot {
         vision = new Vision();
         allianceLed = opMode.hardwareMap.get(Servo.class, "RGB-Alliance");
         setLed();
+        drivetrain.setPose(pose);
 
         //we ran before, clear out all the old stuff running in the schedule
         CommandScheduler.getInstance().cancelAll();
@@ -89,6 +90,7 @@ public class Robot {
         CommandScheduler.getInstance().clearButtons();
 
         //default commands that run when the robot is idle
+        drivetrain.startTeleopDrive(true);
         drivetrain.setDefaultCommand(drivetrain.teleopDrive());
         turret.setDefaultCommand(turret.centerTurretViaPosition());
 
