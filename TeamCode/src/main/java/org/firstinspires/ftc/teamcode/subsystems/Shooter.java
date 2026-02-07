@@ -36,7 +36,10 @@ public class Shooter extends SubsystemBase {
         shootingTable.put(82., 3300.);
         shootingTable.put(97., 3600.);
         shootingTable.put(113., 3900.);
-        //TODO, need to get table to 144", to get the back corner shots
+        shootingTable.put(125., 3900.);
+        shootingTable.put(139., 4100.);
+        shootingTable.put(149., 4300.);
+        shootingTable.put(160., 4500.);
     }
 
     @Override

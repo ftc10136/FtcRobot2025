@@ -33,7 +33,10 @@ public class HoodAngle extends SubsystemBase {
         shootingTable.put(82., 0.29);
         shootingTable.put(97., 0.26);
         shootingTable.put(113., 0.23);
-        //TODO, need to get table to 144", to get the back corner shots
+        shootingTable.put(125., 0.21);
+        shootingTable.put(139., 0.20);
+        shootingTable.put(149., 0.18);
+        shootingTable.put(160., 0.175);
     }
 
     @Override

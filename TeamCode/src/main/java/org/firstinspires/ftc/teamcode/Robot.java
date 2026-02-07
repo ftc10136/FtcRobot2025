@@ -146,7 +146,7 @@ public class Robot {
     public static Command calibrateShooter() {
         //drop balls in the HP hole and the robot shoots them
         return new ParallelCommandGroup(
-                turret.centerTurretViaVision().perpetually(),
+                turret.commandTurretAngle(0),
                 shooter.calibrateShot(),
                 hoodAngle.calibrateShot(),
                 new RepeatCommand(new SequentialCommandGroup(
@@ -154,7 +154,8 @@ public class Robot {
                         spindexer.commandHpLoadUntilBall(1),
                         spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.Shoot),
                         ballevator.commandUp(),
-                        new WaitCommand(300)
+                        new WaitCommand(300),
+                        spindexer.clearCurrentBay()
                 ))
         );
     }
