@@ -67,7 +67,7 @@ public class HoodAngle extends SubsystemBase {
         }
         @Override
         public void execute() {
-            double dist = Robot.vision.getDistance();
+            double dist = Robot.drivetrain.getGoalDistance();
             var angle = shootingTable.get(dist);
             hoodAngle.setPosition(angle);
         }

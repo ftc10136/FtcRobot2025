@@ -35,10 +35,12 @@ public class BlueFarAuto extends LinearOpMode {
         Robot.drivetrain.setPose(paths.BlueBackBalls.getPose(new PathChain.PathT(0,0)));
         return new SequentialCommandGroup(
                 Robot.shootMotif(),
-                Robot.drivetrain.followPath(paths.BlueBackBalls, false, 1),
                 new ParallelDeadlineGroup(
                         Robot.commandFloorLoad(),
-                        Robot.drivetrain.followPath(paths.BlueBackIntake, true, 0.3)
+                        new SequentialCommandGroup(
+                            Robot.drivetrain.followPath(paths.BlueBackBalls, true, 1),
+                            Robot.drivetrain.followPath(paths.BlueBackIntake, true, 0.1)
+                        )
                 ).withTimeout(10000),
                 Robot.drivetrain.followPath(paths.BlueBackToShoot, true, 1),
                 Robot.shootMotif()

@@ -12,6 +12,8 @@ import com.seattlesolvers.solverslib.command.WaitCommand;
 import org.firstinspires.ftc.teamcode.Robot;
 import org.livoniawarriors.RobotUtil;
 
+import edu.wpi.first.math.MathUtil;
+
 public class Turret extends SubsystemBase {
     private final TelemetryPacket packet;
     private final AnalogInput turretEncoder;
@@ -69,6 +71,10 @@ public class Turret extends SubsystemBase {
 
     public Command centerTurretViaVision() {
         return new CenterTurretViaVision();
+    }
+
+    public Command centerTurretViaPosition() {
+        return new CenterTurretViaPosition();
     }
 
     public Command commandTurretAngle(double angleDeg) {
@@ -158,6 +164,31 @@ public class Turret extends SubsystemBase {
             return finished;
         }
     }
+
+    private class CenterTurretViaPosition extends CommandBase {
+        boolean finished = false;
+        public CenterTurretViaPosition() {
+            addRequirements(Robot.turret);
+        }
+
+        @Override
+        public void initialize() {
+            finished = false;
+        }
+
+        @Override
+        public void execute() {
+            double angle = Robot.drivetrain.getGoalAngle() - Robot.drivetrain.getHeading();
+            angle = MathUtil.clamp(angle, -90., 90.);
+            setAngle(angle);
+        }
+
+        @Override
+        public boolean isFinished() {
+            return finished;
+        }
+    }
+
 
     public Command testTurret() {
         return new SequentialCommandGroup(

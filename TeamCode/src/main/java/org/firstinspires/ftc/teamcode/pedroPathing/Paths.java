@@ -47,20 +47,20 @@ public class Paths {
                 .build();
 
         BlueBackBalls = follower.pathBuilder().addPath(
-                        new BezierCurve(
-                                new Pose(63.514, 9.310),
-                                new Pose(57.929, 35.759),
-                                new Pose(41.793, 35.586)
+                        new BezierLine(
+                                new Pose(48.466, 7.672),
+
+                                new Pose(45.424, 35.586)
                         )
-                ).setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(180))
+                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
 
                 .build();
 
         BlueBackIntake = follower.pathBuilder().addPath(
                         new BezierLine(
-                                new Pose(41.793, 35.586),
+                                new Pose(45.424, 35.586),
 
-                                new Pose(15.828, 34.724)
+                                new Pose(12.828, 35.586)
                         )
                 ).setTangentHeadingInterpolation()
 
@@ -68,12 +68,13 @@ public class Paths {
 
         BlueBackToShoot = follower.pathBuilder().addPath(
                         new BezierLine(
-                                new Pose(8.828, 34.724),
+                                new Pose(12.828, 35.586),
 
-                                new Pose(60.000, 23.966)
+                                new Pose(60.000, 23.964)
                         )
                 ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(90))
 
                 .build();
+
     }
 }

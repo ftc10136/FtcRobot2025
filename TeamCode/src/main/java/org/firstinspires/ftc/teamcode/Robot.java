@@ -90,7 +90,7 @@ public class Robot {
 
         //default commands that run when the robot is idle
         drivetrain.setDefaultCommand(drivetrain.teleopDrive());
-        turret.setDefaultCommand(turret.commandTurretAngle(0).perpetually());
+        turret.setDefaultCommand(turret.centerTurretViaPosition());
 
         //button commands
         controls.hpLoadActive().whileActiveContinuous(commandHumanLoad());
@@ -198,8 +198,12 @@ public class Robot {
     public static Command shootMotif(Spindexer.BayState color1, Spindexer.BayState color2, Spindexer.BayState color3) {
         return new ParallelDeadlineGroup(
                 new SequentialCommandGroup(
-                        new WaitCommand(1000),
+                        //this is needed to run the spindexer initially to "wake up" the servo
                         ballevator.commandDown(),
+                        spindexer.commandSpindexerPos(Robot.RobotConfig.SPINDEXER_OFFSET + 0.2825).withTimeout(100),
+                        spindexer.commandSpindexerPos(Robot.RobotConfig.SPINDEXER_OFFSET + 0.2825).withTimeout(100),
+                        //replace with get shot ready timer
+                        new WaitCommand(800),
                         spindexer.commandSpindexerColor(color1),
                         new WaitCommand(100),
                         ballevator.commandUp().withTimeout(500),
@@ -219,7 +223,7 @@ public class Robot {
                 ),
                 shooter.autoShotRpm().perpetually(),
                 hoodAngle.autoShotHood().perpetually(),
-                turret.centerTurretViaVision().perpetually()
+                turret.centerTurretViaPosition()
         );
     }
 

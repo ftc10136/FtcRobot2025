@@ -90,7 +90,7 @@ public class Shooter extends SubsystemBase {
         }
         @Override
         public void execute() {
-            double dist = Robot.vision.getDistance();
+            double dist = Robot.drivetrain.getGoalDistance();
             var rpm = shootingTable.get(dist);
             setRpmMotor(rpm);
         }
