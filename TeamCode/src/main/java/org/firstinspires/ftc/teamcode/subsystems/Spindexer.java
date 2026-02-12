@@ -11,6 +11,7 @@ import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 import org.firstinspires.ftc.teamcode.Robot;
+import org.livoniawarriors.GoBildaLedColors;
 import org.livoniawarriors.RobotUtil;
 
 import java.util.HashMap;
@@ -62,10 +63,10 @@ public class Spindexer extends SubsystemBase {
         colorToBayState.put(Color.kBlack, BayState.None);
 
         bayStateToLedCommands = new HashMap<>();
-        bayStateToLedCommands.put(BayState.None, 0.);
-        bayStateToLedCommands.put(BayState.Something, 0.333);
-        bayStateToLedCommands.put(BayState.Green, 0.5);
-        bayStateToLedCommands.put(BayState.Purple, 0.722);
+        bayStateToLedCommands.put(BayState.None, GoBildaLedColors.Off);
+        bayStateToLedCommands.put(BayState.Something, GoBildaLedColors.Orange);
+        bayStateToLedCommands.put(BayState.Green, GoBildaLedColors.Green);
+        bayStateToLedCommands.put(BayState.Purple, GoBildaLedColors.Purple);
 
         bays = new HashMap<>();
         bays.put("Bay1", new SpinBay("Bay1A-Color", "RGB-Bay1"));
@@ -110,8 +111,6 @@ public class Spindexer extends SubsystemBase {
     }
 
     public double getLedColor(BayState state) {
-        //using https://www.gobilda.com/rgb-indicator-light-pwm-controlled/
-
         //noinspection DataFlowIssue
         return bayStateToLedCommands.get(state);
     }

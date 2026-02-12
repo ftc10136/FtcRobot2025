@@ -25,6 +25,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Spindexer;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 import org.firstinspires.ftc.teamcode.subsystems.HoodAngle;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
+import org.livoniawarriors.GoBildaLedColors;
 import org.livoniawarriors.SequentialCommandGroup;
 
 import java.util.HashMap;
@@ -136,10 +137,12 @@ public class Robot {
     public static Command commandFloorLoad() {
         return new ParallelDeadlineGroup(
                 new SequentialCommandGroup(
+                        turret.setLedCommand(GoBildaLedColors.Blue),
                         ballevator.commandDown(),
                         spindexer.commandFloorLoadUntilBall(1),
                         spindexer.commandFloorLoadUntilBall(2),
                         spindexer.commandFloorLoadUntilBall(3),
+                        turret.setLedCommand(GoBildaLedColors.Orange),
                         spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.Shoot)
                 ),
                 intake.runIntake());
@@ -222,6 +225,7 @@ public class Robot {
                         ballevator.commandUp().withTimeout(500),
                         spindexer.clearCurrentBay(),
                         ballevator.commandDown(),
+                        turret.setLedCommand(GoBildaLedColors.Off),
                         spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.FloorIntake)
                 ),
                 shooter.autoShotRpm().perpetually(),
@@ -247,9 +251,9 @@ public class Robot {
 
     private static void setLed() {
         if (Robot.IsRed) {
-            allianceLed.setPosition(0.29);
+            allianceLed.setPosition(GoBildaLedColors.Red);
         } else {
-            allianceLed.setPosition(0.611);
+            allianceLed.setPosition(GoBildaLedColors.Blue);
         }
     }
 }

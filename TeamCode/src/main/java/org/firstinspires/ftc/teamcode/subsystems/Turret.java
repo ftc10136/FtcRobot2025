@@ -10,6 +10,7 @@ import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 
 import org.firstinspires.ftc.teamcode.Robot;
+import org.livoniawarriors.GoBildaLedColors;
 import org.livoniawarriors.RobotUtil;
 
 import edu.wpi.first.math.MathUtil;
@@ -81,11 +82,15 @@ public class Turret extends SubsystemBase {
         return new CommandTurretAngle(angleDeg);
     }
 
-    public Command setLed() {
+    public void setLed(double color) {
+        topLight.setPosition(color);
+    }
+
+    public Command setLedCommand(double color) {
         return new CommandBase() {
             @Override
             public void execute() {
-                topLight.setPosition(0.5);
+                topLight.setPosition(color);
             }
 
             @Override
@@ -141,6 +146,7 @@ public class Turret extends SubsystemBase {
         @Override
         public void initialize() {
             finished = false;
+            Robot.turret.setLed(GoBildaLedColors.Orange);
         }
 
         @Override
@@ -150,6 +156,7 @@ public class Turret extends SubsystemBase {
             if (Math.abs(X_Error) < 0.8) {
                 GainFactor = 0;
                 finished = true;
+                Robot.turret.setLed(GoBildaLedColors.Green);
             } else if (Math.abs(X_Error) < 10) {
                 GainFactor = 0.8;
             } else {
