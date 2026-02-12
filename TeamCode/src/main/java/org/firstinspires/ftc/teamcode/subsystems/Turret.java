@@ -22,6 +22,7 @@ public class Turret extends SubsystemBase {
     private final Servo topLight;
     private double estimatedCommand;
     private double estimatedAngle;
+    private boolean atTarget;
 
     public Turret() {
         packet = new TelemetryPacket();
@@ -29,6 +30,7 @@ public class Turret extends SubsystemBase {
         turretSpin = Robot.opMode.hardwareMap.get(Servo.class, "TurretSpin");
         turretSpin.setDirection(Servo.Direction.FORWARD);
         topLight = Robot.opMode.hardwareMap.get(Servo.class, "RGB_VisionAcquired");
+        atTarget = false;
         //during HP load, move turret to 1, then reset back to started position
 
         /* Limelight Tracking
@@ -51,12 +53,15 @@ public class Turret extends SubsystemBase {
         packet.put("Turret/EstimatedAngle", estimatedAngle);
         packet.put("Turret/FeedbackVoltage", voltage);
         packet.put("Turret/Command", RobotUtil.getCommandName(getCurrentCommand()));
+        packet.put("Turret/AtTarget", atTarget);
         Robot.logPacket(packet);
         Robot.opMode.telemetry.addData("TurretFeedback", turretEncoder.getVoltage());
     }
 
     private void setPosition(double servoPos) {
         turretSpin.setPosition(servoPos);
+        //since all commands go though setPosition, we can only check here for all commands
+        atTarget = Math.abs(servoPos - estimatedCommand) < 0.015;
     }
 
     private void setAngle(double angleDeg) {
@@ -64,6 +69,10 @@ public class Turret extends SubsystemBase {
         double voltage = (angleDeg - 91.67)/-53.93;
         double command = -0.3377*voltage + 1.058;
         setPosition(command);
+    }
+
+    public boolean atTarget() {
+        return atTarget;
     }
 
     public double getAngle() {
@@ -114,7 +123,7 @@ public class Turret extends SubsystemBase {
 
         @Override
         public boolean isFinished() {
-            return Math.abs(pos - estimatedCommand) < 0.01;
+            return atTarget;
         }
     }
 
@@ -132,8 +141,7 @@ public class Turret extends SubsystemBase {
 
         @Override
         public boolean isFinished() {
-            //in degrees
-            return Math.abs(angle - getAngle()) < 3;
+            return atTarget;
         }
     }
 
@@ -173,14 +181,8 @@ public class Turret extends SubsystemBase {
     }
 
     private class CenterTurretViaPosition extends CommandBase {
-        boolean finished = false;
         public CenterTurretViaPosition() {
             addRequirements(Robot.turret);
-        }
-
-        @Override
-        public void initialize() {
-            finished = false;
         }
 
         @Override
@@ -192,10 +194,9 @@ public class Turret extends SubsystemBase {
 
         @Override
         public boolean isFinished() {
-            return finished;
+            return atTarget;
         }
     }
-
 
     public Command testTurret() {
         return new SequentialCommandGroup(

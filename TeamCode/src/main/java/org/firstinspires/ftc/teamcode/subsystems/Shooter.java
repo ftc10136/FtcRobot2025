@@ -17,13 +17,16 @@ public class Shooter extends SubsystemBase {
     private final DcMotorEx TurretShooterMotor;
     private final TelemetryPacket packet;
     private final InterpolatingDoubleTreeMap shootingTable;
+    private boolean atTarget;
+    private double veloRPM;
 
     public Shooter() {
         packet = new TelemetryPacket();
         TurretShooterMotor = (DcMotorEx)Robot.opMode.hardwareMap.get(DcMotor.class, "TurretShooterMotor");
         TurretShooterMotor.setDirection(DcMotor.Direction.FORWARD);
-        TurretShooterMotor.setVelocityPIDFCoefficients(50, 0.05, 0, 12.2);
+        TurretShooterMotor.setVelocityPIDFCoefficients(55, 0.03, 0, 12.2);
         TurretShooterMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        atTarget = false;
 
         //shot rpm table, input distance in inches, output rpm
         //values are from testing calibrateShot command at different distances
@@ -46,17 +49,23 @@ public class Shooter extends SubsystemBase {
     public void periodic() {
         double veloTicksPerSec = TurretShooterMotor.getVelocity();
         //there are 28 pulses per revolution
-        double veloRPM = veloTicksPerSec * 60/28;
+        veloRPM = veloTicksPerSec * 60/28;
         packet.put("Shooter/VelocityTicksSec", veloTicksPerSec);
         packet.put("Shooter/VelocityRpm", veloRPM);
         packet.put("Shooter/Voltage", TurretShooterMotor.getPower());
         packet.put("Shooter/Current", TurretShooterMotor.getCurrent(CurrentUnit.AMPS));
         packet.put("Shooter/Command", RobotUtil.getCommandName(getCurrentCommand()));
+        packet.put("Shooter/AtTarget", atTarget);
         Robot.logPacket(packet);
     }
 
     private void setRpmMotor(double rpm) {
         TurretShooterMotor.setVelocity((28. / 60) * rpm);
+        atTarget = Math.abs(rpm - veloRPM) < 50;
+    }
+
+    public boolean atTarget() {
+        return atTarget;
     }
 
     public Command setRpm(double rpm) {
