@@ -274,6 +274,10 @@ public class Spindexer extends SubsystemBase {
         return new CommandBase() {
             @Override
             public void execute() {
+                bays.get("Bay1").resetBayState();
+                bays.get("Bay2").resetBayState();
+                bays.get("Bay3").resetBayState();
+                /*
                 if(Math.abs(getIndexPos(1,SpindexerType.Shoot) - feedbackPos) < 0.03) {
                     bays.get("Bay1").resetBayState();
                 } else if(Math.abs(getIndexPos(2,SpindexerType.Shoot) - feedbackPos) < 0.03) {
@@ -281,6 +285,7 @@ public class Spindexer extends SubsystemBase {
                 } else if(Math.abs(getIndexPos(3,SpindexerType.Shoot) - feedbackPos) < 0.03) {
                     bays.get("Bay3").resetBayState();
                 }
+                */
             }
             @Override
             public boolean isFinished() {
