@@ -11,6 +11,7 @@ import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 import org.firstinspires.ftc.teamcode.Robot;
+import org.livoniawarriors.GoBildaLedColors;
 import org.livoniawarriors.RobotUtil;
 
 import java.util.HashMap;
@@ -62,10 +63,10 @@ public class Spindexer extends SubsystemBase {
         colorToBayState.put(Color.kBlack, BayState.None);
 
         bayStateToLedCommands = new HashMap<>();
-        bayStateToLedCommands.put(BayState.None, 0.);
-        bayStateToLedCommands.put(BayState.Something, 0.333);
-        bayStateToLedCommands.put(BayState.Green, 0.5);
-        bayStateToLedCommands.put(BayState.Purple, 0.722);
+        bayStateToLedCommands.put(BayState.None, GoBildaLedColors.Off);
+        bayStateToLedCommands.put(BayState.Something, GoBildaLedColors.Orange);
+        bayStateToLedCommands.put(BayState.Green, GoBildaLedColors.Green);
+        bayStateToLedCommands.put(BayState.Purple, GoBildaLedColors.Purple);
 
         bays = new HashMap<>();
         bays.put("Bay1", new SpinBay("Bay1A-Color", "RGB-Bay1"));
@@ -110,8 +111,6 @@ public class Spindexer extends SubsystemBase {
     }
 
     public double getLedColor(BayState state) {
-        //using https://www.gobilda.com/rgb-indicator-light-pwm-controlled/
-
         //noinspection DataFlowIssue
         return bayStateToLedCommands.get(state);
     }
@@ -191,7 +190,7 @@ public class Spindexer extends SubsystemBase {
         }
         @Override
         public boolean isFinished() {
-            return Math.abs(pos - feedbackPos) < 0.005;
+            return Math.abs(pos - feedbackPos) < 0.01;
         }
     }
 
@@ -225,7 +224,7 @@ public class Spindexer extends SubsystemBase {
         }
         @Override
         public boolean isFinished() {
-            return found == false || Math.abs(pos - feedbackPos) < 0.005;
+            return found == false || Math.abs(pos - feedbackPos) < 0.01;
         }
     }
 
@@ -251,7 +250,7 @@ public class Spindexer extends SubsystemBase {
         }
         @Override
         public boolean isFinished() {
-            return Math.abs(pos - feedbackPos) < 0.005;
+            return Math.abs(pos - feedbackPos) < 0.01;
         }
     }
 
@@ -275,6 +274,10 @@ public class Spindexer extends SubsystemBase {
         return new CommandBase() {
             @Override
             public void execute() {
+                bays.get("Bay1").resetBayState();
+                bays.get("Bay2").resetBayState();
+                bays.get("Bay3").resetBayState();
+                /*
                 if(Math.abs(getIndexPos(1,SpindexerType.Shoot) - feedbackPos) < 0.03) {
                     bays.get("Bay1").resetBayState();
                 } else if(Math.abs(getIndexPos(2,SpindexerType.Shoot) - feedbackPos) < 0.03) {
@@ -282,6 +285,7 @@ public class Spindexer extends SubsystemBase {
                 } else if(Math.abs(getIndexPos(3,SpindexerType.Shoot) - feedbackPos) < 0.03) {
                     bays.get("Bay3").resetBayState();
                 }
+                */
             }
             @Override
             public boolean isFinished() {

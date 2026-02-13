@@ -15,12 +15,16 @@ public class HoodAngle extends SubsystemBase {
     private final Servo hoodAngle;
     private final TelemetryPacket packet;
     private final InterpolatingDoubleTreeMap shootingTable;
+    private long lastLoopTime;
+    private double atPosTimer;
 
     public HoodAngle() {
         packet = new TelemetryPacket();
         hoodAngle = Robot.opMode.hardwareMap.get(Servo.class, "HoodAngle");
         hoodAngle.scaleRange(0.2, 0.8);
-        hoodAngle.setPosition(0.35);
+        lastLoopTime = System.nanoTime();
+        setHoodAngle(0.35);
+        atPosTimer = 0;
 
         //hood angle table, input distance in inches, output hood angle command
         //values are from testing calibrateShot command at different distances
@@ -33,14 +37,39 @@ public class HoodAngle extends SubsystemBase {
         shootingTable.put(82., 0.29);
         shootingTable.put(97., 0.26);
         shootingTable.put(113., 0.23);
-        //TODO, need to get table to 144", to get the back corner shots
+        shootingTable.put(125., 0.21);
+        shootingTable.put(139., 0.20);
+        shootingTable.put(149., 0.18);
+        shootingTable.put(160., 0.175);
     }
 
     @Override
     public void periodic() {
+        //handle timer to know if we are ready to shoot
+        long curTime = System.nanoTime();
+        atPosTimer = atPosTimer - ((curTime - lastLoopTime) / 1000000.);
+        lastLoopTime = curTime;
+        if(atPosTimer < 0) {
+            atPosTimer = 0;
+        }
+
         packet.put("HoodAngle/ServoCommand", hoodAngle.getPosition());
         packet.put("HoodAngle/Command", RobotUtil.getCommandName(getCurrentCommand()));
+        packet.put("HoodAngle/AtTarget", atTarget());
         Robot.logPacket(packet);
+    }
+
+    public boolean atTarget() {
+        return atPosTimer <= 0;
+    }
+
+    private void setHoodAngle(double position) {
+        //get the last servo request
+        double curPos = hoodAngle.getPosition();
+        //we are assuming that it takes 250ms to get from one side to the other
+        double extraTime = Math.abs(position - curPos) * 250;
+        atPosTimer = atPosTimer + extraTime;
+        hoodAngle.setPosition(position);
     }
 
     public Command calibrateShot() {
@@ -57,7 +86,7 @@ public class HoodAngle extends SubsystemBase {
         }
         @Override
         public void execute() {
-            hoodAngle.setPosition(Robot.RobotConfig.CALIBRATE_SHOT_HOOD);
+            setHoodAngle(Robot.RobotConfig.CALIBRATE_SHOT_HOOD);
         }
     }
 
@@ -67,9 +96,9 @@ public class HoodAngle extends SubsystemBase {
         }
         @Override
         public void execute() {
-            double dist = Robot.vision.getDistance();
+            double dist = Robot.drivetrain.getGoalDistance();
             var angle = shootingTable.get(dist);
-            hoodAngle.setPosition(angle);
+            setHoodAngle(angle);
         }
     }
 }

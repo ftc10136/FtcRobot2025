@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.subsystems;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.FTCCoordinates;
+import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
@@ -27,13 +28,23 @@ public class DrivetrainPP extends SubsystemBase {
         packet = new TelemetryPacket();
         follower = Constants.createFollower(Robot.opMode.hardwareMap);
         odo = Robot.opMode.hardwareMap.get(GoBildaPinpointDriver.class,"pinpoint");
-        follower.setStartingPose(new Pose(0,0,0,FTCCoordinates.INSTANCE));
-        follower.startTeleopDrive(true);
         headingZeroRad = 0;
     }
 
     public Follower getFollower() {
         return follower;
+    }
+
+    public Pose getPose() {
+        return follower.getPose();
+    }
+
+    public void startTeleopDrive(boolean isTeleop) {
+        if(isTeleop) {
+            follower.startTeleopDrive(true);
+        } else {
+            follower.breakFollowing();
+        }
     }
 
     @Override
@@ -47,6 +58,8 @@ public class DrivetrainPP extends SubsystemBase {
         packet.put("Drivetrain/Pose heading", pose.getHeading()+Math.PI);
         packet.put("Drivetrain/EncoderX", odo.getEncoderX());
         packet.put("Drivetrain/EncoderY", odo.getEncoderY());
+        packet.put("Drivetrain/GoalDist", getGoalDistance());
+        packet.put("Drivetrain/GoalAngle", getGoalAngle());
 
         Robot.logPacket(packet);
     }
@@ -59,7 +72,15 @@ public class DrivetrainPP extends SubsystemBase {
         return new TeleopDrive();
     }
     public Command followPath(PathChain path) {
-        return new FollowPathCommand(follower, path);
+        return followPath(path, true);
+    }
+    public Command followPath(PathChain path, boolean stopAtEnd) {
+        return followPath(path, stopAtEnd, 0.8);
+    }
+    public Command followPath(PathChain path, boolean stopAtEnd, double maxSpeed) {
+        var command = new FollowPathCommand(follower, path, stopAtEnd, maxSpeed);
+        command.addRequirements(Robot.drivetrain);
+        return command;
     }
 
     public Command resetFieldOriented() {
@@ -118,5 +139,35 @@ public class DrivetrainPP extends SubsystemBase {
         public void end(boolean interrupted) {
             follower.breakFollowing();
         }
+    }
+
+    public double getGoalDistance() {
+        Pose goal;
+        if(Robot.IsRed) {
+            goal = new Pose(132,140,0, PedroCoordinates.INSTANCE);
+        } else {
+            goal = new Pose(12,140,0, PedroCoordinates.INSTANCE);
+        }
+        var deltaX = goal.getX() - follower.getPose().getX();
+        var deltaY = goal.getY() - follower.getPose().getY();
+        return Math.sqrt((deltaX * deltaX) + (deltaY * deltaY));
+    }
+
+    public double getGoalAngle() {
+        Pose goal;
+        if(Robot.IsRed) {
+            goal = new Pose(132,140,0, PedroCoordinates.INSTANCE);
+        } else {
+            goal = new Pose(12,140,0, PedroCoordinates.INSTANCE);
+        }
+        var deltaX = goal.getX() - follower.getPose().getX();
+        var angleRad = Math.acos(deltaX / getGoalDistance());
+        return 90-Math.toDegrees(angleRad);
+    }
+
+    //zero = look at goal side, clockwise positive
+    public double getHeading() {
+        double newAngle = 90 - Math.toDegrees(follower.getHeading());
+        return RobotUtil.inputModulus(newAngle, -180, 180);
     }
 }
