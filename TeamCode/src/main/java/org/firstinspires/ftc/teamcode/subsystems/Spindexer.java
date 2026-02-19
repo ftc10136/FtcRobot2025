@@ -8,11 +8,13 @@ import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.ConditionalCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 import org.firstinspires.ftc.teamcode.Robot;
 import org.livoniawarriors.GoBildaLedColors;
 import org.livoniawarriors.RobotUtil;
+import org.livoniawarriors.SequentialCommandGroup;
 
 import java.util.HashMap;
 import java.util.Objects;
@@ -52,7 +54,7 @@ public class Spindexer extends SubsystemBase {
         packet = new TelemetryPacket();
 
         matcher = new ColorMatch();
-        matcher.setConfidenceThreshold(0.7);
+        matcher.setConfidenceThreshold(0.65);
         matcher.addColorMatch(purpleInput);
         matcher.addColorMatch(greenInput);
 
@@ -107,6 +109,15 @@ public class Spindexer extends SubsystemBase {
         } else {
             state = colorToBayState.get(match.color);
         }
+/*
+        if(color.green > 0.9) {
+            state = BayState.Green;
+        } else if(color.red > 0.3 && color.blue > 0.3) {
+            state = BayState.Purple;
+        } else {
+            state = BayState.None;
+        }
+        */
         return state;
     }
 
@@ -145,7 +156,17 @@ public class Spindexer extends SubsystemBase {
     public Command commandFloorLoadUntilBall(int bay) {
         //using conditional command to speed up logic, if true, do nothing (instant command), otherwise
         //run the indexer until we see a ball
-        return new ConditionalCommand(new InstantCommand(), commandSpindexerPos(bay, SpindexerType.FloorIntake).perpetually().interruptOn(hasBall(bay)), hasBall(bay));
+        return new ConditionalCommand(new InstantCommand(),
+                new SequentialCommandGroup(
+                        commandSpindexerPos(bay, SpindexerType.FloorIntake).withTimeout(500),
+                        new RepeatCommand(
+                            new SequentialCommandGroup(
+                                commandSpindexerPos(getIndexPos(bay, SpindexerType.FloorIntake)+0.01).withTimeout(200),
+                                commandSpindexerPos(getIndexPos(bay, SpindexerType.FloorIntake)-0.01).withTimeout(200)
+                            )
+                        )
+                ).perpetually().interruptOn(hasBall(bay)),
+                hasBall(bay));
     }
 
     public BooleanSupplier hasBall(int bay) {
@@ -274,10 +295,9 @@ public class Spindexer extends SubsystemBase {
         return new CommandBase() {
             @Override
             public void execute() {
-                bays.get("Bay1").resetBayState();
-                bays.get("Bay2").resetBayState();
-                bays.get("Bay3").resetBayState();
-                /*
+                //bays.get("Bay1").resetBayState();
+                //bays.get("Bay2").resetBayState();
+                //bays.get("Bay3").resetBayState();
                 if(Math.abs(getIndexPos(1,SpindexerType.Shoot) - feedbackPos) < 0.03) {
                     bays.get("Bay1").resetBayState();
                 } else if(Math.abs(getIndexPos(2,SpindexerType.Shoot) - feedbackPos) < 0.03) {
@@ -285,7 +305,6 @@ public class Spindexer extends SubsystemBase {
                 } else if(Math.abs(getIndexPos(3,SpindexerType.Shoot) - feedbackPos) < 0.03) {
                     bays.get("Bay3").resetBayState();
                 }
-                */
             }
             @Override
             public boolean isFinished() {
