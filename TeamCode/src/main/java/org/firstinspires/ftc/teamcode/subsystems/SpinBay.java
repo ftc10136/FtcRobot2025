@@ -29,13 +29,15 @@ public class SpinBay {
     public void periodic() {
         //do 1 sensor read for the color
         dist = distSensor.getDistance(DistanceUnit.CM);
-        color = new Color(colorSensor.red()/4096., colorSensor.green()/4096., colorSensor.blue()/4096.);
-        var sensedState = Robot.spindexer.matchColor(color);
+        if(dist < 2) {
+            color = new Color(colorSensor.red()/4096., colorSensor.green()/4096., colorSensor.blue()/4096.);
+            var sensedState = Robot.spindexer.matchColor(color);
 
-        if (sensedState == Spindexer.BayState.Green || sensedState == Spindexer.BayState.Purple) {
-            state = sensedState;
-        } else if (state == Spindexer.BayState.None || state == Spindexer.BayState.Something) {
-            state = Spindexer.BayState.None;
+            if (sensedState == Spindexer.BayState.Green || sensedState == Spindexer.BayState.Purple) {
+                state = sensedState;
+            } else if (state == Spindexer.BayState.None || state == Spindexer.BayState.Something) {
+                state = Spindexer.BayState.None;
+            }
         }
         led.setPosition(Robot.spindexer.getLedColor(state));
     }
