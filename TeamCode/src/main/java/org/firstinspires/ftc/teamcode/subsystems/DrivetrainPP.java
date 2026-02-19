@@ -78,9 +78,7 @@ public class DrivetrainPP extends SubsystemBase {
         return followPath(path, stopAtEnd, 0.8);
     }
     public Command followPath(PathChain path, boolean stopAtEnd, double maxSpeed) {
-        var command = new FollowPathCommand(follower, path, stopAtEnd, maxSpeed);
-        command.addRequirements(Robot.drivetrain);
-        return command;
+        return new DrivePath(path, stopAtEnd, maxSpeed);
     }
 
     public Command resetFieldOriented() {
@@ -119,17 +117,22 @@ public class DrivetrainPP extends SubsystemBase {
 
     class DrivePath extends CommandBase {
         private final PathChain path;
-        public DrivePath(PathChain path) {
+        boolean holdEnd;
+        double maxPower;
+
+        public DrivePath(PathChain path, boolean holdEnd, double maxPower) {
             this.path = path;
+            this.holdEnd = holdEnd;
+            this.maxPower = maxPower;
             addRequirements(Robot.drivetrain);
         }
         @Override
         public void initialize() {
-            follower.followPath(path,true);
+            follower.followPath(path,maxPower,holdEnd);
         }
         @Override
         public void execute() {
-            follower.update();
+            //follower.update();
         }
         @Override
         public boolean isFinished() {
