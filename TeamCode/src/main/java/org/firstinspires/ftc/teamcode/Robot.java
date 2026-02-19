@@ -93,7 +93,11 @@ public class Robot {
         return new BooleanSupplier() {
             @Override
             public boolean getAsBoolean() {
-                return Robot.turret.atTarget() && Robot.shooter.atTarget() && Robot.hoodAngle.atTarget();
+                boolean status = Robot.turret.atTarget() && Robot.shooter.atTarget() && Robot.hoodAngle.atTarget();
+                if(status == true) {
+                    status = true;
+                }
+                return status;
             }
         };
     }
@@ -114,7 +118,7 @@ public class Robot {
         controls.hpLoadActive().whileActiveContinuous(commandHumanLoad());
         controls.floorLoadActive().toggleWhenActive(commandFloorLoad());
         controls.resetFieldOriented().whenActive(drivetrain.resetFieldOriented());
-        controls.shootActive().whileActiveContinuous(shootAllBalls());
+        controls.shootActive().toggleWhenActive(shootAllBalls());
         controls.flipAlliance().whenActive(flipAlliance());
         controls.bumpSpindexerLeft().whileActiveContinuous(spindexer.bumpSpindexer(true));
         controls.bumpSpindexerRight().whileActiveContinuous(spindexer.bumpSpindexer(false));
@@ -204,7 +208,8 @@ public class Robot {
                         new ConditionalCommand(shootBall(3), new InstantCommand(), spindexer.hasBall(3)),
                         turret.setLedCommand(GoBildaLedColors.Off),
                         ballevator.commandDown(),
-                        spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.FloorIntake)
+                        spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.FloorIntake),
+                        new InstantCommand(() -> CommandScheduler.getInstance().schedule(commandFloorLoad()))
                 )
         );
     }
@@ -226,7 +231,7 @@ public class Robot {
                         spindexer.commandSpindexerPos(Robot.RobotConfig.SPINDEXER_OFFSET + 0.2525).withTimeout(100),
                         spindexer.commandSpindexerColor(color1),
                         new WaitCommand(RobotConfig.SPINDEXER_SHOT_DELAY),
-                        new WaitUntilCommand(readyToShoot()),
+                        new WaitUntilCommand(readyToShoot()).withTimeout(2000),
                         ballevator.commandUp().withTimeout(RobotConfig.BALLEVATOR_UP_TIMEOUT),
                         spindexer.clearCurrentBay(),
                         ballevator.commandDown(),
@@ -245,7 +250,10 @@ public class Robot {
                 ),
                 shooter.autoShotRpm().perpetually(),
                 hoodAngle.autoShotHood().perpetually(),
-                turret.centerTurretViaPosition()
+                new SequentialCommandGroup(
+                        turret.centerTurretViaPosition(),
+                        turret.centerTurretViaVision()
+                )
         );
     }
 
