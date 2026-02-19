@@ -147,6 +147,9 @@ public class Turret extends SubsystemBase {
 
     private class CenterTurretViaVision extends CommandBase {
         boolean finished = false;
+        long lastReading;
+        long goalTime;
+
         public CenterTurretViaVision() {
             addRequirements(Robot.turret);
         }
@@ -155,23 +158,36 @@ public class Turret extends SubsystemBase {
         public void initialize() {
             finished = false;
             Robot.turret.setLed(GoBildaLedColors.Orange);
+            lastReading = System.nanoTime();
+            goalTime = 0;
         }
 
         @Override
         public void execute() {
-            double GainFactor;
+            double GainFactor = 0;
+            long curTime = System.nanoTime();
+            long deltaTime = curTime - lastReading;
             double X_Error = Robot.vision.getTurretError();
-            if (Math.abs(X_Error) < 0.8) {
-                GainFactor = 0;
+            if(Robot.vision.isCameraConnected() == false) {
+                setLed(GoBildaLedColors.Red);
                 finished = true;
+            } else if (Math.abs(X_Error) < 0.8) {
+                GainFactor = 0;
+                goalTime += deltaTime;
                 Robot.turret.setLed(GoBildaLedColors.Green);
             } else if (Math.abs(X_Error) < 10) {
-                GainFactor = 0.8;
+                GainFactor = 0.5;
             } else {
-                GainFactor = 1;
+                GainFactor = 0.8;
             }
             double CorrectionNeeded = X_Error * -0.005 * GainFactor;
-            setPosition(turretSpin.getPosition() - CorrectionNeeded);
+
+            lastReading = curTime;
+            if(goalTime > 120_000_000) {
+                finished = true;
+            } else {
+                setPosition(turretSpin.getPosition() - CorrectionNeeded);
+            }
         }
 
         @Override
@@ -188,7 +204,7 @@ public class Turret extends SubsystemBase {
         @Override
         public void execute() {
             double angle = Robot.drivetrain.getGoalAngle() - Robot.drivetrain.getHeading();
-            angle = MathUtil.clamp(angle, -90., 90.);
+            angle = MathUtil.clamp(angle, -80., 90.);
             setAngle(angle);
         }
 

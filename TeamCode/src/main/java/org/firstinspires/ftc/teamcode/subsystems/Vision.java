@@ -51,6 +51,7 @@ public class Vision extends SubsystemBase {
         packet.put("Vision/FPS", status.getFps());
         packet.put("Vision/DistToTarget", distToTarget);
         packet.put("Vision/Motif", seenMotif.name());
+        packet.put("Vision/TurretError", getTurretError());
         Robot.logPacket(packet);
         if(isCameraConnected() == false || isCameraConnected() == false) {
             limelight.pipelineSwitch(4);
