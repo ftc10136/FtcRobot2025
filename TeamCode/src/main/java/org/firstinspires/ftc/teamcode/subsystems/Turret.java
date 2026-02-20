@@ -23,6 +23,7 @@ public class Turret extends SubsystemBase {
     private double estimatedCommand;
     private double estimatedAngle;
     private boolean atTarget;
+    private boolean visionAiming;
 
     public Turret() {
         packet = new TelemetryPacket();
@@ -31,6 +32,7 @@ public class Turret extends SubsystemBase {
         turretSpin.setDirection(Servo.Direction.FORWARD);
         topLight = Robot.opMode.hardwareMap.get(Servo.class, "RGB_VisionAcquired");
         atTarget = false;
+        visionAiming = false;
         //during HP load, move turret to 1, then reset back to started position
 
         /* Limelight Tracking
@@ -59,9 +61,15 @@ public class Turret extends SubsystemBase {
     }
 
     private void setPosition(double servoPos) {
-        turretSpin.setPosition(servoPos);
+        double clamp = MathUtil.clamp(servoPos, 0.046, 0.99);
+        if (Double.isNaN(clamp)) {
+            clamp = 0.5;
+        }
+        turretSpin.setPosition(clamp);
         //since all commands go though setPosition, we can only check here for all commands
-        atTarget = Math.abs(servoPos - estimatedCommand) < 0.015;
+        if(visionAiming == false) {
+            atTarget = Math.abs(clamp - estimatedCommand) < 0.015;
+        }
     }
 
     private void setAngle(double angleDeg) {
@@ -160,6 +168,7 @@ public class Turret extends SubsystemBase {
             Robot.turret.setLed(GoBildaLedColors.Orange);
             lastReading = System.nanoTime();
             goalTime = 0;
+            visionAiming = true;
         }
 
         @Override
@@ -168,6 +177,7 @@ public class Turret extends SubsystemBase {
             long curTime = System.nanoTime();
             long deltaTime = curTime - lastReading;
             double X_Error = Robot.vision.getTurretError();
+            atTarget = false;
             if(Robot.vision.isCameraConnected() == false) {
                 setLed(GoBildaLedColors.Red);
                 finished = true;
@@ -185,6 +195,7 @@ public class Turret extends SubsystemBase {
             lastReading = curTime;
             if(goalTime > 120_000_000) {
                 finished = true;
+                atTarget = true;
             } else {
                 setPosition(turretSpin.getPosition() - CorrectionNeeded);
             }
@@ -193,6 +204,11 @@ public class Turret extends SubsystemBase {
         @Override
         public boolean isFinished() {
             return finished;
+        }
+
+        @Override
+        public void end(boolean interrupted) {
+            visionAiming = false;
         }
     }
 
@@ -204,7 +220,6 @@ public class Turret extends SubsystemBase {
         @Override
         public void execute() {
             double angle = Robot.drivetrain.getGoalAngle() - Robot.drivetrain.getHeading();
-            angle = MathUtil.clamp(angle, -80., 90.);
             setAngle(angle);
         }
 
