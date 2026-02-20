@@ -145,15 +145,19 @@ public class DrivetrainPP extends SubsystemBase {
     }
 
     public double getGoalDistance() {
-        Pose goal;
-        if(Robot.IsRed) {
-            goal = new Pose(132,140,0, PedroCoordinates.INSTANCE);
+        if(Robot.vision.isCameraConnected()) {
+            return Robot.vision.getDistance();
         } else {
-            goal = new Pose(12,140,0, PedroCoordinates.INSTANCE);
+            Pose goal;
+            if (Robot.IsRed) {
+                goal = new Pose(132, 140, 0, PedroCoordinates.INSTANCE);
+            } else {
+                goal = new Pose(12, 140, 0, PedroCoordinates.INSTANCE);
+            }
+            var deltaX = goal.getX() - follower.getPose().getX();
+            var deltaY = goal.getY() - follower.getPose().getY();
+            return Math.sqrt((deltaX * deltaX) + (deltaY * deltaY));
         }
-        var deltaX = goal.getX() - follower.getPose().getX();
-        var deltaY = goal.getY() - follower.getPose().getY();
-        return Math.sqrt((deltaX * deltaX) + (deltaY * deltaY));
     }
 
     public double getGoalAngle() {

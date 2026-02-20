@@ -186,6 +186,6 @@ public class Vision extends SubsystemBase {
     }
 
     public boolean isCameraConnected() {
-        return (System.nanoTime() - lastReading) < 500_000_000;
+        return ((System.nanoTime() - lastReading) < 500_000_000) && limelight.isConnected();
     }
 }
