@@ -161,8 +161,8 @@ public class Spindexer extends SubsystemBase {
                         commandSpindexerPos(bay, SpindexerType.FloorIntake).withTimeout(500),
                         new RepeatCommand(
                             new SequentialCommandGroup(
-                                commandSpindexerPos(getIndexPos(bay, SpindexerType.FloorIntake)+0.01).withTimeout(200),
-                                commandSpindexerPos(getIndexPos(bay, SpindexerType.FloorIntake)-0.01).withTimeout(200)
+                                commandSpindexerPos(getIndexPos(bay, SpindexerType.FloorIntake)+0.015).withTimeout(400),
+                                commandSpindexerPos(getIndexPos(bay, SpindexerType.FloorIntake)-0.01).withTimeout(400)
                             )
                         )
                 ).perpetually().interruptOn(hasBall(bay)),
