@@ -14,6 +14,9 @@ public class Paths {
     public PathChain BlueBackBalls;
     public PathChain BlueBackIntake;
     public PathChain BlueBackToShoot;
+    public PathChain BlueBackToMid;
+    public PathChain BlueMidIntake;
+    public PathChain BlueBackToShoot2;
 
     public Paths(Follower follower) {
         Path1 = follower.pathBuilder().addPath(
@@ -76,5 +79,35 @@ public class Paths {
 
                 .build();
 
+
+        BlueBackToMid = follower.pathBuilder().addPath(
+                        new BezierLine(
+                                new Pose(60.000, 23.964),
+
+                                new Pose(44.241, 59.862)
+                        )
+                ).setLinearHeadingInterpolation(Math.toRadians(170), Math.toRadians(180))
+
+                .build();
+
+        BlueMidIntake = follower.pathBuilder().addPath(
+                        new BezierLine(
+                                new Pose(44.241, 59.862),
+
+                                new Pose(9.500, 59.862)
+                        )
+                ).setTangentHeadingInterpolation()
+
+                .build();
+
+        BlueBackToShoot2 = follower.pathBuilder().addPath(
+                        new BezierLine(
+                                new Pose(9.500, 59.862),
+
+                                new Pose(60.000, 23.964)
+                        )
+                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(170))
+
+                .build();
     }
 }
