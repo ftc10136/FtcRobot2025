@@ -23,6 +23,7 @@ public class Vision extends SubsystemBase {
     private final TelemetryPacket packet;
     private double turretError = 0;
     private double distToTarget = 0;
+    private long lastReading = 0;
 
     private Motifs seenMotif;
     public enum Motifs {
@@ -46,11 +47,15 @@ public class Vision extends SubsystemBase {
         var status = limelight.getStatus();
         packet.put("Vision/IsConnected", limelight.isConnected());
         packet.put("Vision/IsRunning", limelight.isRunning());
+        packet.put("Vision/CameraConnected", isCameraConnected());
         packet.put("Vision/FPS", status.getFps());
         packet.put("Vision/DistToTarget", distToTarget);
         packet.put("Vision/Motif", seenMotif.name());
+        packet.put("Vision/TurretError", getTurretError());
         Robot.logPacket(packet);
-
+        if(isCameraConnected() == false || isCameraConnected() == false) {
+            limelight.pipelineSwitch(4);
+        }
         Robot.opMode.telemetry.addData("Motif", seenMotif.name());
     }
 
@@ -70,6 +75,7 @@ public class Vision extends SubsystemBase {
                     distToTarget = dist * 39.37;
                     logPose(fiducialResult.getCameraPoseTargetSpace(), "CameraPoseTargetSpace");
                     turretError = fiducialResult.getTargetXDegrees();
+                    lastReading = System.nanoTime();
                 }
 
                 if(tagId == 21) {
@@ -177,5 +183,9 @@ public class Vision extends SubsystemBase {
 
     public Motifs getSeenMotif() {
         return seenMotif;
+    }
+
+    public boolean isCameraConnected() {
+        return ((System.nanoTime() - lastReading) < 500_000_000) && limelight.isConnected();
     }
 }

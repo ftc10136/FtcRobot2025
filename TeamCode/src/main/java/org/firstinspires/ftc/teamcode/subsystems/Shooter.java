@@ -38,11 +38,11 @@ public class Shooter extends SubsystemBase {
         shootingTable.put(62., 3000.);
         shootingTable.put(82., 3300.);
         shootingTable.put(97., 3600.);
-        shootingTable.put(113., 3900.);
+        shootingTable.put(113., 3800.);
         shootingTable.put(125., 3900.);
-        shootingTable.put(139., 4100.);
-        shootingTable.put(149., 4300.);
-        shootingTable.put(160., 4500.);
+        shootingTable.put(139., 4050.);
+        shootingTable.put(149., 4200.);
+        shootingTable.put(160., 4400.);
     }
 
     @Override

@@ -33,17 +33,26 @@ public class BlueFarAuto extends LinearOpMode {
     private Command getAutoSequence() {
         Paths paths = new Paths(Robot.drivetrain.getFollower());
         Robot.drivetrain.setPose(paths.BlueBackBalls.getPose(new PathChain.PathT(0,0)));
-        Robot.drivetrain.startTeleopDrive(false);
+        Robot.drivetrain.startTeleopDrive(true);
         return new SequentialCommandGroup(
                 Robot.shootMotif(),
                 new ParallelDeadlineGroup(
                         Robot.commandFloorLoad(),
                         new SequentialCommandGroup(
                             Robot.drivetrain.followPath(paths.BlueBackBalls, true, 1),
-                            Robot.drivetrain.followPath(paths.BlueBackIntake, true, 0.1)
+                            Robot.drivetrain.followPath(paths.BlueBackIntake, true, 0.35)
                         )
                 ).withTimeout(10000),
                 Robot.drivetrain.followPath(paths.BlueBackToShoot, true, 1),
+                Robot.shootMotif(),
+                new ParallelDeadlineGroup(
+                        Robot.commandFloorLoad(),
+                        new SequentialCommandGroup(
+                                Robot.drivetrain.followPath(paths.BlueBackToMid, true, 1),
+                                Robot.drivetrain.followPath(paths.BlueMidIntake, true, 0.35)
+                        )
+                ).withTimeout(10000),
+                Robot.drivetrain.followPath(paths.BlueBackToShoot2, true, 1),
                 Robot.shootMotif()
         );
     }

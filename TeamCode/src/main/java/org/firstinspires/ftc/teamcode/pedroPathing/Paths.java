@@ -14,6 +14,9 @@ public class Paths {
     public PathChain BlueBackBalls;
     public PathChain BlueBackIntake;
     public PathChain BlueBackToShoot;
+    public PathChain BlueBackToMid;
+    public PathChain BlueMidIntake;
+    public PathChain BlueBackToShoot2;
 
     public Paths(Follower follower) {
         Path1 = follower.pathBuilder().addPath(
@@ -50,7 +53,7 @@ public class Paths {
                         new BezierLine(
                                 new Pose(48.466, 7.672),
 
-                                new Pose(45.424, 35.586)
+                                new Pose(45.424, 33.586)
                         )
                 ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
 
@@ -58,9 +61,9 @@ public class Paths {
 
         BlueBackIntake = follower.pathBuilder().addPath(
                         new BezierLine(
-                                new Pose(45.424, 35.586),
+                                new Pose(45.424, 33.586),
 
-                                new Pose(12.828, 35.586)
+                                new Pose(3.828, 33.586)
                         )
                 ).setTangentHeadingInterpolation()
 
@@ -72,9 +75,39 @@ public class Paths {
 
                                 new Pose(60.000, 23.964)
                         )
-                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(90))
+                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(170))
 
                 .build();
 
+
+        BlueBackToMid = follower.pathBuilder().addPath(
+                        new BezierLine(
+                                new Pose(60.000, 23.964),
+
+                                new Pose(44.241, 59.862)
+                        )
+                ).setLinearHeadingInterpolation(Math.toRadians(170), Math.toRadians(180))
+
+                .build();
+
+        BlueMidIntake = follower.pathBuilder().addPath(
+                        new BezierLine(
+                                new Pose(44.241, 59.862),
+
+                                new Pose(9.500, 59.862)
+                        )
+                ).setTangentHeadingInterpolation()
+
+                .build();
+
+        BlueBackToShoot2 = follower.pathBuilder().addPath(
+                        new BezierLine(
+                                new Pose(9.500, 59.862),
+
+                                new Pose(60.000, 23.964)
+                        )
+                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(170))
+
+                .build();
     }
 }
