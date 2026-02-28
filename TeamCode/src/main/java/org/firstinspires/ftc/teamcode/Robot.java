@@ -139,7 +139,7 @@ public class Robot {
 
     @Config
     public static class RobotConfig {
-        public static double SPINDEXER_OFFSET = 0.587;
+        public static double SPINDEXER_OFFSET = 0.126671;
         public static double CALIBRATE_SHOT_RPM = 1000;
         public static double CALIBRATE_SHOT_HOOD = 0.3;
         public static long SPINDEXER_SHOT_DELAY = 80;

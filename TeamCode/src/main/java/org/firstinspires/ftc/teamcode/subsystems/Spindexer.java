@@ -132,28 +132,35 @@ public class Spindexer extends SubsystemBase {
 
     @SuppressWarnings("unused")
     public Command commandSpindexerPos(double pos) {
-        return new SetSpindexerPos(pos);
+        return new InstantCommand();
+        //return new SetSpindexerPos(pos);
     }
 
     public Command commandSpindexerPos(int bay, SpindexerType type) {
-        return new SetSpindexerPos(bay, type);
+        //return new SetSpindexerPos(bay, type);
+        return new InstantCommand();
     }
 
     public Command commandSpindexerColor(BayState color) {
-        return new SetSpindexerColor(color);
+        //return new SetSpindexerColor(color);
+        return new InstantCommand();
     }
 
     public Command bumpSpindexer(boolean positive) {
-        return new BumpSpindexer(positive);
+        return new InstantCommand();
+        //return new BumpSpindexer(positive);
     }
 
     public Command commandHpLoadUntilBall(int bay) {
         //using conditional command to speed up logic, if true, do nothing (instant command), otherwise
         //run the indexer until we see a ball
-        return new ConditionalCommand(new InstantCommand(), commandSpindexerPos(bay, SpindexerType.HumanIntake).perpetually().interruptOn(hasBall(bay)), hasBall(bay));
+        //return new ConditionalCommand(new InstantCommand(), commandSpindexerPos(bay, SpindexerType.HumanIntake).perpetually().interruptOn(hasBall(bay)), hasBall(bay));
+        return new InstantCommand();
     }
 
     public Command commandFloorLoadUntilBall(int bay) {
+        return new InstantCommand();
+        /*
         //using conditional command to speed up logic, if true, do nothing (instant command), otherwise
         //run the indexer until we see a ball
         return new ConditionalCommand(new InstantCommand(),
@@ -167,6 +174,8 @@ public class Spindexer extends SubsystemBase {
                         )
                 ).perpetually().interruptOn(hasBall(bay)),
                 hasBall(bay));
+                */
+
     }
 
     public BooleanSupplier hasBall(int bay) {
@@ -178,14 +187,14 @@ public class Spindexer extends SubsystemBase {
         };
     }
 
-    @SuppressWarnings("unused")
     public static double getShootIndexPos(int bay) {
         double rawPos = Robot.RobotConfig.SPINDEXER_OFFSET + ((bay-1) * 0.188);
         return RobotUtil.inputModulus(rawPos, 0,1);
     }
 
     public static double getIndexPos(int bay, SpindexerType type) {
-        double rawPos = Robot.RobotConfig.SPINDEXER_OFFSET + ((bay-1) * 0.188);
+        return Robot.RobotConfig.SPINDEXER_OFFSET + ((bay-1) * 0.188);
+        /*double rawPos = Robot.RobotConfig.SPINDEXER_OFFSET + ((bay-1) * 0.188);
         if(type == SpindexerType.HumanIntake) {
             rawPos = rawPos - 0.142;
         } else if (type == SpindexerType.FloorIntake) {
@@ -193,6 +202,8 @@ public class Spindexer extends SubsystemBase {
         }
         //one rotation is exactly 0.565 units of servo (0.565/2=0.2825), so we want to keep within that circle
         return RobotUtil.inputModulus(rawPos, Robot.RobotConfig.SPINDEXER_OFFSET - 0.2825,Robot.RobotConfig.SPINDEXER_OFFSET + 0.2825);
+        */
+
     }
 
     private class SetSpindexerPos extends CommandBase {
@@ -276,6 +287,8 @@ public class Spindexer extends SubsystemBase {
     }
 
     public Command clearBayState(int bay) {
+        return new InstantCommand();
+        /*
         return new CommandBase() {
             @Override
             public void execute() {
@@ -288,10 +301,11 @@ public class Spindexer extends SubsystemBase {
             public boolean isFinished() {
                 return true;
             }
-        };
+        };*/
     }
 
     public Command clearCurrentBay() {
+        return new InstantCommand();/*
         return new CommandBase() {
             @Override
             public void execute() {
@@ -311,5 +325,6 @@ public class Spindexer extends SubsystemBase {
                 return true;
             }
         };
+        */
     }
 }
