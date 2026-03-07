@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.subsystems;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.FTCCoordinates;
+import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
@@ -56,6 +57,10 @@ public class DrivetrainPP extends SubsystemBase {
         packet.put("Drivetrain/Pose x", -pose.getX());
         packet.put("Drivetrain/Pose y", -pose.getY());
         packet.put("Drivetrain/Pose heading", pose.getHeading()+Math.PI);
+        var pedroPose = follower.getPose();
+        packet.put("Drivetrain/PedroX", pedroPose.getX());
+        packet.put("Drivetrain/PedroY", pedroPose.getY());
+        packet.put("Drivetrain/PedroHeading", pedroPose.getHeading());
         packet.put("Drivetrain/EncoderX", odo.getEncoderX());
         packet.put("Drivetrain/EncoderY", odo.getEncoderY());
         packet.put("Drivetrain/GoalDist", getGoalDistance());
@@ -150,9 +155,9 @@ public class DrivetrainPP extends SubsystemBase {
         } else {
             Pose goal;
             if (Robot.IsRed) {
-                goal = new Pose(132, 140, 0, PedroCoordinates.INSTANCE);
+                goal = new Pose(128, 132, 0, PedroCoordinates.INSTANCE);
             } else {
-                goal = new Pose(12, 140, 0, PedroCoordinates.INSTANCE);
+                goal = new Pose(16, 132, 0, PedroCoordinates.INSTANCE);
             }
             var deltaX = goal.getX() - follower.getPose().getX();
             var deltaY = goal.getY() - follower.getPose().getY();
@@ -176,5 +181,86 @@ public class DrivetrainPP extends SubsystemBase {
     public double getHeading() {
         double newAngle = 90 - Math.toDegrees(follower.getHeading());
         return RobotUtil.inputModulus(newAngle, -180, 180);
+    }
+
+    public Command driveToBall() {
+        return new DriveToBall();
+    }
+    class DriveToBall extends CommandBase {
+        public DriveToBall() {
+            addRequirements(Robot.drivetrain);
+        }
+
+        @Override
+        public void execute() {
+            double forward, turn;
+            var blocks = Robot.vision.getBlocks();
+            if(blocks.length == 0) {
+                //if we don't see a ball, turn till we see one
+                forward = 0;
+                if(Robot.IsRed) {
+                    turn = 0.2;
+                } else {
+                    turn = -0.2;
+                }
+            } else {
+                //find the most center block
+                var block = blocks[0];
+                for(int i=0; i< blocks.length; i++) {
+                    if(Math.abs(block.x - 160) > Math.abs(blocks[i].x - 160)) {
+                        block = blocks[i];
+                    }
+                }
+                //the coordinates are 0-320 x, 0-240 y, where top left is 0,0
+                //for forward, the closer we are to a ball, drive slower
+                forward = (240-block.y) * 0.0025;
+                //for turn, we want to aim to put the center of the block at the center of the camera
+                turn = (160-block.x) * 0.005;
+            }
+            follower.setTeleOpDrive(forward, 0, turn, true);
+        }
+    }
+
+    public Command DriveToPose(Pose pose) {
+        return DriveToPose(pose, true);
+    }
+    public Command DriveToPose(Pose pose, boolean holdEnd) {
+        return DriveToPose(pose, holdEnd, 0.8);
+    }
+    public Command DriveToPose(Pose pose, boolean holdEnd, double maxPower) {
+        return new DriveToPose(pose, holdEnd, maxPower);
+    }
+
+    class DriveToPose extends CommandBase {
+        Pose pose;
+        boolean holdEnd;
+        double maxPower;
+
+        public DriveToPose(Pose pose, boolean holdEnd, double maxPower) {
+            this.pose = pose;
+            this.holdEnd = holdEnd;
+            this.maxPower = maxPower;
+            addRequirements(Robot.drivetrain);
+        }
+        @Override
+        public void initialize() {
+            var curPose = getPose();
+            var path = follower.pathBuilder()
+                    .addPath(new BezierLine(curPose, pose))
+                    .setLinearHeadingInterpolation(curPose.getHeading(), pose.getHeading())
+                    .build();
+            follower.followPath(path,maxPower,holdEnd);
+        }
+        @Override
+        public void execute() {}
+        @Override
+        public boolean isFinished() {
+            return follower.atPose(pose, 1, 1, 0.3);
+        }
+        @Override
+        public void end(boolean interrupted) {
+            follower.breakFollowing();
+            follower.startTeleOpDrive(holdEnd);
+        }
     }
 }

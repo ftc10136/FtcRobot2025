@@ -125,9 +125,12 @@ public class Robot {
         controls.shootMotif().whileActiveContinuous(shootMotif());
 
         //test commands
-        //new Trigger(()->Robot.opMode.gamepad1.start).whileActiveContinuous(turret.testTurret());
         Trigger shootCalibration = new Trigger(() -> Robot.opMode.gamepad1.start);
-        shootCalibration.toggleWhenActive(calibrateShooter());
+        //shootCalibration.toggleWhenActive(calibrateShooter());
+        shootCalibration.whileActiveContinuous(new ParallelDeadlineGroup(
+                commandFloorLoad(),
+                drivetrain.driveToBall()
+        ));
     }
 
     public static void setAutonomous(Command autoSequence) {

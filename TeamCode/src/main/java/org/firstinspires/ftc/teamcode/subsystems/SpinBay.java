@@ -36,7 +36,7 @@ public class SpinBay {
             if (sensedState == Spindexer.BayState.Green || sensedState == Spindexer.BayState.Purple) {
                 state = sensedState;
             } else if (state == Spindexer.BayState.None || state == Spindexer.BayState.Something) {
-                state = Spindexer.BayState.None;
+                state = Spindexer.BayState.Something;
             }
         }
         led.setPosition(Robot.spindexer.getLedColor(state));
