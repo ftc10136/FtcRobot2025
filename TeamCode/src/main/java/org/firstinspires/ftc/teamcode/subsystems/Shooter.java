@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.subsystems;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
@@ -15,6 +16,7 @@ import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 
 public class Shooter extends SubsystemBase {
     private final DcMotorEx TurretShooterMotor;
+    private final DcMotorEx TurretShooterMotor2;
     private final TelemetryPacket packet;
     private final InterpolatingDoubleTreeMap shootingTable;
     private boolean atTarget;
@@ -24,8 +26,12 @@ public class Shooter extends SubsystemBase {
         packet = new TelemetryPacket();
         TurretShooterMotor = (DcMotorEx)Robot.opMode.hardwareMap.get(DcMotor.class, "TurretShooterMotor");
         TurretShooterMotor.setDirection(DcMotor.Direction.FORWARD);
-        TurretShooterMotor.setVelocityPIDFCoefficients(55, 0.03, 0, 12.2);
+        TurretShooterMotor.setVelocityPIDFCoefficients(50, 0.05, 0, 12.2);
         TurretShooterMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        TurretShooterMotor2 = (DcMotorEx)Robot.opMode.hardwareMap.get(DcMotor.class, "TurretShooterMotor2");
+        TurretShooterMotor2.setDirection(DcMotor.Direction.REVERSE);
+        TurretShooterMotor2.setVelocityPIDFCoefficients(50, 0.05, 0, 12.2);
+        TurretShooterMotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         atTarget = false;
 
         //shot rpm table, input distance in inches, output rpm
@@ -50,10 +56,16 @@ public class Shooter extends SubsystemBase {
         double veloTicksPerSec = TurretShooterMotor.getVelocity();
         //there are 28 pulses per revolution
         veloRPM = veloTicksPerSec * 60/28;
-        packet.put("Shooter/VelocityTicksSec", veloTicksPerSec);
-        packet.put("Shooter/VelocityRpm", veloRPM);
-        packet.put("Shooter/Voltage", TurretShooterMotor.getPower());
-        packet.put("Shooter/Current", TurretShooterMotor.getCurrent(CurrentUnit.AMPS));
+        double veloTicksPerSec2 = TurretShooterMotor.getVelocity();
+        //there are 28 pulses per revolution
+        double veloRPM2 = veloTicksPerSec2 * 60/28;
+        packet.put("Shooter/VelocityTicksSec1", veloTicksPerSec);
+        packet.put("Shooter/VelocityRpm1", veloRPM);
+        packet.put("Shooter/VelocityRpm2", veloRPM2);
+        packet.put("Shooter/Voltage1", TurretShooterMotor.getPower());
+        packet.put("Shooter/Current1", TurretShooterMotor.getCurrent(CurrentUnit.AMPS));
+        packet.put("Shooter/Voltage2", TurretShooterMotor2.getPower());
+        packet.put("Shooter/Current2", TurretShooterMotor2.getCurrent(CurrentUnit.AMPS));
         packet.put("Shooter/Command", RobotUtil.getCommandName(getCurrentCommand()));
         packet.put("Shooter/AtTarget", atTarget);
         Robot.logPacket(packet);
@@ -61,6 +73,7 @@ public class Shooter extends SubsystemBase {
 
     private void setRpmMotor(double rpm) {
         TurretShooterMotor.setVelocity((28. / 60) * rpm);
+        TurretShooterMotor2.setVelocity((28. / 60) * rpm);
         atTarget = Math.abs(rpm - veloRPM) < 50;
     }
 

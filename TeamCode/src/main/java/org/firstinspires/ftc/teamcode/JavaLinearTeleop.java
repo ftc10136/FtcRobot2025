@@ -19,7 +19,7 @@ public class JavaLinearTeleop extends LinearOpMode {
         Robot.scheduleTeleop();
 
         //run while enabled
-        while (!isStopRequested()) {
+        while (opModeIsActive()) {
             Robot.Periodic();
         }
     }

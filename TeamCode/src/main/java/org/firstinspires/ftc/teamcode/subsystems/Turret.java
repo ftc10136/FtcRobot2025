@@ -65,11 +65,12 @@ public class Turret extends SubsystemBase {
         if (Double.isNaN(clamp)) {
             clamp = 0.5;
         }
-        turretSpin.setPosition(clamp);
+        //turretSpin.setPosition(clamp);
         //since all commands go though setPosition, we can only check here for all commands
         if(visionAiming == false) {
             atTarget = Math.abs(clamp - estimatedCommand) < 0.015;
         }
+        atTarget = true;
     }
 
     private void setAngle(double angleDeg) {

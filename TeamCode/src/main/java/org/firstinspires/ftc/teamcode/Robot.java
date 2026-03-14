@@ -48,6 +48,13 @@ public class Robot {
     private static Servo allianceLed;
 
     public static boolean IsRed = false;
+    public static RobotTypeEnum RobotType = RobotTypeEnum.Competition;
+    public static int stepNum = 0;
+
+    public enum RobotTypeEnum {
+        Competition,
+        Programming
+    }
 
     public static void Init(OpMode inMode) {
         opMode = inMode;
@@ -82,6 +89,7 @@ public class Robot {
 
     public static void Periodic() {
         CommandScheduler.getInstance().run();
+        opMode.telemetry.addData("Step", stepNum);
         opMode.telemetry.update();
     }
 
@@ -110,9 +118,11 @@ public class Robot {
         //default commands that run when the robot is idle
         drivetrain.startTeleopDrive(true);
         drivetrain.setDefaultCommand(drivetrain.teleopDrive());
+        /*
         turret.setDefaultCommand(turret.centerTurretViaPosition());
         shooter.setDefaultCommand(shooter.autoShotRpm().perpetually());
         hoodAngle.setDefaultCommand(hoodAngle.autoShotHood().perpetually());
+        */
 
         //button commands
         controls.hpLoadActive().whileActiveContinuous(commandHumanLoad());
@@ -142,7 +152,8 @@ public class Robot {
 
     @Config
     public static class RobotConfig {
-        public static double SPINDEXER_OFFSET = 0.587;
+        public static double SPINDEXER_OFFSET_COMP = 0.375;
+        public static double SPINDEXER_OFFSET_PROG = 0.587;
         public static double CALIBRATE_SHOT_RPM = 1000;
         public static double CALIBRATE_SHOT_HOOD = 0.3;
         public static long SPINDEXER_SHOT_DELAY = 80;
@@ -191,11 +202,17 @@ public class Robot {
 
     public static Command shootBall(int bay) {
         return new SequentialCommandGroup(
+                logStep(10),
                 ballevator.commandDown(),
+                logStep(11),
                 spindexer.commandSpindexerPos(bay, Spindexer.SpindexerType.Shoot),
+                logStep(12),
                 new WaitCommand(RobotConfig.SPINDEXER_SHOT_DELAY),
+                logStep(13),
                 ballevator.commandUp().withTimeout(RobotConfig.BALLEVATOR_UP_TIMEOUT),
-                spindexer.clearBayState(bay)
+                logStep(14),
+                spindexer.clearBayState(bay),
+                logStep(15)
         );
     }
 
@@ -205,10 +222,16 @@ public class Robot {
                 hoodAngle.autoShotHood(),
                 turret.centerTurretViaVision(),
                 new SequentialCommandGroup(
+                        logStep(1),
                         new WaitUntilCommand(readyToShoot()).withTimeout(2000),
-                        new ConditionalCommand(shootBall(1), new InstantCommand(), spindexer.hasBall(1)),
+                        logStep(2),
+                        /*new ConditionalCommand(shootBall(1), new InstantCommand(), spindexer.hasBall(1)),
+                        logStep(3),
                         new ConditionalCommand(shootBall(2), new InstantCommand(), spindexer.hasBall(2)),
-                        new ConditionalCommand(shootBall(3), new InstantCommand(), spindexer.hasBall(3)),
+                        new ConditionalCommand(shootBall(3), new InstantCommand(), spindexer.hasBall(3)),*/
+                        shootBall(1),
+                        shootBall(2),
+                        shootBall(3),
                         turret.setLedCommand(GoBildaLedColors.Off),
                         ballevator.commandDown(),
                         spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.FloorIntake),
@@ -230,8 +253,8 @@ public class Robot {
                 new SequentialCommandGroup(
                         //this is needed to run the spindexer initially to "wake up" the servo
                         ballevator.commandDown(),
-                        spindexer.commandSpindexerPos(Robot.RobotConfig.SPINDEXER_OFFSET + 0.2825).withTimeout(100),
-                        spindexer.commandSpindexerPos(Robot.RobotConfig.SPINDEXER_OFFSET + 0.2525).withTimeout(100),
+                        spindexer.commandSpindexerPos(Spindexer.getOffset() + 0.2825).withTimeout(100),
+                        spindexer.commandSpindexerPos(Spindexer.getOffset() + 0.2525).withTimeout(100),
                         spindexer.commandSpindexerColor(color1),
                         new WaitCommand(RobotConfig.SPINDEXER_SHOT_DELAY),
                         new WaitUntilCommand(readyToShoot()).withTimeout(2000),
@@ -281,5 +304,20 @@ public class Robot {
         } else {
             allianceLed.setPosition(GoBildaLedColors.Blue);
         }
+    }
+
+
+    public static Command logStep(int step) {
+        return new CommandBase() {
+            @Override
+            public void execute() {
+                stepNum = step;
+            }
+
+            @Override
+            public boolean isFinished() {
+                return true;
+            }
+        };
     }
 }

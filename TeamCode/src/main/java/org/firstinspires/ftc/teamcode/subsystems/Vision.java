@@ -7,6 +7,7 @@ import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.dfrobot.HuskyLens;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.geometry.Pose2d;
 import com.seattlesolvers.solverslib.geometry.Rotation2d;
@@ -30,7 +31,7 @@ public class Vision extends SubsystemBase {
     private double distToTarget = 0;
     private long lastReading = 0;
     private HuskyLens.Block[] blocks;
-
+    private Servo limelightServo;
     private Motifs seenMotif;
     public enum Motifs {
         GPP, //21
@@ -51,10 +52,14 @@ public class Vision extends SubsystemBase {
         // LimelightPipelines: 1=20/BlueAlliance, 2=24/RedAlliance, 3=20,21,22
         limelight.pipelineSwitch(4);
         seenMotif = Motifs.PPG;
+
+        //limelightServo = Robot.opMode.hardwareMap.get(Servo.class, "LimeLightServo");
+        //limelightServo.setPosition(0.5);
     }
 
     @Override
     public void periodic() {
+        //limelightServo.setPosition(0.5);
         updateVision();
         getRobotTranslation();
         var status = limelight.getStatus();

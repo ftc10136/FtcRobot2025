@@ -76,6 +76,9 @@ public class Spindexer extends SubsystemBase {
         bays.put("Bay3", new SpinBay("Bay3A-Color", "RGB-Bay3"));
 
         Spindexer = Robot.opMode.hardwareMap.get(Servo.class, "Spindexer");
+        //Spindexer = Robot.opMode.hardwareMap.get(Servo.class, "LimeLightServo");
+
+
         Spindexer.setDirection(Servo.Direction.REVERSE);
         SpindexerEncoder = Robot.opMode.hardwareMap.get(AnalogInput.class, "SpindexerEncoder");
     }
@@ -83,8 +86,12 @@ public class Spindexer extends SubsystemBase {
     @Override
     public void periodic() {
         double voltage = SpindexerEncoder.getVoltage();
-        //these numbers were calculated with a best fit approximation from the 3 bays
-        feedbackPos = 0.3391 * voltage - 0.07272;
+        if (Robot.RobotType == Robot.RobotTypeEnum.Programming) {
+            //these numbers were calculated with a best fit approximation from the 3 bays
+            feedbackPos = 0.3391 * voltage - 0.07272;
+        } else {
+            feedbackPos = 0.3514 * voltage - 0.07765;
+        }
         for (var bay : bays.entrySet()) {
             bay.getValue().periodic();
             Color color = bay.getValue().getColor();
@@ -119,6 +126,23 @@ public class Spindexer extends SubsystemBase {
         }
         */
         return state;
+    }
+
+    public static double getOffset() {
+        //this value is the feedback when the bay 1 is at the shooting position
+        if (Robot.RobotType == Robot.RobotTypeEnum.Programming) {
+            return Robot.RobotConfig.SPINDEXER_OFFSET_PROG;
+        } else {
+            return Robot.RobotConfig.SPINDEXER_OFFSET_COMP;
+        }
+    }
+
+    public static double getBaySpacing() {
+        if (Robot.RobotType == Robot.RobotTypeEnum.Programming) {
+            return 0.188;
+        } else {
+            return 0.133;
+        }
     }
 
     public double getLedColor(BayState state) {
@@ -161,8 +185,8 @@ public class Spindexer extends SubsystemBase {
                         commandSpindexerPos(bay, SpindexerType.FloorIntake).withTimeout(500),
                         new RepeatCommand(
                             new SequentialCommandGroup(
-                                commandSpindexerPos(getIndexPos(bay, SpindexerType.FloorIntake)+0.015).withTimeout(400),
-                                commandSpindexerPos(getIndexPos(bay, SpindexerType.FloorIntake)-0.01).withTimeout(400)
+                                commandSpindexerPos(getIndexPos(bay, SpindexerType.FloorIntake)).withTimeout(400),
+                                commandSpindexerPos(getIndexPos(bay, SpindexerType.FloorIntake)).withTimeout(400)
                             )
                         )
                 ).perpetually().interruptOn(hasBall(bay)),
@@ -180,19 +204,25 @@ public class Spindexer extends SubsystemBase {
 
     @SuppressWarnings("unused")
     public static double getShootIndexPos(int bay) {
-        double rawPos = Robot.RobotConfig.SPINDEXER_OFFSET + ((bay-1) * 0.188);
+        double rawPos = getOffset() + ((bay-1) * getBaySpacing());
         return RobotUtil.inputModulus(rawPos, 0,1);
     }
 
     public static double getIndexPos(int bay, SpindexerType type) {
-        double rawPos = Robot.RobotConfig.SPINDEXER_OFFSET + ((bay-1) * 0.188);
+        double rawPos = getOffset() + ((bay-1) * getBaySpacing());
         if(type == SpindexerType.HumanIntake) {
+            //not used on comp
             rawPos = rawPos - 0.142;
         } else if (type == SpindexerType.FloorIntake) {
-            rawPos = rawPos + 0.11248;
+            if (Robot.RobotType == Robot.RobotTypeEnum.Programming) {
+                rawPos = rawPos + 0.11248;
+            } else {
+                rawPos = rawPos + 0.07;
+            }
         }
-        //one rotation is exactly 0.565 units of servo (0.565/2=0.2825), so we want to keep within that circle
-        return RobotUtil.inputModulus(rawPos, Robot.RobotConfig.SPINDEXER_OFFSET - 0.2825,Robot.RobotConfig.SPINDEXER_OFFSET + 0.2825);
+        //we want to keep the command within the circle
+        //return RobotUtil.inputModulus(rawPos, getOffset() - (getBaySpacing()*2),getOffset() + (getBaySpacing()*2));
+        return rawPos;
     }
 
     private class SetSpindexerPos extends CommandBase {
@@ -211,7 +241,7 @@ public class Spindexer extends SubsystemBase {
         }
         @Override
         public boolean isFinished() {
-            return Math.abs(pos - feedbackPos) < 0.01;
+            return Math.abs(pos - feedbackPos) < 0.02;
         }
     }
 
@@ -260,9 +290,9 @@ public class Spindexer extends SubsystemBase {
         public void initialize() {
             pos = Spindexer.getPosition();
             if(positive) {
-                pos = pos + 0.02;
+                pos = pos + 0.01;
             } else {
-                pos = pos - 0.02;
+                pos = pos - 0.01;
             }
         }
         @Override
