@@ -164,7 +164,7 @@ public class Robot {
         //default commands that run when the robot is idle
         drivetrain.startTeleopDrive(true);
         drivetrain.setDefaultCommand(drivetrain.teleopDrive());
-        turret.setDefaultCommand(turret.centerTurretViaPosition());
+        turret.setDefaultCommand(turret.centerTurretViaPosition().perpetually());
         shooter.setDefaultCommand(shooter.autoShotRpm().perpetually());
         hoodAngle.setDefaultCommand(hoodAngle.autoShotHood().perpetually());
 

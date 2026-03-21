@@ -321,6 +321,22 @@ public class Spindexer extends SubsystemBase {
         };
     }
 
+    public Command resetBays() {
+        return new CommandBase() {
+            @Override
+            public void execute() {
+                bays.get("Bay1").resetBayState();
+                bays.get("Bay2").resetBayState();
+                bays.get("Bay3").resetBayState();
+            }
+
+            @Override
+            public boolean isFinished() {
+                return true;
+            }
+        };
+    }
+
     public Command clearCurrentBay() {
         return new CommandBase() {
             @Override
