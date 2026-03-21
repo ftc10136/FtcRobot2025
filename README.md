@@ -4,7 +4,7 @@ This repo is based off the default FTC starting repository [FtcRobotController](
 ### Wireless Deploy/Debug
 To wirelessly deploy/debug, run these steps:
 1) Connect to the device's wireless.
-2) Run this command in the terminal `adb connect 192.168.43.1:5555`
+2) Run this command in the terminal `.\AppData\Local\Android\Sdk\platform-tools\adb connect 192.168.43.1:5555`
 3) Select the device in the dropdown menu.
 
 ### Default readme below:

@@ -5,6 +5,7 @@ import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
+import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.seattlesolvers.solverslib.command.Command;
@@ -16,6 +17,7 @@ import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.ParallelDeadlineGroup;
 import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.SelectCommand;
+import com.seattlesolvers.solverslib.command.Subsystem;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.command.button.Trigger;
@@ -31,7 +33,9 @@ import org.firstinspires.ftc.teamcode.subsystems.Vision;
 import org.livoniawarriors.GoBildaLedColors;
 import org.livoniawarriors.SequentialCommandGroup;
 
+import java.lang.reflect.Field;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.function.BooleanSupplier;
 
 public class Robot {
@@ -48,9 +52,19 @@ public class Robot {
     private static Servo allianceLed;
 
     public static boolean IsRed = false;
+    public static RobotTypeEnum RobotType = RobotTypeEnum.Competition;
+    public static int stepNum = 0;
+    private static TelemetryPacket packet;
+
+    public enum RobotTypeEnum {
+        Competition,
+        Programming
+    }
 
     public static void Init(OpMode inMode) {
         opMode = inMode;
+        CommandScheduler.getInstance().setBulkReading(opMode.hardwareMap, LynxModule.BulkCachingMode.MANUAL);
+        packet = new TelemetryPacket();
         var pose = new Pose(72,72,Math.PI/2, PedroCoordinates.INSTANCE);
         //if we have already run, clear out the old running subsystems
         if (drivetrain != null) {
@@ -78,26 +92,69 @@ public class Robot {
 
         //buttons that run while disabled
         controls.flipAlliance().whenActive(flipAlliance());
+        controls.resetTurretAngle().whenActive(turret.resetZero());
     }
 
     public static void Periodic() {
+        long startTime = System.nanoTime();
+        loggingTime = 0;
         CommandScheduler.getInstance().run();
+        //periodicTiming();  //note, this causes all the periodic functions to run twice!
+
+        double deltaTime = (System.nanoTime() - startTime) / 1_000_000.;
+        packet.put("TimingMs/LoggingTime", loggingTime);
+        logPacket(packet);
+
+        opMode.telemetry.addData("Step", stepNum);
+        opMode.telemetry.addData("TurretAngle", turret.getAngle());
+        opMode.telemetry.addData("Command TimeMs", deltaTime);
+        opMode.telemetry.addData("_RPM Ready", shooter.atTarget());
+        opMode.telemetry.addData("_Turret Ready", turret.atTarget());
+        opMode.telemetry.addData("_Hood Ready", hoodAngle.atTarget());
         opMode.telemetry.update();
     }
 
+    private void periodicTiming() {
+        try {
+            Class<?> clazz = CommandScheduler.class;
+
+            // 2. Get the specific private field
+            // Use getDeclaredField() to access private fields declared within the class
+            // getFields() only returns public fields
+            Field privateStringField = clazz.getDeclaredField("m_subsystems");
+
+            // 3. Make the private field accessible
+            // This is necessary to bypass Java language access control checks
+            privateStringField.setAccessible(true);
+
+            // 4. Get the value of the field from the specific object instance
+            @SuppressWarnings("unchecked")
+            Map<Subsystem, Command> fieldValue = (Map<Subsystem, Command>) privateStringField.get(CommandScheduler.getInstance());
+            assert fieldValue != null;
+            for (Subsystem subsystem : fieldValue.keySet()) {
+                long startTime2 = System.nanoTime();
+                subsystem.periodic();
+                double deltaTime = (System.nanoTime() - startTime2) / 1_000_000.;
+                packet.put("TimingMs/"+subsystem.toString(), deltaTime);
+            }
+
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    static double loggingTime;
     public static void logPacket(TelemetryPacket packet) {
+        long startTime2 = System.nanoTime();
         FtcDashboard.getInstance().sendTelemetryPacket(packet);
+        loggingTime += (System.nanoTime() - startTime2) / 1_000_000.;
     }
 
     public static BooleanSupplier readyToShoot() {
         return new BooleanSupplier() {
             @Override
             public boolean getAsBoolean() {
-                boolean status = Robot.turret.atTarget() && Robot.shooter.atTarget() && Robot.hoodAngle.atTarget();
-                if(status == true) {
-                    status = true;
-                }
-                return status;
+                return Robot.turret.atTarget() && Robot.shooter.atTarget() && Robot.hoodAngle.atTarget();
             }
         };
     }
@@ -110,7 +167,7 @@ public class Robot {
         //default commands that run when the robot is idle
         drivetrain.startTeleopDrive(true);
         drivetrain.setDefaultCommand(drivetrain.teleopDrive());
-        turret.setDefaultCommand(turret.centerTurretViaPosition());
+        //turret.setDefaultCommand(turret.centerTurretViaPosition().perpetually());
         shooter.setDefaultCommand(shooter.autoShotRpm().perpetually());
         hoodAngle.setDefaultCommand(hoodAngle.autoShotHood().perpetually());
 
@@ -119,10 +176,15 @@ public class Robot {
         controls.floorLoadActive().toggleWhenActive(commandFloorLoad());
         controls.resetFieldOriented().whenActive(drivetrain.resetFieldOriented());
         controls.shootActive().toggleWhenActive(shootAllBalls());
-        controls.flipAlliance().whenActive(flipAlliance());
         controls.bumpSpindexerLeft().whileActiveContinuous(spindexer.bumpSpindexer(true));
         controls.bumpSpindexerRight().whileActiveContinuous(spindexer.bumpSpindexer(false));
         controls.shootMotif().whileActiveContinuous(shootMotif());
+
+        controls.flipAlliance().whenActive(flipAlliance());
+        controls.resetTurretAngle().whenActive(turret.resetZero());
+        controls.bumpTurretRotationsLeft().whenActive(turret.bumpRotations(-1));
+        controls.bumpTurretRotationsRight().whenActive(turret.bumpRotations(1));
+        controls.resetBays().whenActive(spindexer.resetBays());
 
         //test commands
         Trigger shootCalibration = new Trigger(() -> Robot.opMode.gamepad1.start);
@@ -142,10 +204,11 @@ public class Robot {
 
     @Config
     public static class RobotConfig {
-        public static double SPINDEXER_OFFSET = 0.587;
+        public static double SPINDEXER_OFFSET_COMP = 0.375;
+        public static double SPINDEXER_OFFSET_PROG = 0.587;
         public static double CALIBRATE_SHOT_RPM = 1000;
         public static double CALIBRATE_SHOT_HOOD = 0.3;
-        public static long SPINDEXER_SHOT_DELAY = 80;
+        public static long SPINDEXER_SHOT_DELAY = 0;
         public static long BALLEVATOR_UP_TIMEOUT = 300;
     }
 
@@ -191,22 +254,31 @@ public class Robot {
 
     public static Command shootBall(int bay) {
         return new SequentialCommandGroup(
+                logStep(10),
                 ballevator.commandDown(),
+                logStep(11),
                 spindexer.commandSpindexerPos(bay, Spindexer.SpindexerType.Shoot),
+                logStep(12),
                 new WaitCommand(RobotConfig.SPINDEXER_SHOT_DELAY),
+                logStep(13),
                 ballevator.commandUp().withTimeout(RobotConfig.BALLEVATOR_UP_TIMEOUT),
-                spindexer.clearBayState(bay)
+                logStep(14),
+                spindexer.clearBayState(bay),
+                logStep(15)
         );
     }
 
     public static Command shootAllBalls() {
         return new ParallelCommandGroup(
-                shooter.autoShotRpm(),
-                hoodAngle.autoShotHood(),
-                turret.centerTurretViaVision(),
+                shooter.autoShotRpm().perpetually(),
+                hoodAngle.autoShotHood().perpetually(),
+                turret.centerTurretViaPosition().perpetually(),
                 new SequentialCommandGroup(
+                        logStep(1),
                         new WaitUntilCommand(readyToShoot()).withTimeout(2000),
+                        logStep(2),
                         new ConditionalCommand(shootBall(1), new InstantCommand(), spindexer.hasBall(1)),
+                        logStep(3),
                         new ConditionalCommand(shootBall(2), new InstantCommand(), spindexer.hasBall(2)),
                         new ConditionalCommand(shootBall(3), new InstantCommand(), spindexer.hasBall(3)),
                         turret.setLedCommand(GoBildaLedColors.Off),
@@ -230,8 +302,8 @@ public class Robot {
                 new SequentialCommandGroup(
                         //this is needed to run the spindexer initially to "wake up" the servo
                         ballevator.commandDown(),
-                        spindexer.commandSpindexerPos(Robot.RobotConfig.SPINDEXER_OFFSET + 0.2825).withTimeout(100),
-                        spindexer.commandSpindexerPos(Robot.RobotConfig.SPINDEXER_OFFSET + 0.2525).withTimeout(100),
+                        spindexer.commandSpindexerPos(Spindexer.getOffset() + 0.2825).withTimeout(100),
+                        spindexer.commandSpindexerPos(Spindexer.getOffset() + 0.2525).withTimeout(100),
                         spindexer.commandSpindexerColor(color1),
                         new WaitCommand(RobotConfig.SPINDEXER_SHOT_DELAY),
                         new WaitUntilCommand(readyToShoot()).withTimeout(2000),
@@ -253,10 +325,7 @@ public class Robot {
                 ),
                 shooter.autoShotRpm().perpetually(),
                 hoodAngle.autoShotHood().perpetually(),
-                new SequentialCommandGroup(
-                        turret.centerTurretViaPosition(),
-                        turret.centerTurretViaVision()
-                )
+                turret.centerTurretViaPosition()
         );
     }
 
@@ -281,5 +350,20 @@ public class Robot {
         } else {
             allianceLed.setPosition(GoBildaLedColors.Blue);
         }
+    }
+
+
+    public static Command logStep(int step) {
+        return new CommandBase() {
+            @Override
+            public void execute() {
+                stepNum = step;
+            }
+
+            @Override
+            public boolean isFinished() {
+                return true;
+            }
+        };
     }
 }

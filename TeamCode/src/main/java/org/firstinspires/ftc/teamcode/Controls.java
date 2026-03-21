@@ -98,4 +98,40 @@ public class Controls {
             }
         };
     }
+
+    public Trigger resetTurretAngle() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad1.dpad_up;
+            }
+        };
+    }
+
+    public Trigger bumpTurretRotationsRight() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad1.dpad_right;
+            }
+        };
+    }
+
+    public Trigger bumpTurretRotationsLeft() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad1.dpad_left;
+            }
+        };
+    }
+
+    public Trigger resetBays() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad1.dpad_down;
+            }
+        };
+    }
 }

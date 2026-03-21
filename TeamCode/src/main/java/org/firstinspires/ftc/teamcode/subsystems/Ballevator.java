@@ -20,6 +20,7 @@ public class Ballevator extends SubsystemBase {
     private final Servo Ballevator;
 
     //these are feedback sensor voltages when low or high and can clear the balls passing by
+    /*  //Programming robot
     @SuppressWarnings("FieldCanBeLocal")
     private final double BALLEVATOR_DOWN_VOLTAGE = 2.9;
     @SuppressWarnings("FieldCanBeLocal")
@@ -29,6 +30,19 @@ public class Ballevator extends SubsystemBase {
     private final double BALLEVATOR_DOWN_COMMAND = 0;
     @SuppressWarnings("FieldCanBeLocal")
     private final double BALLEVATOR_UP_COMMAND = 0.25;
+*/
+    //comp bot
+    @SuppressWarnings("FieldCanBeLocal")
+    private final double BALLEVATOR_DOWN_VOLTAGE = 1.50;
+    private final double BALLEVATOR_FULL_DOWN_VOLTAGE = 1.42;
+    @SuppressWarnings("FieldCanBeLocal")
+    private final double BALLEVATOR_UP_VOLTAGE = 2.4;
+    private final double BALLEVATOR_FULL_UP_VOLTAGE = 1.79;
+    //servo commands from 0-1 to move the elevator up and down
+    @SuppressWarnings("FieldCanBeLocal")
+    private final double BALLEVATOR_DOWN_COMMAND = 0;
+    @SuppressWarnings("FieldCanBeLocal")
+    private final double BALLEVATOR_UP_COMMAND = 0.66;
 
     public Ballevator() {
         packet = new TelemetryPacket();
@@ -55,7 +69,7 @@ public class Ballevator extends SubsystemBase {
     }
 
     public boolean isBallevatorDown() {
-        return BallevatorEncoder.getVoltage() > BALLEVATOR_DOWN_VOLTAGE;
+        return BallevatorEncoder.getVoltage() < BALLEVATOR_DOWN_VOLTAGE;
     }
 
     @SuppressWarnings("unused")
@@ -78,7 +92,7 @@ public class Ballevator extends SubsystemBase {
         }
         @Override
         public boolean isFinished() {
-            return BallevatorEncoder.getVoltage() < BALLEVATOR_UP_VOLTAGE;
+            return BallevatorEncoder.getVoltage() > BALLEVATOR_UP_VOLTAGE;
         }
     }
 

@@ -56,11 +56,13 @@ public class HoodAngle extends SubsystemBase {
         packet.put("HoodAngle/ServoCommand", hoodAngle.getPosition());
         packet.put("HoodAngle/Command", RobotUtil.getCommandName(getCurrentCommand()));
         packet.put("HoodAngle/AtTarget", atTarget());
+        packet.put("HoodAngle/Timer", atPosTimer);
         Robot.logPacket(packet);
     }
 
     public boolean atTarget() {
-        return atPosTimer <= 0;
+        //can't be 0 since this is float math and might not be real zero
+        return atPosTimer <= 0.01;
     }
 
     private void setHoodAngle(double position) {

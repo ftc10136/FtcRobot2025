@@ -5,8 +5,10 @@ import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.dfrobot.HuskyLens;
+import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.geometry.Pose2d;
 import com.seattlesolvers.solverslib.geometry.Rotation2d;
@@ -30,7 +32,7 @@ public class Vision extends SubsystemBase {
     private double distToTarget = 0;
     private long lastReading = 0;
     private HuskyLens.Block[] blocks;
-
+    private Servo limelightServo;
     private Motifs seenMotif;
     public enum Motifs {
         GPP, //21
@@ -51,13 +53,17 @@ public class Vision extends SubsystemBase {
         // LimelightPipelines: 1=20/BlueAlliance, 2=24/RedAlliance, 3=20,21,22
         limelight.pipelineSwitch(4);
         seenMotif = Motifs.PPG;
+
+        //limelightServo = Robot.opMode.hardwareMap.get(Servo.class, "LimeLightServo");
+        //limelightServo.setPosition(0.5);
     }
 
     @Override
     public void periodic() {
+        //limelightServo.setPosition(0.5);
         updateVision();
         getRobotTranslation();
-        var status = limelight.getStatus();
+        /*var status = limelight.getStatus();
         packet.put("Vision/IsConnected", limelight.isConnected());
         packet.put("Vision/IsRunning", limelight.isRunning());
         packet.put("Vision/CameraConnected", isCameraConnected());
@@ -65,8 +71,10 @@ public class Vision extends SubsystemBase {
         packet.put("Vision/DistToTarget", distToTarget);
         packet.put("Vision/Motif", seenMotif.name());
         packet.put("Vision/TurretError", getTurretError());
+        */
+
         if (CAMERA_ENABLED) {
-            blocks = huskyLens.blocks();
+            //blocks = huskyLens.blocks();
             for (int i = 0; i < blocks.length; i++) {
                 packet.put("Vision/Block/" + i + "/X", blocks[i].x);
                 packet.put("Vision/Block/" + i + "/Y", blocks[i].y);
@@ -74,14 +82,15 @@ public class Vision extends SubsystemBase {
             }
         }
         Robot.logPacket(packet);
-        if(isCameraConnected() == false || isCameraConnected() == false) {
-            limelight.pipelineSwitch(4);
-        }
+        //if(isCameraConnected() == false || isCameraConnected() == false) {
+        //    limelight.pipelineSwitch(4);
+        //}
         Robot.opMode.telemetry.addData("Motif", seenMotif.name());
     }
 
     private void updateVision() {
-        var result = limelight.getLatestResult();
+        //var result = limelight.getLatestResult();
+        LLResult result = null;
         if (result != null) {
             logPose(result.getBotpose(), "BotPose");
             var fiducialResults = result.getFiducialResults();
