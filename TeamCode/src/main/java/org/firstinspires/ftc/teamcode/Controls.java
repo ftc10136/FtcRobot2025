@@ -125,4 +125,13 @@ public class Controls {
             }
         };
     }
+
+    public Trigger resetBays() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad1.dpad_down;
+            }
+        };
+    }
 }

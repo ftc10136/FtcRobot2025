@@ -10,28 +10,26 @@ import org.firstinspires.ftc.teamcode.Robot;
 import edu.wpi.first.wpilibj.util.Color;
 
 public class SpinBay {
-    private final ColorSensor colorSensor;
-    private final DistanceSensor distSensor;
     private final Servo led;
 
     private Spindexer.BayState state;
-    private Color color;
-    private double dist;
+    private ColorSensorResult reading;
+    private final ReadColorSensorThread thread;
 
     public SpinBay(String colorSensorName, String ledName) {
-        colorSensor = Robot.opMode.hardwareMap.get(ColorSensor.class, colorSensorName);
-        distSensor = (DistanceSensor) colorSensor;
+        thread = new ReadColorSensorThread(colorSensorName);
+        reading = new ColorSensorResult();
         led = Robot.opMode.hardwareMap.get(Servo.class, ledName);
-        color = Color.kBlack;
+        reading = new ColorSensorResult();
         state = Spindexer.BayState.None;
+        thread.start();
     }
 
     public void periodic() {
+        reading = thread.getResult();
         //do 1 sensor read for the color
-        dist = distSensor.getDistance(DistanceUnit.CM);
-        if(dist < 2) {
-            color = new Color(colorSensor.red()/4096., colorSensor.green()/4096., colorSensor.blue()/4096.);
-            var sensedState = Robot.spindexer.matchColor(color);
+        if(reading.dist < 2) {
+            var sensedState = Robot.spindexer.matchColor(getColor());
 
             if (sensedState == Spindexer.BayState.Green || sensedState == Spindexer.BayState.Purple) {
                 state = sensedState;
@@ -47,14 +45,66 @@ public class SpinBay {
     }
 
     public Color getColor() {
-        return color;
+        if(reading.color == null) {
+            return Color.kBlack;
+        }
+        return reading.color;
     }
 
     public double getDist() {
-        return dist;
+        return reading.dist;
     }
 
     public void resetBayState() {
         state = Spindexer.BayState.None;
+        reading = new ColorSensorResult();
+        thread.resetResult();
+    }
+
+    private static class ColorSensorResult{
+        public double dist;
+        public Color color;
+        public double loopTimeMs;
+
+        public ColorSensorResult() {
+            dist = 20;
+            color = Color.kBlack;
+            loopTimeMs = -1;
+        }
+    }
+    private static class ReadColorSensorThread extends Thread {
+        private ColorSensor colorSensor;
+        private DistanceSensor distSensor;
+        private ColorSensorResult threadResult;
+
+        public ReadColorSensorThread(String colorSensorName) {
+            colorSensor = Robot.opMode.hardwareMap.get(ColorSensor.class, colorSensorName);
+            distSensor = (DistanceSensor) colorSensor;
+            threadResult = new ColorSensorResult();
+        }
+
+        public ColorSensorResult getResult() {
+            return threadResult;
+        }
+
+        public void resetResult() {
+            threadResult = new ColorSensorResult();
+        }
+
+        // moved to a separate thread because the color sensor sometimes lags
+        public void run() {
+            //noinspection InfiniteLoopStatement
+            while (true) {
+                var localResult = new ColorSensorResult();
+                long startTime = System.nanoTime();
+                localResult.dist = distSensor.getDistance(DistanceUnit.CM);
+                localResult.color = new Color(colorSensor.red()/4096., colorSensor.green()/4096., colorSensor.blue()/4096.);
+                localResult.loopTimeMs = (System.nanoTime() - startTime) / 1000000.;
+                threadResult = localResult;
+
+                //let the system catch up with other work after a read
+                Thread.yield();
+            }
+        }
     }
 }
