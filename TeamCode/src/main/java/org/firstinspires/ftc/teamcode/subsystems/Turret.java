@@ -14,16 +14,23 @@ import org.livoniawarriors.GoBildaLedColors;
 import org.livoniawarriors.RobotUtil;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
 
 public class Turret extends SubsystemBase {
     private final TelemetryPacket packet;
     private final AnalogInput turretEncoder;
     private final Servo turretSpin;
     private final Servo topLight;
-    private double estimatedCommand;
     private double estimatedAngle;
     private boolean atTarget;
     private boolean visionAiming;
+    private double lastSensorVoltage;
+    private double lastGoodVoltage;
+    private double continuousVoltage;
+    private int rollovers;
+    private final PIDController pid;
+    private long lastTime;
+    private double offsetAngle;
 
     public Turret() {
         packet = new TelemetryPacket();
@@ -33,51 +40,81 @@ public class Turret extends SubsystemBase {
         topLight = Robot.opMode.hardwareMap.get(Servo.class, "RGB_VisionAcquired");
         atTarget = false;
         visionAiming = false;
-        //during HP load, move turret to 1, then reset back to started position
-
-        /* Limelight Tracking
-         *  CorrectionNeeded = X_Error * -0.005 * GainFactor;
-            if (TurretMode == 1) {
-                TurretSpin.setPosition(TurretSpin.getPosition() - CorrectionNeeded);
-            }
-         */
+        //start in middle of sensor range
+        lastSensorVoltage = 1.5;
+        continuousVoltage = lastSensorVoltage;
+        offsetAngle = 0;
+        pid = new PIDController(0.002, 0.0005,0, 0.05);
+        resetPid();
     }
 
     @Override
     public void periodic() {
         double voltage = turretEncoder.getVoltage();
-        //these were calculated by running testTurret(), reading the voltage vs command values, and run a linear regression on the data
-        estimatedCommand = -0.3377*voltage + 1.058;
-        //these were calculated by moving the turret to straight into intake (0*), and to the empty side (90*), and doing a linear regression on it
-        estimatedAngle = -53.92*voltage + 91.67;
+
+        //sometimes on rollover, we catch 3.2, then 1.4, then 0.1 during the transition of rollover,
+        //this if check catches when we settle
+        if(Math.abs(lastSensorVoltage - voltage) < 0.5) {
+            //voltage hops from 0 to 3.22v, then back to zero
+            if (lastGoodVoltage > 2.7 && voltage < 0.5) {
+                rollovers++;
+            } else if (voltage > 2.7 && lastGoodVoltage < 0.5) {
+                rollovers--;
+            }
+            continuousVoltage = (3.22 * rollovers) + voltage;
+            lastGoodVoltage = voltage;
+        }
+        lastSensorVoltage = voltage;
+
+        estimatedAngle = -38.58*continuousVoltage + 70.96;
+
         packet.put("Turret/ServoCommand", turretSpin.getPosition());
-        packet.put("Turret/EstimatedCommand", estimatedCommand);
-        packet.put("Turret/EstimatedAngle", estimatedAngle);
+        packet.put("Turret/EstimatedAngle", getAngle());
         packet.put("Turret/FeedbackVoltage", voltage);
+        packet.put("Turret/ContinuousVoltage", continuousVoltage);
         packet.put("Turret/Command", RobotUtil.getCommandName(getCurrentCommand()));
         packet.put("Turret/AtTarget", atTarget);
         Robot.logPacket(packet);
         Robot.opMode.telemetry.addData("TurretFeedback", turretEncoder.getVoltage());
     }
 
-    private void setPosition(double servoPos) {
-        double clamp = MathUtil.clamp(servoPos, 0.046, 0.99);
-        if (Double.isNaN(clamp)) {
-            clamp = 0.5;
+    private void setAngle(double angleDeg) {
+        var clamp = MathUtil.clamp(angleDeg, -60., 300.);
+        long currentTime = System.nanoTime();
+        double deltaTime = (currentTime - lastTime) / 1_000_000_000.;
+
+        var output = pid.calculate(getAngle(), clamp, deltaTime);
+        if(!Double.isNaN(output)) {
+            if(output < 0 && getAngle() < -60) {
+                output = 0;
+            } else if (output > 0 && getAngle() > 300) {
+                output = 0;
+            }
+            var outClamp = MathUtil.clamp(output + 0.5, 0.4, 0.6);
+            turretSpin.setPosition(outClamp);
+            packet.put("Turret/OutClamp", outClamp);
+            lastTime = currentTime;
+        } else {
+            pid.reset();
         }
-        //turretSpin.setPosition(clamp);
-        //since all commands go though setPosition, we can only check here for all commands
-        if(visionAiming == false) {
-            atTarget = Math.abs(clamp - estimatedCommand) < 0.015;
-        }
-        atTarget = true;
+
+        packet.put("Turret/DeltaTime", deltaTime);
+        Robot.opMode.telemetry.addData("LoopTime", deltaTime);
+        packet.put("Turret/RequestAngle", angleDeg);
+        atTarget = Math.abs(angleDeg - getAngle()) < 3;
     }
 
-    private void setAngle(double angleDeg) {
-        //inverting the voltage to angle formulas
-        double voltage = (angleDeg - 91.67)/-53.93;
-        double command = -0.3377*voltage + 1.058;
-        setPosition(command);
+    private void resetPid() {
+        pid.reset();
+        lastTime = System.nanoTime();
+    }
+
+    public Command resetZero() {
+        return new ResetZero();
+    }
+
+    public Command bumpRotations(int numRotations) {
+        return new BumpRotations(numRotations);
     }
 
     public boolean atTarget() {
@@ -85,11 +122,7 @@ public class Turret extends SubsystemBase {
     }
 
     public double getAngle() {
-        return estimatedAngle;
-    }
-
-    public Command centerTurretViaVision() {
-        return new CenterTurretViaVision();
+        return estimatedAngle - offsetAngle;
     }
 
     public Command centerTurretViaPosition() {
@@ -118,29 +151,12 @@ public class Turret extends SubsystemBase {
         };
     }
 
-    private class CommandTurret extends CommandBase {
-        double pos;
-        public CommandTurret(double pos) {
-            this.pos = pos;
-            addRequirements(Robot.turret);
-        }
-
-        @Override
-        public void execute() {
-            setPosition(pos);
-        }
-
-        @Override
-        public boolean isFinished() {
-            return atTarget;
-        }
-    }
-
     private class CommandTurretAngle extends CommandBase {
         double angle;
         public CommandTurretAngle(double angle) {
             this.angle = angle;
             addRequirements(Robot.turret);
+            resetPid();
         }
 
         @Override
@@ -154,68 +170,10 @@ public class Turret extends SubsystemBase {
         }
     }
 
-    private class CenterTurretViaVision extends CommandBase {
-        boolean finished = false;
-        long lastReading;
-        long goalTime;
-
-        public CenterTurretViaVision() {
-            addRequirements(Robot.turret);
-        }
-
-        @Override
-        public void initialize() {
-            finished = false;
-            Robot.turret.setLed(GoBildaLedColors.Orange);
-            lastReading = System.nanoTime();
-            goalTime = 0;
-            visionAiming = true;
-        }
-
-        @Override
-        public void execute() {
-            double GainFactor = 0;
-            long curTime = System.nanoTime();
-            long deltaTime = curTime - lastReading;
-            double X_Error = Robot.vision.getTurretError();
-            atTarget = false;
-            if(Robot.vision.isCameraConnected() == false) {
-                setLed(GoBildaLedColors.Red);
-                finished = true;
-            } else if (Math.abs(X_Error) < 0.8) {
-                GainFactor = 0;
-                goalTime += deltaTime;
-                Robot.turret.setLed(GoBildaLedColors.Green);
-            } else if (Math.abs(X_Error) < 10) {
-                GainFactor = 0.5;
-            } else {
-                GainFactor = 0.8;
-            }
-            double CorrectionNeeded = X_Error * -0.005 * GainFactor;
-
-            lastReading = curTime;
-            if(goalTime > 120_000_000) {
-                finished = true;
-                atTarget = true;
-            } else {
-                setPosition(turretSpin.getPosition() - CorrectionNeeded);
-            }
-        }
-
-        @Override
-        public boolean isFinished() {
-            return finished;
-        }
-
-        @Override
-        public void end(boolean interrupted) {
-            visionAiming = false;
-        }
-    }
-
     private class CenterTurretViaPosition extends CommandBase {
         public CenterTurretViaPosition() {
             addRequirements(Robot.turret);
+            resetPid();
         }
 
         @Override
@@ -230,17 +188,45 @@ public class Turret extends SubsystemBase {
         }
     }
 
+    private class ResetZero extends CommandBase {
+        @Override
+        public void execute() {
+            offsetAngle = estimatedAngle;
+        }
+
+        @Override
+        public boolean isFinished() {
+            return true;
+        }
+    }
+
+    private class BumpRotations extends CommandBase {
+        private final int numRotations;
+        public BumpRotations(int numRotations) {
+            this.numRotations = numRotations;
+        }
+        @Override
+        public void execute() {
+            rollovers += numRotations;
+        }
+
+        @Override
+        public boolean isFinished() {
+            return true;
+        }
+    }
+
     public Command testTurret() {
         return new SequentialCommandGroup(
-                new CommandTurret(0.3),
+                new CommandTurretAngle(-90),
                 new WaitCommand(3000),
-                new CommandTurret(0.4),
+                new CommandTurretAngle(-45),
                 new WaitCommand(3000),
-                new CommandTurret(0.5),
+                new CommandTurretAngle(0),
                 new WaitCommand(3000),
-                new CommandTurret(0.6),
+                new CommandTurretAngle(45),
                 new WaitCommand(3000),
-                new CommandTurret(0.7),
+                new CommandTurretAngle(90),
                 new WaitCommand(3000)
         );
     }

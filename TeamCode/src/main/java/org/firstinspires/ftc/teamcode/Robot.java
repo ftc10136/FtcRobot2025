@@ -85,6 +85,7 @@ public class Robot {
 
         //buttons that run while disabled
         controls.flipAlliance().whenActive(flipAlliance());
+        controls.resetTurretAngle().whenActive(turret.resetZero());
     }
 
     public static void Periodic() {
@@ -118,21 +119,23 @@ public class Robot {
         //default commands that run when the robot is idle
         drivetrain.startTeleopDrive(true);
         drivetrain.setDefaultCommand(drivetrain.teleopDrive());
-        /*
         turret.setDefaultCommand(turret.centerTurretViaPosition());
         shooter.setDefaultCommand(shooter.autoShotRpm().perpetually());
         hoodAngle.setDefaultCommand(hoodAngle.autoShotHood().perpetually());
-        */
 
         //button commands
         controls.hpLoadActive().whileActiveContinuous(commandHumanLoad());
         controls.floorLoadActive().toggleWhenActive(commandFloorLoad());
         controls.resetFieldOriented().whenActive(drivetrain.resetFieldOriented());
         controls.shootActive().toggleWhenActive(shootAllBalls());
-        controls.flipAlliance().whenActive(flipAlliance());
         controls.bumpSpindexerLeft().whileActiveContinuous(spindexer.bumpSpindexer(true));
         controls.bumpSpindexerRight().whileActiveContinuous(spindexer.bumpSpindexer(false));
         controls.shootMotif().whileActiveContinuous(shootMotif());
+
+        controls.flipAlliance().whenActive(flipAlliance());
+        controls.resetTurretAngle().whenActive(turret.resetZero());
+        controls.bumpTurretRotationsLeft().whenActive(turret.bumpRotations(-1));
+        controls.bumpTurretRotationsRight().whenActive(turret.bumpRotations(1));
 
         //test commands
         Trigger shootCalibration = new Trigger(() -> Robot.opMode.gamepad1.start);
@@ -220,18 +223,15 @@ public class Robot {
         return new ParallelCommandGroup(
                 shooter.autoShotRpm(),
                 hoodAngle.autoShotHood(),
-                turret.centerTurretViaVision(),
+                turret.centerTurretViaPosition(),
                 new SequentialCommandGroup(
                         logStep(1),
                         new WaitUntilCommand(readyToShoot()).withTimeout(2000),
                         logStep(2),
-                        /*new ConditionalCommand(shootBall(1), new InstantCommand(), spindexer.hasBall(1)),
+                        new ConditionalCommand(shootBall(1), new InstantCommand(), spindexer.hasBall(1)),
                         logStep(3),
                         new ConditionalCommand(shootBall(2), new InstantCommand(), spindexer.hasBall(2)),
-                        new ConditionalCommand(shootBall(3), new InstantCommand(), spindexer.hasBall(3)),*/
-                        shootBall(1),
-                        shootBall(2),
-                        shootBall(3),
+                        new ConditionalCommand(shootBall(3), new InstantCommand(), spindexer.hasBall(3)),
                         turret.setLedCommand(GoBildaLedColors.Off),
                         ballevator.commandDown(),
                         spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.FloorIntake),
@@ -276,10 +276,7 @@ public class Robot {
                 ),
                 shooter.autoShotRpm().perpetually(),
                 hoodAngle.autoShotHood().perpetually(),
-                new SequentialCommandGroup(
-                        turret.centerTurretViaPosition(),
-                        turret.centerTurretViaVision()
-                )
+                turret.centerTurretViaPosition()
         );
     }
 
