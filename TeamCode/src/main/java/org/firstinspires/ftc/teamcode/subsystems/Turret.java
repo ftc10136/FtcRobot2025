@@ -44,7 +44,8 @@ public class Turret extends SubsystemBase {
         lastSensorVoltage = 1.5;
         continuousVoltage = lastSensorVoltage;
         offsetAngle = 0;
-        pid = new PIDController(0.002, 0.0005,0, 0.05);
+        //cannot have I term, as we don't reset the pids in continous modes
+        pid = new PIDController(0.0025, 0,0, 0.05);
         resetPid();
 
         //zero the turret on startup
@@ -59,7 +60,7 @@ public class Turret extends SubsystemBase {
 
         //sometimes on rollover, we catch 3.2, then 1.4, then 0.1 during the transition of rollover,
         //this if check catches when we settle
-        if(Math.abs(lastSensorVoltage - voltage) < 0.5) {
+        if(Math.abs(lastSensorVoltage - voltage) < 0.4) {
             //voltage hops from 0 to 3.22v, then back to zero
             if (lastGoodVoltage > 2.7 && voltage < 0.5) {
                 rollovers++;
@@ -90,12 +91,22 @@ public class Turret extends SubsystemBase {
 
         var output = pid.calculate(getAngle(), clamp, deltaTime);
         if(!Double.isNaN(output)) {
+            //the servo doesn't run between 0.47-0.53, so bump up the requests
+            if(output < -0.01) {
+                output -= 0.04;
+            } else if (output > 0.01) {
+                output += 0.04;
+            } else {
+                output = 0;
+            }
+
+            //make soft limits for requests
             if(output < 0 && getAngle() < -60) {
                 output = 0;
             } else if (output > 0 && getAngle() > 300) {
                 output = 0;
             }
-            var outClamp = MathUtil.clamp(output + 0.5, 0.4, 0.6);
+            var outClamp = MathUtil.clamp(output + 0.5, 0.35, 0.65);
             turretSpin.setPosition(outClamp);
             packet.put("Turret/OutClamp", outClamp);
             lastTime = currentTime;
@@ -161,7 +172,6 @@ public class Turret extends SubsystemBase {
         public CommandTurretAngle(double angle) {
             this.angle = angle;
             addRequirements(Robot.turret);
-            resetPid();
         }
 
         @Override
@@ -183,7 +193,6 @@ public class Turret extends SubsystemBase {
     private class CenterTurretViaPosition extends CommandBase {
         public CenterTurretViaPosition() {
             addRequirements(Robot.turret);
-            resetPid();
         }
 
         @Override

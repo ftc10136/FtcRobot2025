@@ -108,6 +108,9 @@ public class Robot {
         opMode.telemetry.addData("Step", stepNum);
         opMode.telemetry.addData("TurretAngle", turret.getAngle());
         opMode.telemetry.addData("Command TimeMs", deltaTime);
+        opMode.telemetry.addData("_RPM Ready", shooter.atTarget());
+        opMode.telemetry.addData("_Turret Ready", turret.atTarget());
+        opMode.telemetry.addData("_Hood Ready", hoodAngle.atTarget());
         opMode.telemetry.update();
     }
 
@@ -164,7 +167,7 @@ public class Robot {
         //default commands that run when the robot is idle
         drivetrain.startTeleopDrive(true);
         drivetrain.setDefaultCommand(drivetrain.teleopDrive());
-        turret.setDefaultCommand(turret.centerTurretViaPosition().perpetually());
+        //turret.setDefaultCommand(turret.centerTurretViaPosition().perpetually());
         shooter.setDefaultCommand(shooter.autoShotRpm().perpetually());
         hoodAngle.setDefaultCommand(hoodAngle.autoShotHood().perpetually());
 
@@ -205,7 +208,7 @@ public class Robot {
         public static double SPINDEXER_OFFSET_PROG = 0.587;
         public static double CALIBRATE_SHOT_RPM = 1000;
         public static double CALIBRATE_SHOT_HOOD = 0.3;
-        public static long SPINDEXER_SHOT_DELAY = 80;
+        public static long SPINDEXER_SHOT_DELAY = 0;
         public static long BALLEVATOR_UP_TIMEOUT = 300;
     }
 
@@ -267,9 +270,9 @@ public class Robot {
 
     public static Command shootAllBalls() {
         return new ParallelCommandGroup(
-                shooter.autoShotRpm(),
-                hoodAngle.autoShotHood(),
-                turret.centerTurretViaPosition(),
+                shooter.autoShotRpm().perpetually(),
+                hoodAngle.autoShotHood().perpetually(),
+                turret.centerTurretViaPosition().perpetually(),
                 new SequentialCommandGroup(
                         logStep(1),
                         new WaitUntilCommand(readyToShoot()).withTimeout(2000),
