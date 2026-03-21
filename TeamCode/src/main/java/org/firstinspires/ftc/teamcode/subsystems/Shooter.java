@@ -56,16 +56,16 @@ public class Shooter extends SubsystemBase {
         double veloTicksPerSec = TurretShooterMotor.getVelocity();
         //there are 28 pulses per revolution
         veloRPM = veloTicksPerSec * 60/28;
-        double veloTicksPerSec2 = TurretShooterMotor.getVelocity();
+        double veloTicksPerSec2 = TurretShooterMotor2.getVelocity();
         //there are 28 pulses per revolution
         double veloRPM2 = veloTicksPerSec2 * 60/28;
         packet.put("Shooter/VelocityTicksSec1", veloTicksPerSec);
         packet.put("Shooter/VelocityRpm1", veloRPM);
         packet.put("Shooter/VelocityRpm2", veloRPM2);
-        packet.put("Shooter/Voltage1", TurretShooterMotor.getPower());
-        packet.put("Shooter/Current1", TurretShooterMotor.getCurrent(CurrentUnit.AMPS));
-        packet.put("Shooter/Voltage2", TurretShooterMotor2.getPower());
-        packet.put("Shooter/Current2", TurretShooterMotor2.getCurrent(CurrentUnit.AMPS));
+        //packet.put("Shooter/Voltage1", TurretShooterMotor.getPower());
+        //packet.put("Shooter/Current1", TurretShooterMotor.getCurrent(CurrentUnit.AMPS));
+        //packet.put("Shooter/Voltage2", TurretShooterMotor2.getPower());
+        //packet.put("Shooter/Current2", TurretShooterMotor2.getCurrent(CurrentUnit.AMPS));
         packet.put("Shooter/Command", RobotUtil.getCommandName(getCurrentCommand()));
         packet.put("Shooter/AtTarget", atTarget);
         Robot.logPacket(packet);

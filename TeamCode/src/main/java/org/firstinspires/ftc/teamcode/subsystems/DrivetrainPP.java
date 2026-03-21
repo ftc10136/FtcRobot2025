@@ -61,8 +61,8 @@ public class DrivetrainPP extends SubsystemBase {
         packet.put("Drivetrain/PedroX", pedroPose.getX());
         packet.put("Drivetrain/PedroY", pedroPose.getY());
         packet.put("Drivetrain/PedroHeading", pedroPose.getHeading());
-        packet.put("Drivetrain/EncoderX", odo.getEncoderX());
-        packet.put("Drivetrain/EncoderY", odo.getEncoderY());
+        //packet.put("Drivetrain/EncoderX", odo.getEncoderX());
+        //packet.put("Drivetrain/EncoderY", odo.getEncoderY());
         packet.put("Drivetrain/GoalDist", getGoalDistance());
         packet.put("Drivetrain/GoalAngle", getGoalAngle());
 

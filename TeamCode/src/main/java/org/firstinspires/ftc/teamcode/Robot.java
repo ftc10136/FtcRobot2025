@@ -5,6 +5,7 @@ import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
+import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.seattlesolvers.solverslib.command.Command;
@@ -16,6 +17,7 @@ import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.ParallelDeadlineGroup;
 import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.SelectCommand;
+import com.seattlesolvers.solverslib.command.Subsystem;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.command.button.Trigger;
@@ -31,7 +33,9 @@ import org.firstinspires.ftc.teamcode.subsystems.Vision;
 import org.livoniawarriors.GoBildaLedColors;
 import org.livoniawarriors.SequentialCommandGroup;
 
+import java.lang.reflect.Field;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.function.BooleanSupplier;
 
 public class Robot {
@@ -50,6 +54,7 @@ public class Robot {
     public static boolean IsRed = false;
     public static RobotTypeEnum RobotType = RobotTypeEnum.Competition;
     public static int stepNum = 0;
+    private static TelemetryPacket packet;
 
     public enum RobotTypeEnum {
         Competition,
@@ -58,6 +63,8 @@ public class Robot {
 
     public static void Init(OpMode inMode) {
         opMode = inMode;
+        CommandScheduler.getInstance().setBulkReading(opMode.hardwareMap, LynxModule.BulkCachingMode.MANUAL);
+        packet = new TelemetryPacket();
         var pose = new Pose(72,72,Math.PI/2, PedroCoordinates.INSTANCE);
         //if we have already run, clear out the old running subsystems
         if (drivetrain != null) {
@@ -89,24 +96,62 @@ public class Robot {
     }
 
     public static void Periodic() {
+        long startTime = System.nanoTime();
+        loggingTime = 0;
         CommandScheduler.getInstance().run();
+        //periodicTiming();  //note, this causes all the periodic functions to run twice!
+
+        double deltaTime = (System.nanoTime() - startTime) / 1_000_000.;
+        packet.put("TimingMs/LoggingTime", loggingTime);
+        logPacket(packet);
+
         opMode.telemetry.addData("Step", stepNum);
+        opMode.telemetry.addData("TurretAngle", turret.getAngle());
+        opMode.telemetry.addData("Command TimeMs", deltaTime);
         opMode.telemetry.update();
     }
 
+    private void periodicTiming() {
+        try {
+            Class<?> clazz = CommandScheduler.class;
+
+            // 2. Get the specific private field
+            // Use getDeclaredField() to access private fields declared within the class
+            // getFields() only returns public fields
+            Field privateStringField = clazz.getDeclaredField("m_subsystems");
+
+            // 3. Make the private field accessible
+            // This is necessary to bypass Java language access control checks
+            privateStringField.setAccessible(true);
+
+            // 4. Get the value of the field from the specific object instance
+            @SuppressWarnings("unchecked")
+            Map<Subsystem, Command> fieldValue = (Map<Subsystem, Command>) privateStringField.get(CommandScheduler.getInstance());
+            assert fieldValue != null;
+            for (Subsystem subsystem : fieldValue.keySet()) {
+                long startTime2 = System.nanoTime();
+                subsystem.periodic();
+                double deltaTime = (System.nanoTime() - startTime2) / 1_000_000.;
+                packet.put("TimingMs/"+subsystem.toString(), deltaTime);
+            }
+
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    static double loggingTime;
     public static void logPacket(TelemetryPacket packet) {
+        long startTime2 = System.nanoTime();
         FtcDashboard.getInstance().sendTelemetryPacket(packet);
+        loggingTime += (System.nanoTime() - startTime2) / 1_000_000.;
     }
 
     public static BooleanSupplier readyToShoot() {
         return new BooleanSupplier() {
             @Override
             public boolean getAsBoolean() {
-                boolean status = Robot.turret.atTarget() && Robot.shooter.atTarget() && Robot.hoodAngle.atTarget();
-                if(status == true) {
-                    status = true;
-                }
-                return status;
+                return Robot.turret.atTarget() && Robot.shooter.atTarget() && Robot.hoodAngle.atTarget();
             }
         };
     }
