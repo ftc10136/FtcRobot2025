@@ -173,6 +173,11 @@ public class Turret extends SubsystemBase {
         public boolean isFinished() {
             return atTarget;
         }
+
+        @Override
+        public void end(boolean interrupted) {
+            turretSpin.setPosition(0.5);
+        }
     }
 
     private class CenterTurretViaPosition extends CommandBase {
@@ -190,6 +195,11 @@ public class Turret extends SubsystemBase {
         @Override
         public boolean isFinished() {
             return atTarget;
+        }
+
+        @Override
+        public void end(boolean interrupted) {
+            turretSpin.setPosition(0.5);
         }
     }
 
