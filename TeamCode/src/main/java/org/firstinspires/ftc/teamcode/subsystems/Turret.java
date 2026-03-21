@@ -46,6 +46,11 @@ public class Turret extends SubsystemBase {
         offsetAngle = 0;
         pid = new PIDController(0.002, 0.0005,0, 0.05);
         resetPid();
+
+        //zero the turret on startup
+        double voltage = turretEncoder.getVoltage();
+        estimatedAngle = -38.58*voltage + 70.96;
+        offsetAngle = estimatedAngle;
     }
 
     @Override
