@@ -155,9 +155,9 @@ public class DrivetrainPP extends SubsystemBase {
         } else {
             Pose goal;
             if (Robot.IsRed) {
-                goal = new Pose(128, 132, 0, PedroCoordinates.INSTANCE);
+                goal = new Pose(144, 144, 0, PedroCoordinates.INSTANCE);
             } else {
-                goal = new Pose(16, 132, 0, PedroCoordinates.INSTANCE);
+                goal = new Pose(0, 144, 0, PedroCoordinates.INSTANCE);
             }
             var deltaX = goal.getX() - follower.getPose().getX();
             var deltaY = goal.getY() - follower.getPose().getY();
@@ -168,9 +168,9 @@ public class DrivetrainPP extends SubsystemBase {
     public double getGoalAngle() {
         Pose goal;
         if(Robot.IsRed) {
-            goal = new Pose(132,140,0, PedroCoordinates.INSTANCE);
+            goal = new Pose(144,144,0, PedroCoordinates.INSTANCE);
         } else {
-            goal = new Pose(12,140,0, PedroCoordinates.INSTANCE);
+            goal = new Pose(0,144,0, PedroCoordinates.INSTANCE);
         }
         var deltaX = goal.getX() - follower.getPose().getX();
         var angleRad = Math.acos(deltaX / getGoalDistance());

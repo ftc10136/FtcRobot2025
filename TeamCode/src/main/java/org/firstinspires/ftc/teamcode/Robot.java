@@ -204,7 +204,7 @@ public class Robot {
 
     @Config
     public static class RobotConfig {
-        public static double SPINDEXER_OFFSET_COMP = 0.375;
+        public static double SPINDEXER_OFFSET_COMP = 0.3689;
         public static double SPINDEXER_OFFSET_PROG = 0.587;
         public static double CALIBRATE_SHOT_RPM = 1000;
         public static double CALIBRATE_SHOT_HOOD = 0.3;
@@ -241,9 +241,11 @@ public class Robot {
                 turret.commandTurretAngle(0),
                 shooter.calibrateShot(),
                 hoodAngle.calibrateShot(),
+                intake.runIntake(),
                 new RepeatCommand(new SequentialCommandGroup(
                         ballevator.commandDown(),
-                        spindexer.commandHpLoadUntilBall(1),
+                        spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.FloorIntake),
+                        spindexer.commandFloorLoadUntilBall(1),
                         spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.Shoot),
                         ballevator.commandUp(),
                         new WaitCommand(300),
