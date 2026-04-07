@@ -101,7 +101,6 @@ public class Spindexer extends SubsystemBase {
             packet.put("Spindexer/" + bay.getKey() + "/Distance", bay.getValue().getDist());
             packet.put("Spindexer/" + bay.getKey() + "/State", bay.getValue().getState());
         }
-        packet.put("Spindexer/PositionServo", Spindexer.getPosition());
         packet.put("Spindexer/FeedbackVoltage", voltage);
         packet.put("Spindexer/PositionFeedback", feedbackPos);
         packet.put("Spindexer/Command", RobotUtil.getCommandName(getCurrentCommand()));

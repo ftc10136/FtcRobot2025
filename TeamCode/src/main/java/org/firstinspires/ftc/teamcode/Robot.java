@@ -93,6 +93,9 @@ public class Robot {
         //buttons that run while disabled
         controls.flipAlliance().whenActive(flipAlliance());
         controls.resetTurretAngle().whenActive(turret.resetZero());
+
+        //uncomment this line to do timing analysis on commands.  This will cause them to run twice.
+        //CommandScheduler.getInstance().onCommandExecute(Robot::logCommandTiming);
     }
 
     public static void Periodic() {
@@ -112,6 +115,13 @@ public class Robot {
         opMode.telemetry.addData("_Turret Ready", turret.atTarget());
         opMode.telemetry.addData("_Hood Ready", hoodAngle.atTarget());
         opMode.telemetry.update();
+    }
+
+    private static void logCommandTiming(Command command) {
+        long startTime2 = System.nanoTime();
+        command.execute();
+        double deltaTime = (System.nanoTime() - startTime2) / 1_000_000.;
+        packet.put("TimingMs/" + command, deltaTime);
     }
 
     private void periodicTiming() {

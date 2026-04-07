@@ -54,7 +54,6 @@ public class Ballevator extends SubsystemBase {
 
     @Override
     public void periodic() {
-        packet.put("Ballevator/ServoCommand", Ballevator.getPosition());
         packet.put("Ballevator/FeedbackVoltage", BallevatorEncoder.getVoltage());
         packet.put("Ballevator/Command", RobotUtil.getCommandName(getCurrentCommand()));
         Robot.logPacket(packet);

@@ -17,6 +17,7 @@ public class HoodAngle extends SubsystemBase {
     private final InterpolatingDoubleTreeMap shootingTable;
     private long lastLoopTime;
     private double atPosTimer;
+    private double lastCommand = 0;
 
     public HoodAngle() {
         packet = new TelemetryPacket();
@@ -54,7 +55,7 @@ public class HoodAngle extends SubsystemBase {
             atPosTimer = 0;
         }
 
-        packet.put("HoodAngle/ServoCommand", hoodAngle.getPosition());
+        packet.put("HoodAngle/ServoCommand", lastCommand);
         packet.put("HoodAngle/Command", RobotUtil.getCommandName(getCurrentCommand()));
         packet.put("HoodAngle/AtTarget", atTarget());
         packet.put("HoodAngle/Timer", atPosTimer);
@@ -68,11 +69,12 @@ public class HoodAngle extends SubsystemBase {
 
     private void setHoodAngle(double position) {
         //get the last servo request
-        double curPos = hoodAngle.getPosition();
+        double curPos = lastCommand;
         //we are assuming that it takes 250ms to get from one side to the other
         double extraTime = Math.abs(position - curPos) * 250;
         atPosTimer = atPosTimer + extraTime;
         hoodAngle.setPosition(position);
+        lastCommand = position;
     }
 
     public Command calibrateShot() {

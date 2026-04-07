@@ -10,7 +10,6 @@ import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 
 import org.firstinspires.ftc.teamcode.Robot;
-import org.livoniawarriors.GoBildaLedColors;
 import org.livoniawarriors.RobotUtil;
 
 import edu.wpi.first.math.MathUtil;
@@ -74,7 +73,6 @@ public class Turret extends SubsystemBase {
 
         estimatedAngle = -38.58*continuousVoltage + 70.96;
 
-        packet.put("Turret/ServoCommand", turretSpin.getPosition());
         packet.put("Turret/EstimatedAngle", getAngle());
         packet.put("Turret/FeedbackVoltage", voltage);
         packet.put("Turret/ContinuousVoltage", continuousVoltage);
