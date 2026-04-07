@@ -54,13 +54,14 @@ public class Vision extends SubsystemBase {
         limelight.pipelineSwitch(4);
         seenMotif = Motifs.PPG;
 
-        //limelightServo = Robot.opMode.hardwareMap.get(Servo.class, "LimeLightServo");
-        //limelightServo.setPosition(0.5);
+        limelightServo = Robot.opMode.hardwareMap.get(Servo.class, "CameraServo");
+        limelightServo.setPosition(0.4);
     }
 
     @Override
     public void periodic() {
-        //limelightServo.setPosition(0.5);
+        //limelightServo.setPosition(Robot.opMode.gamepad2.right_stick_x);
+        //Robot.opMode.telemetry.addData("TurretCommand", Robot.opMode.gamepad2.right_stick_x);
         updateVision();
         getRobotTranslation();
         /*var status = limelight.getStatus();
