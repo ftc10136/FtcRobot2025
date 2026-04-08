@@ -150,9 +150,9 @@ public class DrivetrainPP extends SubsystemBase {
     }
 
     public double getGoalDistance() {
-        if(Robot.vision.isCameraConnected()) {
-            return Robot.vision.getDistance();
-        } else {
+        //if(Robot.vision.isCameraConnected()) {
+        //    return Robot.vision.getDistance();
+        //} else {
             Pose goal;
             if (Robot.IsRed) {
                 goal = new Pose(144, 144, 0, PedroCoordinates.INSTANCE);
@@ -162,7 +162,7 @@ public class DrivetrainPP extends SubsystemBase {
             var deltaX = goal.getX() - follower.getPose().getX();
             var deltaY = goal.getY() - follower.getPose().getY();
             return Math.sqrt((deltaX * deltaX) + (deltaY * deltaY));
-        }
+        //}
     }
 
     public double getGoalAngle() {

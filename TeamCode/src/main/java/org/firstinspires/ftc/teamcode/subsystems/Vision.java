@@ -20,6 +20,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.Robot;
+import org.livoniawarriors.RobotUtil;
 
 import java.util.function.BooleanSupplier;
 
@@ -51,7 +52,7 @@ public class Vision extends SubsystemBase {
         blocks = new HuskyLens.Block[0];
 
         // LimelightPipelines: 1=20/BlueAlliance, 2=24/RedAlliance, 3=20,21,22
-        limelight.pipelineSwitch(4);
+        limelight.pipelineSwitch(6);
         seenMotif = Motifs.PPG;
 
         limelightServo = Robot.opMode.hardwareMap.get(Servo.class, "CameraServo");
@@ -60,11 +61,12 @@ public class Vision extends SubsystemBase {
 
     @Override
     public void periodic() {
+        limelightServo.setPosition(0.4);
         //limelightServo.setPosition(Robot.opMode.gamepad2.right_stick_x);
         //Robot.opMode.telemetry.addData("TurretCommand", Robot.opMode.gamepad2.right_stick_x);
         updateVision();
         getRobotTranslation();
-        /*var status = limelight.getStatus();
+        var status = limelight.getStatus();
         packet.put("Vision/IsConnected", limelight.isConnected());
         packet.put("Vision/IsRunning", limelight.isRunning());
         packet.put("Vision/CameraConnected", isCameraConnected());
@@ -72,7 +74,6 @@ public class Vision extends SubsystemBase {
         packet.put("Vision/DistToTarget", distToTarget);
         packet.put("Vision/Motif", seenMotif.name());
         packet.put("Vision/TurretError", getTurretError());
-        */
 
         if (CAMERA_ENABLED) {
             //blocks = huskyLens.blocks();
@@ -83,17 +84,21 @@ public class Vision extends SubsystemBase {
             }
         }
         Robot.logPacket(packet);
-        //if(isCameraConnected() == false || isCameraConnected() == false) {
-        //    limelight.pipelineSwitch(4);
-        //}
+        if(isCameraConnected() == false || isCameraConnected() == false) {
+            limelight.pipelineSwitch(6);
+        }
         Robot.opMode.telemetry.addData("Motif", seenMotif.name());
     }
 
     private void updateVision() {
-        //var result = limelight.getLatestResult();
-        LLResult result = null;
+        var headingDeg = -Robot.drivetrain.getHeading() + 180;
+        headingDeg = RobotUtil.inputModulus(headingDeg, -180, 180);
+        limelight.updateRobotOrientation(headingDeg);
+        var result = limelight.getLatestResult();
+        //LLResult result = null;
         if (result != null) {
             logPose(result.getBotpose(), "BotPose");
+            logPose(result.getBotpose_MT2(), "BotPose_MT2");
             var fiducialResults = result.getFiducialResults();
             for (LLResultTypes.FiducialResult fiducialResult : fiducialResults) {
                 var tagId = fiducialResult.getFiducialId();
