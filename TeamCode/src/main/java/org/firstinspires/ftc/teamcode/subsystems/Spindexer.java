@@ -71,9 +71,9 @@ public class Spindexer extends SubsystemBase {
         bayStateToLedCommands.put(BayState.Purple, GoBildaLedColors.Purple);
 
         bays = new HashMap<>();
-        bays.put("Bay1", new SpinBay("Bay1A-Color", "RGB-Bay1"));
-        bays.put("Bay2", new SpinBay("Bay2A-Color", "RGB-Bay2"));
-        bays.put("Bay3", new SpinBay("Bay3A-Color", "RGB-Bay3"));
+        bays.put("Bay1", new SpinBay("Bay1A-Color", "RGB-Bay1", 1));
+        bays.put("Bay2", new SpinBay("Bay2A-Color", "RGB-Bay2", 2));
+        bays.put("Bay3", new SpinBay("Bay3A-Color", "RGB-Bay3", 3));
 
         Spindexer = Robot.opMode.hardwareMap.get(Servo.class, "Spindexer");
         //Spindexer = Robot.opMode.hardwareMap.get(Servo.class, "LimeLightServo");
@@ -92,14 +92,17 @@ public class Spindexer extends SubsystemBase {
         } else {
             feedbackPos = 0.3514 * voltage - 0.07765;
         }
-        for (var bay : bays.entrySet()) {
-            bay.getValue().periodic();
-            Color color = bay.getValue().getColor();
-            packet.put("Spindexer/" + bay.getKey() + "/Red", color.red);
-            packet.put("Spindexer/" + bay.getKey() + "/Green", color.green);
-            packet.put("Spindexer/" + bay.getKey() + "/Blue", color.blue);
-            packet.put("Spindexer/" + bay.getKey() + "/Distance", bay.getValue().getDist());
-            packet.put("Spindexer/" + bay.getKey() + "/State", bay.getValue().getState());
+        for (var entry : bays.entrySet()) {
+            var key = entry.getKey();
+            var bay = entry.getValue();
+            bay.periodic();
+            Color color = bay.getColor();
+            packet.put("Spindexer/" + key + "/Red", color.red);
+            packet.put("Spindexer/" + key + "/Green", color.green);
+            packet.put("Spindexer/" + key + "/Blue", color.blue);
+            packet.put("Spindexer/" + key + "/Distance", bay.getDist());
+            packet.put("Spindexer/" + key + "/State", bay.getState());
+            packet.put("Spindexer/" + key + "/ReadTime", bay.reading.loopTimeMs);
         }
         packet.put("Spindexer/FeedbackVoltage", voltage);
         packet.put("Spindexer/PositionFeedback", feedbackPos);

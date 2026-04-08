@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
-import com.qualcomm.robotcore.hardware.ColorSensor;
+import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 
@@ -13,22 +13,50 @@ public class SpinBay {
     private final Servo led;
 
     private Spindexer.BayState state;
-    private ColorSensorResult reading;
-    private final ReadColorSensorThread thread;
+    public ColorSensorResult reading;
+    //private final ReadColorSensorThread thread;
+    private double readTime;
+    int count;
+    int bayNum;
 
-    public SpinBay(String colorSensorName, String ledName) {
-        thread = new ReadColorSensorThread(colorSensorName);
+    private RevColorSensorV3 colorSensor;
+    private DistanceSensor distSensor;
+
+
+    public SpinBay(String colorSensorName, String ledName, int bayNum) {
+        this.bayNum = bayNum - 1;
+        //thread = new ReadColorSensorThread(colorSensorName);
         reading = new ColorSensorResult();
         led = Robot.opMode.hardwareMap.get(Servo.class, ledName);
         reading = new ColorSensorResult();
         state = Spindexer.BayState.None;
-        thread.start();
+        readTime = 0;
+        count = 0;
+
+        colorSensor = Robot.opMode.hardwareMap.get(RevColorSensorV3.class, colorSensorName);
+        distSensor = (DistanceSensor) colorSensor;
+
+        //thread.start();
     }
 
     public void periodic() {
-        reading = thread.getResult();
+        count++;
+        /*if(reading.count == newReading.count) {
+            return;
+        }*/
+        //slowing down reads to just 1 bay per periodic call
+        if((count % 3) == bayNum) {
+            reading = getResult();
+        } else {
+            return;
+        }
         //do 1 sensor read for the color
         if(reading.dist < 2) {
+            readTime += reading.loopTimeMs;
+            //we want 50ms of reads before we trust a reading
+            if(readTime < Robot.RobotConfig.BALL_BAY_TIME_MS) {
+                return;
+            }
             var sensedState = Robot.spindexer.matchColor(getColor());
 
             if (sensedState == Spindexer.BayState.Green || sensedState == Spindexer.BayState.Purple) {
@@ -36,6 +64,8 @@ public class SpinBay {
             } else if (state == Spindexer.BayState.None || state == Spindexer.BayState.Something) {
                 state = Spindexer.BayState.Something;
             }
+        } else {
+            readTime = 0;
         }
         led.setPosition(Robot.spindexer.getLedColor(state));
     }
@@ -57,54 +87,55 @@ public class SpinBay {
 
     public void resetBayState() {
         state = Spindexer.BayState.None;
-        reading = new ColorSensorResult();
-        thread.resetResult();
+        readTime = 0;
     }
 
-    private static class ColorSensorResult{
+    public ColorSensorResult getResult() {
+        var localResult = new ColorSensorResult();
+        long startTime = System.nanoTime();
+        var reading = colorSensor.getNormalizedColors();
+        localResult.dist = distSensor.getDistance(DistanceUnit.CM);
+        localResult.color = new Color(reading.red * 16, reading.green * 16, reading.blue * 16);
+        localResult.loopTimeMs = (System.nanoTime() - startTime) / 1000000.;
+        localResult.count = count;
+        count++;
+        return localResult;
+    }
+
+    public static class ColorSensorResult{
         public double dist;
         public Color color;
         public double loopTimeMs;
+        public int count;
 
         public ColorSensorResult() {
             dist = 20;
             color = Color.kBlack;
-            loopTimeMs = -1;
+            loopTimeMs = 0;
+            count = 0;
         }
     }
-    private static class ReadColorSensorThread extends Thread {
-        private ColorSensor colorSensor;
-        private DistanceSensor distSensor;
+    /*
+    private class ReadColorSensorThread extends Thread {
         private ColorSensorResult threadResult;
 
         public ReadColorSensorThread(String colorSensorName) {
-            colorSensor = Robot.opMode.hardwareMap.get(ColorSensor.class, colorSensorName);
-            distSensor = (DistanceSensor) colorSensor;
             threadResult = new ColorSensorResult();
         }
 
-        public ColorSensorResult getResult() {
+        public ColorSensorResult getThreadResult() {
             return threadResult;
-        }
-
-        public void resetResult() {
-            threadResult = new ColorSensorResult();
         }
 
         // moved to a separate thread because the color sensor sometimes lags
         public void run() {
             //noinspection InfiniteLoopStatement
             while (true) {
-                var localResult = new ColorSensorResult();
-                long startTime = System.nanoTime();
-                localResult.dist = distSensor.getDistance(DistanceUnit.CM);
-                localResult.color = new Color(colorSensor.red()/4096., colorSensor.green()/4096., colorSensor.blue()/4096.);
-                localResult.loopTimeMs = (System.nanoTime() - startTime) / 1000000.;
-                threadResult = localResult;
-
+                threadResult = getResult();
                 //let the system catch up with other work after a read
                 Thread.yield();
             }
         }
     }
+     */
 }
