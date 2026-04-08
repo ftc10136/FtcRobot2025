@@ -184,11 +184,11 @@ public class Spindexer extends SubsystemBase {
         //run the indexer until we see a ball
         return new ConditionalCommand(new InstantCommand(),
                 new SequentialCommandGroup(
-                        commandSpindexerPos(bay, SpindexerType.FloorIntake).withTimeout(500),
+                        commandSpindexerPos(bay, SpindexerType.FloorIntake).withTimeout(400),
                         new RepeatCommand(
                             new SequentialCommandGroup(
-                                commandSpindexerPos(getIndexPos(bay, SpindexerType.FloorIntake)).withTimeout(400),
-                                commandSpindexerPos(getIndexPos(bay, SpindexerType.FloorIntake)).withTimeout(400)
+                                commandSpindexerPos(getIndexPos(bay, SpindexerType.FloorIntake)+0.015).withTimeout(400),
+                                commandSpindexerPos(getIndexPos(bay, SpindexerType.FloorIntake)-0.015).withTimeout(400)
                             )
                         )
                 ).perpetually().interruptOn(hasBall(bay)),
