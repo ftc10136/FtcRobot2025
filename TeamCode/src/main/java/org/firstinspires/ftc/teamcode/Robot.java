@@ -220,6 +220,9 @@ public class Robot {
         public static double CALIBRATE_SHOT_HOOD = 0.3;
         public static long SPINDEXER_SHOT_DELAY = 0;
         public static long BALLEVATOR_UP_TIMEOUT = 300;
+        /// How long must a ball be read before we update the bay status with a ball
+        public static double BALL_BAY_TIME_MS = 1;
+        public static double TURRET_OFFSET_DEG = 26.3;
     }
 
     public static Command commandHumanLoad() {

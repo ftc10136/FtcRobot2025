@@ -50,7 +50,7 @@ public class Turret extends SubsystemBase {
         //zero the turret on startup
         double voltage = turretEncoder.getVoltage();
         estimatedAngle = -38.58*voltage + 70.96;
-        offsetAngle = estimatedAngle;
+        offsetAngle = Robot.RobotConfig.TURRET_OFFSET_DEG;
     }
 
     @Override
