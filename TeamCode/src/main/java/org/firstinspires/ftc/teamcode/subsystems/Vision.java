@@ -5,19 +5,12 @@ import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.dfrobot.HuskyLens;
-import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
-import com.seattlesolvers.solverslib.geometry.Pose2d;
-import com.seattlesolvers.solverslib.geometry.Rotation2d;
-import com.seattlesolvers.solverslib.geometry.Transform2d;
-import com.seattlesolvers.solverslib.geometry.Translation2d;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.Robot;
 import org.livoniawarriors.RobotUtil;
@@ -35,6 +28,8 @@ public class Vision extends SubsystemBase {
     private HuskyLens.Block[] blocks;
     private Servo limelightServo;
     private Motifs seenMotif;
+    private Pose visionPose;
+
     public enum Motifs {
         GPP, //21
         PGP, //22
@@ -53,6 +48,7 @@ public class Vision extends SubsystemBase {
 
         // LimelightPipelines: 1=20/BlueAlliance, 2=24/RedAlliance, 3=20,21,22
         limelight.pipelineSwitch(6);
+        visionPose = new Pose();
         seenMotif = Motifs.PPG;
 
         limelightServo = Robot.opMode.hardwareMap.get(Servo.class, "CameraServo");
@@ -62,15 +58,11 @@ public class Vision extends SubsystemBase {
     @Override
     public void periodic() {
         limelightServo.setPosition(0.4);
-        //limelightServo.setPosition(Robot.opMode.gamepad2.right_stick_x);
-        //Robot.opMode.telemetry.addData("TurretCommand", Robot.opMode.gamepad2.right_stick_x);
+
         updateVision();
-        getRobotTranslation();
-        var status = limelight.getStatus();
         packet.put("Vision/IsConnected", limelight.isConnected());
         packet.put("Vision/IsRunning", limelight.isRunning());
         packet.put("Vision/CameraConnected", isCameraConnected());
-        packet.put("Vision/FPS", status.getFps());
         packet.put("Vision/DistToTarget", distToTarget);
         packet.put("Vision/Motif", seenMotif.name());
         packet.put("Vision/TurretError", getTurretError());
@@ -84,7 +76,7 @@ public class Vision extends SubsystemBase {
             }
         }
         Robot.logPacket(packet);
-        if(isCameraConnected() == false || isCameraConnected() == false) {
+        if(!isCameraConnected()) {
             limelight.pipelineSwitch(6);
         }
         Robot.opMode.telemetry.addData("Motif", seenMotif.name());
@@ -95,10 +87,11 @@ public class Vision extends SubsystemBase {
         headingDeg = RobotUtil.inputModulus(headingDeg, -180, 180);
         limelight.updateRobotOrientation(headingDeg);
         var result = limelight.getLatestResult();
-        //LLResult result = null;
         if (result != null) {
+            var mt2Pose = result.getBotpose_MT2();
+            visionPose = new Pose(-mt2Pose.getPosition().y, mt2Pose.getPosition().x, mt2Pose.getOrientation().getYaw(AngleUnit.RADIANS), FTCCoordinates.INSTANCE).getAsCoordinateSystem(PedroCoordinates.INSTANCE);
             logPose(result.getBotpose(), "BotPose");
-            logPose(result.getBotpose_MT2(), "BotPose_MT2");
+            logPose(mt2Pose, "BotPose_MT2");
             var fiducialResults = result.getFiducialResults();
             for (LLResultTypes.FiducialResult fiducialResult : fiducialResults) {
                 var tagId = fiducialResult.getFiducialId();
@@ -125,32 +118,16 @@ public class Vision extends SubsystemBase {
         }
     }
 
-    private Pose2D getRobotTranslation() {
-        //CONSTANTS
-        var OFFSET_ANGLE_DEG = 7.895;
-        var CAMERA_TURRET_RADIUS_IN = 3.53553;
-
-        //INPUTS
-        var curTurretAngleDeg = 0.;
-
-        //work
-        var curTurretAngleRad = Math.toRadians(curTurretAngleDeg + OFFSET_ANGLE_DEG);
-        var pose = new Pose2d(0,0, Rotation2d.fromDegrees(0));
-        //move it
-        pose = pose.plus(new Transform2d(new Translation2d(-0.25,1.75), Rotation2d.fromDegrees(0)));
-        return new Pose2D(DistanceUnit.METER, pose.getX(), pose.getY(), AngleUnit.RADIANS, pose.getHeading());
-    }
-
     private void logPose(Pose3D pose, String name) {
         var pedroPose = new Pose(-pose.getPosition().y, pose.getPosition().x, pose.getOrientation().getYaw(AngleUnit.RADIANS), FTCCoordinates.INSTANCE).getAsCoordinateSystem(PedroCoordinates.INSTANCE);
-
-        packet.put("Vision/" + name + " x", pose.getPosition().x);
-        packet.put("Vision/" + name + " y", pose.getPosition().y);
-        packet.put("Vision/" + name + " heading", pose.getOrientation().getYaw(AngleUnit.RADIANS));
 
         packet.put("Vision/Pedro " + name + " x", pedroPose.getX()*39.37);
         packet.put("Vision/Pedro " + name + " y", pedroPose.getY()*39.37);
         packet.put("Vision/Pedro " + name + " heading", pedroPose.getHeading()+Math.PI);
+    }
+
+    public Pose getVisionPose() {
+        return visionPose;
     }
 
     public void initScanning() {
