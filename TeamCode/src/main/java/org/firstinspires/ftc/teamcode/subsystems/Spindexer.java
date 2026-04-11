@@ -85,13 +85,7 @@ public class Spindexer extends SubsystemBase {
 
     @Override
     public void periodic() {
-        double voltage = SpindexerEncoder.getVoltage();
-        if (Robot.RobotType == Robot.RobotTypeEnum.Programming) {
-            //these numbers were calculated with a best fit approximation from the 3 bays
-            feedbackPos = 0.3391 * voltage - 0.07272;
-        } else {
-            feedbackPos = 0.3514 * voltage - 0.07765;
-        }
+        readFeedback();
         for (var entry : bays.entrySet()) {
             var key = entry.getKey();
             var bay = entry.getValue();
@@ -104,10 +98,22 @@ public class Spindexer extends SubsystemBase {
             packet.put("Spindexer/" + key + "/State", bay.getState());
             packet.put("Spindexer/" + key + "/ReadTime", bay.reading.loopTimeMs);
         }
-        packet.put("Spindexer/FeedbackVoltage", voltage);
+
         packet.put("Spindexer/PositionFeedback", feedbackPos);
         packet.put("Spindexer/Command", RobotUtil.getCommandName(getCurrentCommand()));
         Robot.logPacket(packet);
+    }
+
+    private double readFeedback() {
+        double voltage = SpindexerEncoder.getVoltage();
+        if (Robot.RobotType == Robot.RobotTypeEnum.Programming) {
+            //these numbers were calculated with a best fit approximation from the 3 bays
+            feedbackPos = 0.3391 * voltage - 0.07272;
+        } else {
+            feedbackPos = 0.3514 * voltage - 0.07765;
+        }
+        packet.put("Spindexer/FeedbackVoltage", voltage);
+        return feedbackPos;
     }
 
     public BayState matchColor(Color color) {
@@ -243,7 +249,7 @@ public class Spindexer extends SubsystemBase {
         }
         @Override
         public boolean isFinished() {
-            return Math.abs(pos - feedbackPos) < 0.02;
+            return Math.abs(pos - readFeedback()) < 0.02;
         }
     }
 

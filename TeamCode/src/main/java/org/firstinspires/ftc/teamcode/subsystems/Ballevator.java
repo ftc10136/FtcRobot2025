@@ -33,16 +33,16 @@ public class Ballevator extends SubsystemBase {
 */
     //comp bot
     @SuppressWarnings("FieldCanBeLocal")
-    private final double BALLEVATOR_DOWN_VOLTAGE = 1.50;
-    private final double BALLEVATOR_FULL_DOWN_VOLTAGE = 1.42;
+    public final double BALLEVATOR_DOWN_VOLTAGE = 1.50;
+    public final double BALLEVATOR_FULL_DOWN_VOLTAGE = 1.42;
     @SuppressWarnings("FieldCanBeLocal")
-    private final double BALLEVATOR_UP_VOLTAGE = 1.72;
-    private final double BALLEVATOR_FULL_UP_VOLTAGE = 1.79;
+    public final double BALLEVATOR_UP_VOLTAGE = 1.65;
+    public final double BALLEVATOR_FULL_UP_VOLTAGE = 1.79;
     //servo commands from 0-1 to move the elevator up and down
     @SuppressWarnings("FieldCanBeLocal")
-    private final double BALLEVATOR_DOWN_COMMAND = 0;
+    public static final double BALLEVATOR_DOWN_COMMAND = 0;
     @SuppressWarnings("FieldCanBeLocal")
-    private final double BALLEVATOR_UP_COMMAND = 0.66;
+    public final double BALLEVATOR_UP_COMMAND = 0.66;
 
     public Ballevator() {
         packet = new TelemetryPacket();
@@ -59,6 +59,9 @@ public class Ballevator extends SubsystemBase {
         Robot.logPacket(packet);
     }
 
+    public void setBallevatorPosition(double position) {
+        Ballevator.setPosition(position);
+    }
     public Command commandUp() {
         return new BallevatorUp();
     }
@@ -69,6 +72,10 @@ public class Ballevator extends SubsystemBase {
 
     public boolean isBallevatorDown() {
         return BallevatorEncoder.getVoltage() < BALLEVATOR_DOWN_VOLTAGE;
+    }
+
+    public boolean isBallevatorUp() {
+        return BallevatorEncoder.getVoltage() > BALLEVATOR_UP_VOLTAGE;
     }
 
     @SuppressWarnings("unused")
@@ -86,12 +93,12 @@ public class Ballevator extends SubsystemBase {
             addRequirements(Robot.ballevator);
         }
         @Override
-        public void execute() {
+        public void initialize() {
             Ballevator.setPosition(BALLEVATOR_UP_COMMAND);
         }
         @Override
         public boolean isFinished() {
-            return BallevatorEncoder.getVoltage() > BALLEVATOR_UP_VOLTAGE;
+            return isBallevatorUp();
         }
     }
 
@@ -100,7 +107,7 @@ public class Ballevator extends SubsystemBase {
             addRequirements(Robot.ballevator);
         }
         @Override
-        public void execute() {
+        public void initialize() {
             Ballevator.setPosition(BALLEVATOR_DOWN_COMMAND);
         }
         @Override

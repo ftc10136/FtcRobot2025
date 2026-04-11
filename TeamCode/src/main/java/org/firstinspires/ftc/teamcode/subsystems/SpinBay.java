@@ -21,7 +21,7 @@ public class SpinBay {
 
     private RevColorSensorV3 colorSensor;
     private DistanceSensor distSensor;
-
+    private long lastResetTime;
 
     public SpinBay(String colorSensorName, String ledName, int bayNum) {
         this.bayNum = bayNum - 1;
@@ -32,6 +32,7 @@ public class SpinBay {
         state = Spindexer.BayState.None;
         readTime = 0;
         count = 0;
+        lastResetTime = 0;
 
         colorSensor = Robot.opMode.hardwareMap.get(RevColorSensorV3.class, colorSensorName);
         distSensor = (DistanceSensor) colorSensor;
@@ -40,6 +41,10 @@ public class SpinBay {
     }
 
     public void periodic() {
+        if(System.nanoTime() - lastResetTime < 100_000_000) {
+            //if we reset the bay, we want to wait 100ms before we read it again
+            return;
+        }
         count++;
         /*if(reading.count == newReading.count) {
             return;
@@ -88,6 +93,7 @@ public class SpinBay {
     public void resetBayState() {
         state = Spindexer.BayState.None;
         readTime = 0;
+        lastResetTime = System.nanoTime();
     }
 
     public ColorSensorResult getResult() {
