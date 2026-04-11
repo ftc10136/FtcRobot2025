@@ -3,12 +3,11 @@ package org.firstinspires.ftc.teamcode.subsystems;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.util.Range;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 
-import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.Robot;
 import org.livoniawarriors.RobotUtil;
 
@@ -26,11 +25,11 @@ public class Shooter extends SubsystemBase {
         packet = new TelemetryPacket();
         TurretShooterMotor = (DcMotorEx)Robot.opMode.hardwareMap.get(DcMotor.class, "TurretShooterMotor");
         TurretShooterMotor.setDirection(DcMotor.Direction.FORWARD);
-        TurretShooterMotor.setVelocityPIDFCoefficients(50, 0.05, 0, 12.2);
+        TurretShooterMotor.setVelocityPIDFCoefficients(55, 0.01, 0, 12.2);
         TurretShooterMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         TurretShooterMotor2 = (DcMotorEx)Robot.opMode.hardwareMap.get(DcMotor.class, "TurretShooterMotor2");
         TurretShooterMotor2.setDirection(DcMotor.Direction.REVERSE);
-        TurretShooterMotor2.setVelocityPIDFCoefficients(50, 0.05, 0, 12.2);
+        TurretShooterMotor2.setVelocityPIDFCoefficients(55, 0.01, 0, 12.2);
         TurretShooterMotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         atTarget = false;
 
@@ -47,8 +46,8 @@ public class Shooter extends SubsystemBase {
         shootingTable.put(106.56, 3800.);
         shootingTable.put(118.46, 3920.);
         shootingTable.put(129.94, 4075.);
-        shootingTable.put(142.32, 4400.);
-        shootingTable.put(154., 4250.);
+        shootingTable.put(142.32, 4100.);
+        shootingTable.put(154., 4150.);
         shootingTable.put(166.28, 4300.);
     }
 
@@ -73,8 +72,18 @@ public class Shooter extends SubsystemBase {
     }
 
     private void setRpmMotor(double rpm) {
-        TurretShooterMotor.setVelocity((28. / 60) * rpm);
-        TurretShooterMotor2.setVelocity((28. / 60) * rpm);
+        //software based PID
+        double feedForward = Robot.RobotConfig.SHOOTER_MOTOR_KS + (rpm * Robot.RobotConfig.SHOOTER_MOTOR_KV);
+        double feedBack = (rpm - veloRPM) * Robot.RobotConfig.SHOOTER_MOTOR_KP;
+        double power = feedForward + feedBack;
+        if (rpm > 300) {
+            power = Range.clip(power, 0.08, 1.);
+        }
+        TurretShooterMotor.setPower(power);
+        TurretShooterMotor2.setPower(power);
+        //hardware based PID shots
+        //TurretShooterMotor.setVelocity((28. / 60) * rpm);
+        //TurretShooterMotor2.setVelocity((28. / 60) * rpm);
         atTarget = Math.abs(rpm - veloRPM) < 50;
     }
 
