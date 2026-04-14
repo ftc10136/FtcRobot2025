@@ -77,7 +77,7 @@ public class Vision extends SubsystemBase {
         }
         Robot.logPacket(packet);
         if(!isCameraConnected()) {
-            limelight.pipelineSwitch(6);
+            //limelight.pipelineSwitch(6);
         }
         Robot.opMode.telemetry.addData("Motif", seenMotif.name());
     }

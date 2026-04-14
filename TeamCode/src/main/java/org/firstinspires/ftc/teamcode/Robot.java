@@ -117,6 +117,7 @@ public class Robot {
         logPacket(packet);
 
         opMode.telemetry.addData("TurretAngle", turret.getAngle());
+        opMode.telemetry.addData("ShotDistance", drivetrain.getGoalDistance());
         opMode.telemetry.addData("Command TimeMs", deltaTime);
         opMode.telemetry.addData("_RPM Ready", shooter.atTarget());
         opMode.telemetry.addData("_Turret Ready", turret.atTarget());
@@ -206,11 +207,11 @@ public class Robot {
 
         //test commands
         Trigger shootCalibration = new Trigger(() -> Robot.opMode.gamepad1.start);
-        //shootCalibration.toggleWhenActive(calibrateShooter());
-        shootCalibration.whileActiveContinuous(new ParallelDeadlineGroup(
+        shootCalibration.toggleWhenActive(calibrateShooter());
+        /*shootCalibration.whileActiveContinuous(new ParallelDeadlineGroup(
                 commandFloorLoad(),
                 drivetrain.driveToBall()
-        ));
+        ));*/
     }
 
     public static void setAutonomous(Command autoSequence) {
@@ -230,7 +231,7 @@ public class Robot {
         public static double SPINDEXER_OFFSET_COMP = 0.287;
         public static double CALIBRATE_SHOT_RPM = 1000;
         public static double CALIBRATE_SHOT_HOOD = 0.3;
-        public static long SPINDEXER_SHOT_DELAY = 80;
+        public static long SPINDEXER_SHOT_DELAY = 120;
         public static long BALLEVATOR_UP_TIMEOUT = 300;
         /// How long must a ball be read before we update the bay status with a ball
         public static double BALL_BAY_TIME_MS = 1;
@@ -288,18 +289,16 @@ public class Robot {
     }
 
     public static Command shootBall(int bay) {
+        var fastTimer = new LoggerCommandTimer("FastBall" + bay);
         return new SequentialCommandGroup(
-                logTimer.addEntry(bay + "BallStart"),
-                ballevator.commandDown(),
-                logTimer.addEntry(bay + "BallElevatorDown"),
-                spindexer.commandSpindexerPos(bay, Spindexer.SpindexerType.Shoot),
-                logTimer.addEntry(bay + "BallSpindexer"),
-                new WaitCommand(RobotConfig.SPINDEXER_SHOT_DELAY),
-                logTimer.addEntry(bay + "BallSleep"),
-                ballevator.commandUp().withTimeout(RobotConfig.BALLEVATOR_UP_TIMEOUT),
-                logTimer.addEntry(bay + "BallElevatorUp"),
-                spindexer.clearBayState(bay),
-                logTimer.addEntry(bay + "BallCleared")
+                fastTimer.startLog(),
+                ballevator.commandDown().alongWith(fastTimer.addEntry(bay + "BallStart")),
+                spindexer.commandSpindexerPos(bay, Spindexer.SpindexerType.Shoot).alongWith(fastTimer.addEntry(bay + "BallElevatorDown")),
+                new WaitCommand(RobotConfig.SPINDEXER_SHOT_DELAY).alongWith(fastTimer.addEntry(bay + "BallSpindexer")),
+                ballevator.commandUp().withTimeout(RobotConfig.BALLEVATOR_UP_TIMEOUT).alongWith(fastTimer.addEntry(bay + "BallSleep")),
+                spindexer.clearBayState(bay).alongWith(fastTimer.addEntry(bay + "BallElevatorUp")),
+                fastTimer.finishLog(bay + "BallCleared")
+
         );
     }
 
@@ -308,24 +307,25 @@ public class Robot {
     }
 
     public static Command shootAllBalls() {
-        return new SequentialCommandGroup(
-                new ParallelCommandGroup(
-                        logTimer.startLog(),
-                        shooter.autoShotRpm().perpetually(),
-                        hoodAngle.autoShotHood().perpetually(),
-                        turret.centerTurretViaPosition().perpetually()
-                ).interruptOn(readyToShoot()).withTimeout(2000),
-                logTimer.addEntry("StartShot"),
-                new ConditionalCommand(fastShot(1), new InstantCommand(), spindexer.hasBall(1)),
-                logTimer.addEntry("Ball1Shot"),
-                new ConditionalCommand(fastShot(2), new InstantCommand(), spindexer.hasBall(2)),
-                logTimer.addEntry("Ball2Shot"),
-                new ConditionalCommand(fastShot(3), new InstantCommand(), spindexer.hasBall(3)),
-                logTimer.finishLog("Ball3Shot"),
-                turret.setLedCommand(GoBildaLedColors.Off),
-                ballevator.commandDown(),
-                spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.FloorIntake),
-                new InstantCommand(() -> CommandScheduler.getInstance().schedule(commandFloorLoad()))
+        return new ParallelCommandGroup(
+                logTimer.startLog(),
+                shooter.autoShotRpm(),
+                hoodAngle.autoShotHood(),
+                turret.centerTurretViaPosition(),
+                new SequentialCommandGroup(
+                        new WaitUntilCommand(readyToShoot()).withTimeout(2000),
+                        logTimer.addEntry("StartShot"),
+                        new ConditionalCommand(shootBall(1), new InstantCommand(), spindexer.hasBall(1)),
+                        logTimer.addEntry("Ball1Shot"),
+                        new ConditionalCommand(shootBall(2), new InstantCommand(), spindexer.hasBall(2)),
+                        logTimer.addEntry("Ball2Shot"),
+                        new ConditionalCommand(shootBall(3), new InstantCommand(), spindexer.hasBall(3)),
+                        logTimer.finishLog("Ball3Shot"),
+                        turret.setLedCommand(GoBildaLedColors.Off),
+                        ballevator.commandDown(),
+                        spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.FloorIntake),
+                        new InstantCommand(() -> CommandScheduler.getInstance().schedule(commandFloorLoad()))
+                )
         );
     }
 
@@ -415,6 +415,7 @@ public class Robot {
             var sequence = List.of(
                     fastTimer.startLog(),
                     turret.stopTurret(),
+                    fastTimer.addEntry(bay + "BallStart"),
                     ballevator.commandDown(),
                     fastTimer.addEntry(bay + "BallElevatorDown"),
                     spindexer.commandSpindexerPos(bay, Spindexer.SpindexerType.Shoot),

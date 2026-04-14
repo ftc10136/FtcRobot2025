@@ -8,15 +8,18 @@ import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.util.Range;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
-import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.livoniawarriors.RobotUtil;
+
+import java.util.HashMap;
 
 public class DrivetrainPP extends SubsystemBase {
     public final Follower follower;
@@ -24,12 +27,21 @@ public class DrivetrainPP extends SubsystemBase {
     private double headingZeroRad;
     private final GoBildaPinpointDriver odo;
 
+    //for logging only
+    private HashMap<String, DcMotorEx> motors;
+
     public DrivetrainPP() {
         super();
         packet = new TelemetryPacket();
         follower = Constants.createFollower(Robot.opMode.hardwareMap);
         odo = Robot.opMode.hardwareMap.get(GoBildaPinpointDriver.class,"pinpoint");
         headingZeroRad = 0;
+
+        motors = new HashMap<>();
+        motors.put("leftFront", Robot.opMode.hardwareMap.get(DcMotorEx.class, "leftFront"));
+        motors.put("leftRear", Robot.opMode.hardwareMap.get(DcMotorEx.class, "leftRear"));
+        motors.put("rightFront", Robot.opMode.hardwareMap.get(DcMotorEx.class, "rightFront"));
+        motors.put("rightRear", Robot.opMode.hardwareMap.get(DcMotorEx.class, "rightRear"));
     }
 
     public Follower getFollower() {
@@ -66,6 +78,12 @@ public class DrivetrainPP extends SubsystemBase {
         packet.put("Drivetrain/GoalDist", getGoalDistance());
         packet.put("Drivetrain/GoalAngle", getGoalAngle());
 
+        for(var motorName : motors.keySet()) {
+            var motor = motors.get(motorName);
+            packet.put("Drivetrain/" + motorName + "/Power", motor.getPower());
+            packet.put("Drivetrain/" + motorName + "/Velocity", motor.getVelocity());
+            packet.put("Currents/" + motorName, motor.getCurrent(CurrentUnit.AMPS));
+        }
         Robot.logPacket(packet);
     }
 
