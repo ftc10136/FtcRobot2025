@@ -36,7 +36,7 @@ public class Ballevator extends SubsystemBase {
     public final double BALLEVATOR_DOWN_VOLTAGE = 1.50;
     public final double BALLEVATOR_FULL_DOWN_VOLTAGE = 1.42;
     @SuppressWarnings("FieldCanBeLocal")
-    public final double BALLEVATOR_UP_VOLTAGE = 1.65;
+    public final double BALLEVATOR_UP_VOLTAGE = 2.1;
     public final double BALLEVATOR_FULL_UP_VOLTAGE = 1.79;
     //servo commands from 0-1 to move the elevator up and down
     @SuppressWarnings("FieldCanBeLocal")

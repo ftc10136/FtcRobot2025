@@ -244,7 +244,7 @@ public class Spindexer extends SubsystemBase {
             addRequirements(Robot.spindexer);
         }
         @Override
-        public void execute() {
+        public void initialize() {
             setSpindexerPos(pos);
         }
         @Override

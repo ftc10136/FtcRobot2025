@@ -16,8 +16,8 @@ import org.firstinspires.ftc.teamcode.Robot;
 public class Constants {
     public static FollowerConstants followerConstantsComp = new FollowerConstants()
             .mass(13.38)  //in KG?, 29.5 lbs on 3/7/26
-            .forwardZeroPowerAcceleration(-42.3166)
-            .lateralZeroPowerAcceleration(-35.1215);
+            .forwardZeroPowerAcceleration(-10.3166)
+            .lateralZeroPowerAcceleration(-8.1215);
 
     public static PinpointConstants localizerConstantsComp = new PinpointConstants()
             .forwardPodY(-5)     //forward pod 3.75, -5
@@ -55,7 +55,7 @@ public class Constants {
             .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
             .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
             .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .useBrakeModeInTeleOp(true)
+            .useBrakeModeInTeleOp(false)
             .xVelocity(56.9842)
             .yVelocity(46.3710);
 

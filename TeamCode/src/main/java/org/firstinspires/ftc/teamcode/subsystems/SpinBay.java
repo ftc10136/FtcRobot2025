@@ -19,8 +19,8 @@ public class SpinBay {
     int count;
     int bayNum;
 
-    private RevColorSensorV3 colorSensor;
-    private DistanceSensor distSensor;
+    private final RevColorSensorV3 colorSensor;
+    private final DistanceSensor distSensor;
     private long lastResetTime;
 
     public SpinBay(String colorSensorName, String ledName, int bayNum) {
@@ -99,12 +99,15 @@ public class SpinBay {
     public ColorSensorResult getResult() {
         var localResult = new ColorSensorResult();
         long startTime = System.nanoTime();
-        var reading = colorSensor.getNormalizedColors();
-        localResult.dist = distSensor.getDistance(DistanceUnit.CM);
-        localResult.color = new Color(reading.red * 16, reading.green * 16, reading.blue * 16);
+        if(state == Spindexer.BayState.None) {
+            localResult.dist = distSensor.getDistance(DistanceUnit.CM);
+        } else if(state == Spindexer.BayState.Something) {
+            localResult.dist = 1;
+            var reading = colorSensor.getNormalizedColors();
+            localResult.color = new Color(reading.red * 16, reading.green * 16, reading.blue * 16);
+        }
         localResult.loopTimeMs = (System.nanoTime() - startTime) / 1000000.;
         localResult.count = count;
-        count++;
         return localResult;
     }
 
