@@ -70,7 +70,7 @@ public class Robot {
     public static void Init(OpMode inMode) {
         opMode = inMode;
         isEnabled = false;
-        CommandScheduler.getInstance().setBulkReading(opMode.hardwareMap, LynxModule.BulkCachingMode.MANUAL);
+        CommandScheduler.getInstance().setBulkReading(opMode.hardwareMap, LynxModule.BulkCachingMode.AUTO);
         packet = new TelemetryPacket();
         var pose = new Pose(72,72,Math.PI/2, PedroCoordinates.INSTANCE);
         //if we have already run, clear out the old running subsystems
@@ -307,25 +307,29 @@ public class Robot {
     }
 
     public static Command shootAllBalls() {
-        return new ParallelCommandGroup(
-                logTimer.startLog(),
-                shooter.autoShotRpm(),
-                hoodAngle.autoShotHood(),
-                turret.centerTurretViaPosition(),
+        return new ParallelDeadlineGroup(
                 new SequentialCommandGroup(
                         new WaitUntilCommand(readyToShoot()).withTimeout(2000),
                         logTimer.addEntry("StartShot"),
-                        new ConditionalCommand(shootBall(1), new InstantCommand(), spindexer.hasBall(1)),
+                        new ConditionalCommand(fastShot(1), new InstantCommand(), spindexer.hasBall(1)),
                         logTimer.addEntry("Ball1Shot"),
-                        new ConditionalCommand(shootBall(2), new InstantCommand(), spindexer.hasBall(2)),
+                        new ConditionalCommand(fastShot(2), new InstantCommand(), spindexer.hasBall(2)),
                         logTimer.addEntry("Ball2Shot"),
-                        new ConditionalCommand(shootBall(3), new InstantCommand(), spindexer.hasBall(3)),
+                        new ConditionalCommand(fastShot(3), new InstantCommand(), spindexer.hasBall(3)),
                         logTimer.finishLog("Ball3Shot"),
                         turret.setLedCommand(GoBildaLedColors.Off),
                         ballevator.commandDown(),
                         spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.FloorIntake),
-                        new InstantCommand(() -> CommandScheduler.getInstance().schedule(commandFloorLoad()))
-                )
+                        new InstantCommand(() -> {
+                            CommandScheduler.getInstance().cancelAll();
+                            CommandScheduler.getInstance().schedule(commandFloorLoad());
+                        })
+                ),
+                logTimer.startLog(),
+                shooter.autoShotRpm().perpetually(),
+                hoodAngle.autoShotHood().perpetually(),
+                turret.centerTurretViaPosition().perpetually(),
+                drivetrain.holdAtSpot().perpetually()
         );
     }
 
@@ -415,6 +419,7 @@ public class Robot {
             var sequence = List.of(
                     fastTimer.startLog(),
                     turret.stopTurret(),
+                    drivetrain.holdAtSpot(),
                     fastTimer.addEntry(bay + "BallStart"),
                     ballevator.commandDown(),
                     fastTimer.addEntry(bay + "BallElevatorDown"),
@@ -434,7 +439,7 @@ public class Robot {
 
         @Override
         public void end(boolean interrupted) {
-            CommandScheduler.getInstance().setBulkReading(opMode.hardwareMap, LynxModule.BulkCachingMode.MANUAL);
+            CommandScheduler.getInstance().setBulkReading(opMode.hardwareMap, LynxModule.BulkCachingMode.AUTO);
         }
 
         @Override

@@ -94,6 +94,10 @@ public class DrivetrainPP extends SubsystemBase {
     public Command teleopDrive() {
         return new TeleopDrive();
     }
+
+    public Command holdAtSpot() {
+        return new HoldAtSpot();
+    }
     public Command followPath(PathChain path) {
         return followPath(path, true);
     }
@@ -124,6 +128,10 @@ public class DrivetrainPP extends SubsystemBase {
     class TeleopDrive extends CommandBase {
         public TeleopDrive() {
             addRequirements(Robot.drivetrain);
+        }
+        @Override
+        public void initialize() {
+            follower.startTeleOpDrive(true);
         }
         @Override
         public void execute() {
@@ -279,6 +287,29 @@ public class DrivetrainPP extends SubsystemBase {
         public void end(boolean interrupted) {
             follower.breakFollowing();
             follower.startTeleOpDrive(holdEnd);
+        }
+    }
+
+    class HoldAtSpot extends CommandBase {
+        private Pose holdPose;
+        public HoldAtSpot() {
+
+        }
+        @Override
+        public void initialize() {
+            holdPose = getPose();
+        }
+        @Override
+        public void execute() {
+            follower.holdPoint(holdPose);
+        }
+        @Override
+        public boolean isFinished() {
+            return true;
+        }
+        @Override
+        public void end(boolean interrupted) {
+            follower.breakFollowing();
         }
     }
 }

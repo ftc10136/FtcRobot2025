@@ -235,6 +235,9 @@ public class Spindexer extends SubsystemBase {
 
     private class SetSpindexerPos extends CommandBase {
         private final double pos;
+        private int passes;
+        private double lastFeedback;
+        private double command;
         public SetSpindexerPos(double position) {
             pos = position;
             addRequirements(Robot.spindexer);
@@ -245,11 +248,30 @@ public class Spindexer extends SubsystemBase {
         }
         @Override
         public void initialize() {
-            setSpindexerPos(pos);
+            passes = 0;
+            packet.put("Spindexer/CommandedPosition", pos);
+            lastFeedback = readFeedback();
+            command = pos;
+        }
+        @Override
+        public void execute() {
+            var feedback = readFeedback();
+            packet.put("Spindexer/AdjustedCommand", command);
+            setSpindexerPos(command);
+            if(Math.abs(pos - feedback) < 0.02) {
+                passes++;
+            } else {
+                passes = 0;
+                var deltaFeedback = feedback - lastFeedback;
+                if(Math.abs(deltaFeedback) < 0.01) {
+                    //command += Math.signum(pos - feedback) * 0.001;
+                }
+            }
+
         }
         @Override
         public boolean isFinished() {
-            return Math.abs(pos - readFeedback()) < 0.02;
+            return passes > 3;
         }
     }
 
