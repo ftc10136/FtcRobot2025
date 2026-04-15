@@ -8,15 +8,18 @@ import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.util.Range;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
-import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.livoniawarriors.RobotUtil;
+
+import java.util.HashMap;
 
 public class DrivetrainPP extends SubsystemBase {
     public final Follower follower;
@@ -24,12 +27,21 @@ public class DrivetrainPP extends SubsystemBase {
     private double headingZeroRad;
     private final GoBildaPinpointDriver odo;
 
+    //for logging only
+    private HashMap<String, DcMotorEx> motors;
+
     public DrivetrainPP() {
         super();
         packet = new TelemetryPacket();
         follower = Constants.createFollower(Robot.opMode.hardwareMap);
         odo = Robot.opMode.hardwareMap.get(GoBildaPinpointDriver.class,"pinpoint");
         headingZeroRad = 0;
+
+        motors = new HashMap<>();
+        motors.put("leftFront", Robot.opMode.hardwareMap.get(DcMotorEx.class, "leftFront"));
+        motors.put("leftRear", Robot.opMode.hardwareMap.get(DcMotorEx.class, "leftRear"));
+        motors.put("rightFront", Robot.opMode.hardwareMap.get(DcMotorEx.class, "rightFront"));
+        motors.put("rightRear", Robot.opMode.hardwareMap.get(DcMotorEx.class, "rightRear"));
     }
 
     public Follower getFollower() {
@@ -66,6 +78,12 @@ public class DrivetrainPP extends SubsystemBase {
         packet.put("Drivetrain/GoalDist", getGoalDistance());
         packet.put("Drivetrain/GoalAngle", getGoalAngle());
 
+        for(var motorName : motors.keySet()) {
+            var motor = motors.get(motorName);
+            packet.put("Drivetrain/" + motorName + "/Power", motor.getPower());
+            packet.put("Drivetrain/" + motorName + "/Velocity", motor.getVelocity());
+            packet.put("Currents/" + motorName, motor.getCurrent(CurrentUnit.AMPS));
+        }
         Robot.logPacket(packet);
     }
 
@@ -75,6 +93,10 @@ public class DrivetrainPP extends SubsystemBase {
 
     public Command teleopDrive() {
         return new TeleopDrive();
+    }
+
+    public Command holdAtSpot() {
+        return new HoldAtSpot();
     }
     public Command followPath(PathChain path) {
         return followPath(path, true);
@@ -106,6 +128,10 @@ public class DrivetrainPP extends SubsystemBase {
     class TeleopDrive extends CommandBase {
         public TeleopDrive() {
             addRequirements(Robot.drivetrain);
+        }
+        @Override
+        public void initialize() {
+            follower.startTeleOpDrive(true);
         }
         @Override
         public void execute() {
@@ -150,9 +176,9 @@ public class DrivetrainPP extends SubsystemBase {
     }
 
     public double getGoalDistance() {
-        if(Robot.vision.isCameraConnected()) {
-            return Robot.vision.getDistance();
-        } else {
+        //if(Robot.vision.isCameraConnected()) {
+        //    return Robot.vision.getDistance();
+        //} else {
             Pose goal;
             if (Robot.IsRed) {
                 goal = new Pose(144, 144, 0, PedroCoordinates.INSTANCE);
@@ -162,7 +188,7 @@ public class DrivetrainPP extends SubsystemBase {
             var deltaX = goal.getX() - follower.getPose().getX();
             var deltaY = goal.getY() - follower.getPose().getY();
             return Math.sqrt((deltaX * deltaX) + (deltaY * deltaY));
-        }
+        //}
     }
 
     public double getGoalAngle() {
@@ -261,6 +287,29 @@ public class DrivetrainPP extends SubsystemBase {
         public void end(boolean interrupted) {
             follower.breakFollowing();
             follower.startTeleOpDrive(holdEnd);
+        }
+    }
+
+    class HoldAtSpot extends CommandBase {
+        private Pose holdPose;
+        public HoldAtSpot() {
+
+        }
+        @Override
+        public void initialize() {
+            holdPose = getPose();
+        }
+        @Override
+        public void execute() {
+            follower.holdPoint(holdPose);
+        }
+        @Override
+        public boolean isFinished() {
+            return true;
+        }
+        @Override
+        public void end(boolean interrupted) {
+            follower.breakFollowing();
         }
     }
 }

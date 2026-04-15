@@ -10,7 +10,6 @@ import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 
 import org.firstinspires.ftc.teamcode.Robot;
-import org.livoniawarriors.GoBildaLedColors;
 import org.livoniawarriors.RobotUtil;
 
 import edu.wpi.first.math.MathUtil;
@@ -51,7 +50,7 @@ public class Turret extends SubsystemBase {
         //zero the turret on startup
         double voltage = turretEncoder.getVoltage();
         estimatedAngle = -38.58*voltage + 70.96;
-        offsetAngle = estimatedAngle;
+        offsetAngle = Robot.RobotConfig.TURRET_OFFSET_DEG;
     }
 
     @Override
@@ -74,7 +73,6 @@ public class Turret extends SubsystemBase {
 
         estimatedAngle = -38.58*continuousVoltage + 70.96;
 
-        packet.put("Turret/ServoCommand", turretSpin.getPosition());
         packet.put("Turret/EstimatedAngle", getAngle());
         packet.put("Turret/FeedbackVoltage", voltage);
         packet.put("Turret/ContinuousVoltage", continuousVoltage);
@@ -93,9 +91,9 @@ public class Turret extends SubsystemBase {
         if(!Double.isNaN(output)) {
             //the servo doesn't run between 0.47-0.53, so bump up the requests
             if(output < -0.01) {
-                output -= 0.04;
+                output -= 0.05;
             } else if (output > 0.01) {
-                output += 0.04;
+                output += 0.05;
             } else {
                 output = 0;
             }
@@ -117,7 +115,7 @@ public class Turret extends SubsystemBase {
         packet.put("Turret/DeltaTime", deltaTime);
         Robot.opMode.telemetry.addData("LoopTime", deltaTime);
         packet.put("Turret/RequestAngle", angleDeg);
-        atTarget = Math.abs(angleDeg - getAngle()) < 3;
+        atTarget = Math.abs(angleDeg - getAngle()) < 2;
     }
 
     private void resetPid() {
@@ -144,6 +142,11 @@ public class Turret extends SubsystemBase {
     public Command centerTurretViaPosition() {
         return new CenterTurretViaPosition();
     }
+
+    public Command stopTurret() {
+        return new StopTurret();
+    }
+
 
     public Command commandTurretAngle(double angleDeg) {
         return new CommandTurretAngle(angleDeg);
@@ -216,6 +219,17 @@ public class Turret extends SubsystemBase {
         @Override
         public void execute() {
             offsetAngle = estimatedAngle;
+        }
+
+        @Override
+        public boolean isFinished() {
+            return true;
+        }
+    }
+    private class StopTurret extends CommandBase {
+        @Override
+        public void execute() {
+            turretSpin.setPosition(0.5);
         }
 
         @Override

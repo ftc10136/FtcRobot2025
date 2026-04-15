@@ -71,9 +71,9 @@ public class Spindexer extends SubsystemBase {
         bayStateToLedCommands.put(BayState.Purple, GoBildaLedColors.Purple);
 
         bays = new HashMap<>();
-        bays.put("Bay1", new SpinBay("Bay1A-Color", "RGB-Bay1"));
-        bays.put("Bay2", new SpinBay("Bay2A-Color", "RGB-Bay2"));
-        bays.put("Bay3", new SpinBay("Bay3A-Color", "RGB-Bay3"));
+        bays.put("Bay1", new SpinBay("Bay1A-Color", "RGB-Bay1", 1));
+        bays.put("Bay2", new SpinBay("Bay2A-Color", "RGB-Bay2", 2));
+        bays.put("Bay3", new SpinBay("Bay3A-Color", "RGB-Bay3", 3));
 
         Spindexer = Robot.opMode.hardwareMap.get(Servo.class, "Spindexer");
         //Spindexer = Robot.opMode.hardwareMap.get(Servo.class, "LimeLightServo");
@@ -85,6 +85,26 @@ public class Spindexer extends SubsystemBase {
 
     @Override
     public void periodic() {
+        readFeedback();
+        for (var entry : bays.entrySet()) {
+            var key = entry.getKey();
+            var bay = entry.getValue();
+            bay.periodic();
+            Color color = bay.getColor();
+            packet.put("Spindexer/" + key + "/Red", color.red);
+            packet.put("Spindexer/" + key + "/Green", color.green);
+            packet.put("Spindexer/" + key + "/Blue", color.blue);
+            packet.put("Spindexer/" + key + "/Distance", bay.getDist());
+            packet.put("Spindexer/" + key + "/State", bay.getState());
+            packet.put("Spindexer/" + key + "/ReadTime", bay.reading.loopTimeMs);
+        }
+
+        packet.put("Spindexer/PositionFeedback", feedbackPos);
+        packet.put("Spindexer/Command", RobotUtil.getCommandName(getCurrentCommand()));
+        Robot.logPacket(packet);
+    }
+
+    private double readFeedback() {
         double voltage = SpindexerEncoder.getVoltage();
         if (Robot.RobotType == Robot.RobotTypeEnum.Programming) {
             //these numbers were calculated with a best fit approximation from the 3 bays
@@ -92,20 +112,8 @@ public class Spindexer extends SubsystemBase {
         } else {
             feedbackPos = 0.3514 * voltage - 0.07765;
         }
-        for (var bay : bays.entrySet()) {
-            bay.getValue().periodic();
-            Color color = bay.getValue().getColor();
-            packet.put("Spindexer/" + bay.getKey() + "/Red", color.red);
-            packet.put("Spindexer/" + bay.getKey() + "/Green", color.green);
-            packet.put("Spindexer/" + bay.getKey() + "/Blue", color.blue);
-            packet.put("Spindexer/" + bay.getKey() + "/Distance", bay.getValue().getDist());
-            packet.put("Spindexer/" + bay.getKey() + "/State", bay.getValue().getState());
-        }
-        packet.put("Spindexer/PositionServo", Spindexer.getPosition());
         packet.put("Spindexer/FeedbackVoltage", voltage);
-        packet.put("Spindexer/PositionFeedback", feedbackPos);
-        packet.put("Spindexer/Command", RobotUtil.getCommandName(getCurrentCommand()));
-        Robot.logPacket(packet);
+        return feedbackPos;
     }
 
     public BayState matchColor(Color color) {
@@ -182,11 +190,11 @@ public class Spindexer extends SubsystemBase {
         //run the indexer until we see a ball
         return new ConditionalCommand(new InstantCommand(),
                 new SequentialCommandGroup(
-                        commandSpindexerPos(bay, SpindexerType.FloorIntake).withTimeout(500),
+                        commandSpindexerPos(bay, SpindexerType.FloorIntake).withTimeout(400),
                         new RepeatCommand(
                             new SequentialCommandGroup(
-                                commandSpindexerPos(getIndexPos(bay, SpindexerType.FloorIntake)).withTimeout(400),
-                                commandSpindexerPos(getIndexPos(bay, SpindexerType.FloorIntake)).withTimeout(400)
+                                commandSpindexerPos(getIndexPos(bay, SpindexerType.FloorIntake)+0.015).withTimeout(400),
+                                commandSpindexerPos(getIndexPos(bay, SpindexerType.FloorIntake)-0.015).withTimeout(400)
                             )
                         )
                 ).perpetually().interruptOn(hasBall(bay)),
@@ -227,6 +235,9 @@ public class Spindexer extends SubsystemBase {
 
     private class SetSpindexerPos extends CommandBase {
         private final double pos;
+        private int passes;
+        private double lastFeedback;
+        private double command;
         public SetSpindexerPos(double position) {
             pos = position;
             addRequirements(Robot.spindexer);
@@ -236,12 +247,31 @@ public class Spindexer extends SubsystemBase {
             addRequirements(Robot.spindexer);
         }
         @Override
+        public void initialize() {
+            passes = 0;
+            packet.put("Spindexer/CommandedPosition", pos);
+            lastFeedback = readFeedback();
+            command = pos;
+        }
+        @Override
         public void execute() {
-            setSpindexerPos(pos);
+            var feedback = readFeedback();
+            packet.put("Spindexer/AdjustedCommand", command);
+            setSpindexerPos(command);
+            if(Math.abs(pos - feedback) < 0.02) {
+                passes++;
+            } else {
+                passes = 0;
+                var deltaFeedback = feedback - lastFeedback;
+                if(Math.abs(deltaFeedback) < 0.01) {
+                    //command += Math.signum(pos - feedback) * 0.001;
+                }
+            }
+
         }
         @Override
         public boolean isFinished() {
-            return Math.abs(pos - feedbackPos) < 0.02;
+            return passes > 3;
         }
     }
 
