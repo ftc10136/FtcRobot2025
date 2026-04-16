@@ -10,9 +10,15 @@ import org.firstinspires.ftc.teamcode.Robot;
 import edu.wpi.first.wpilibj.util.Color;
 
 public class SpinBay {
+    public enum BayState {
+        None,
+        Something,
+        Green,
+        Purple
+    }
     private final Servo led;
 
-    private Spindexer.BayState state;
+    private BayState state;
     public ColorSensorResult reading;
     //private final ReadColorSensorThread thread;
     private double readTime;
@@ -29,7 +35,7 @@ public class SpinBay {
         reading = new ColorSensorResult();
         led = Robot.opMode.hardwareMap.get(Servo.class, ledName);
         reading = new ColorSensorResult();
-        state = Spindexer.BayState.None;
+        state = BayState.None;
         readTime = 0;
         count = 0;
         lastResetTime = 0;
@@ -62,20 +68,20 @@ public class SpinBay {
             if(readTime < Robot.RobotConfig.BALL_BAY_TIME_MS) {
                 return;
             }
-            var sensedState = Robot.spindexer.matchColor(getColor());
+            //var sensedState = Robot.spindexer.matchColor(getColor());
 
-            if (sensedState == Spindexer.BayState.Green || sensedState == Spindexer.BayState.Purple) {
-                state = sensedState;
-            } else if (state == Spindexer.BayState.None || state == Spindexer.BayState.Something) {
-                state = Spindexer.BayState.Something;
-            }
+            //if (sensedState == Spindexer.BayState.Green || sensedState == Spindexer.BayState.Purple) {
+            //    state = sensedState;
+            //} else if (state == Spindexer.BayState.None || state == Spindexer.BayState.Something) {
+            //    state = Spindexer.BayState.Something;
+            //}
         } else {
             readTime = 0;
         }
-        led.setPosition(Robot.spindexer.getLedColor(state));
+        //led.setPosition(Robot.spindexer.getLedColor(state));
     }
 
-    public Spindexer.BayState getState() {
+    public BayState getState() {
         return state;
     }
 
@@ -91,7 +97,7 @@ public class SpinBay {
     }
 
     public void resetBayState() {
-        state = Spindexer.BayState.None;
+        state = BayState.None;
         readTime = 0;
         lastResetTime = System.nanoTime();
     }
@@ -99,9 +105,9 @@ public class SpinBay {
     public ColorSensorResult getResult() {
         var localResult = new ColorSensorResult();
         long startTime = System.nanoTime();
-        if(state == Spindexer.BayState.None) {
+        if(state == BayState.None) {
             localResult.dist = distSensor.getDistance(DistanceUnit.CM);
-        } else if(state == Spindexer.BayState.Something) {
+        } else if(state == BayState.Something) {
             localResult.dist = 1;
             var reading = colorSensor.getNormalizedColors();
             localResult.color = new Color(reading.red * 16, reading.green * 16, reading.blue * 16);

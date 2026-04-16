@@ -23,11 +23,10 @@ import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.util.Timing;
 
-import org.firstinspires.ftc.teamcode.subsystems.Ballevator;
 import org.firstinspires.ftc.teamcode.subsystems.DrivetrainPP;
+import org.firstinspires.ftc.teamcode.subsystems.Helidexer;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
-import org.firstinspires.ftc.teamcode.subsystems.Spindexer;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 import org.firstinspires.ftc.teamcode.subsystems.HoodAngle;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
@@ -46,17 +45,16 @@ public class Robot {
     public static OpMode opMode;
     public static DrivetrainPP drivetrain;
     public static Controls controls;
-    public static Spindexer spindexer;
     public static Intake intake;
-    public static Ballevator ballevator;
     public static Turret turret;
     public static Shooter shooter;
     public static HoodAngle hoodAngle;
     public static Vision vision;
     private static Servo allianceLed;
+    public static Helidexer helidexer;
 
     public static boolean IsRed = false;
-    public static RobotTypeEnum RobotType = RobotTypeEnum.Competition;
+    public static RobotTypeEnum RobotType = RobotTypeEnum.Programming;
     private static TelemetryPacket packet;
 
     private static LoggerCommandTimer logTimer;
@@ -72,19 +70,18 @@ public class Robot {
         isEnabled = false;
         CommandScheduler.getInstance().setBulkReading(opMode.hardwareMap, LynxModule.BulkCachingMode.AUTO);
         packet = new TelemetryPacket();
-        var pose = new Pose(72,72,Math.PI/2, PedroCoordinates.INSTANCE);
+        var pose = new Pose(72,72, Math.toRadians(135), PedroCoordinates.INSTANCE);
         //if we have already run, clear out the old running subsystems
         if (drivetrain != null) {
             pose = drivetrain.getPose();
-            CommandScheduler.getInstance().unregisterSubsystem(drivetrain, spindexer, intake,
-                    ballevator, turret, shooter, hoodAngle, vision);
+            CommandScheduler.getInstance().unregisterSubsystem(drivetrain, intake,
+                    helidexer, turret, shooter, hoodAngle, vision);
         }
         controls = new Controls();
         drivetrain = new DrivetrainPP();
-        spindexer = new Spindexer();
         intake = new Intake();
-        ballevator = new Ballevator();
         turret = new Turret();
+        helidexer = new Helidexer();
         shooter = new Shooter();
         hoodAngle = new HoodAngle();
         vision = new Vision();
@@ -187,23 +184,23 @@ public class Robot {
         drivetrain.startTeleopDrive(true);
         drivetrain.setDefaultCommand(drivetrain.teleopDrive());
         //turret.setDefaultCommand(turret.centerTurretViaPosition().perpetually());
-        shooter.setDefaultCommand(shooter.autoShotRpm().perpetually());
+        //shooter.setDefaultCommand(shooter.autoShotRpm().perpetually());
         hoodAngle.setDefaultCommand(hoodAngle.autoShotHood().perpetually());
+        helidexer.resetHome();
 
         //button commands
         controls.hpLoadActive().whileActiveContinuous(commandHumanLoad());
         controls.floorLoadActive().toggleWhenActive(commandFloorLoad());
         controls.resetFieldOriented().whenActive(drivetrain.resetFieldOriented());
         controls.shootActive().toggleWhenActive(shootAllBalls());
-        controls.bumpSpindexerLeft().whileActiveContinuous(spindexer.bumpSpindexer(true));
-        controls.bumpSpindexerRight().whileActiveContinuous(spindexer.bumpSpindexer(false));
+        controls.bumpSpindexerLeft().whileActiveContinuous(helidexer.shootAll());
+        controls.bumpSpindexerRight().whileActiveContinuous(helidexer.advanceBay());
         controls.shootMotif().whileActiveContinuous(shootMotif());
 
         controls.flipAlliance().whenActive(flipAlliance());
         controls.resetTurretAngle().whenActive(turret.resetZero());
         controls.bumpTurretRotationsLeft().whenActive(turret.bumpRotations(-1));
         controls.bumpTurretRotationsRight().whenActive(turret.bumpRotations(1));
-        controls.resetBays().whenActive(spindexer.resetBays());
 
         //test commands
         Trigger shootCalibration = new Trigger(() -> Robot.opMode.gamepad1.start);
@@ -242,29 +239,33 @@ public class Robot {
         public static double SHOOTER_MOTOR_KV = 0.00019;
         /// How much power do we add based on the amount of error we have
         public static double SHOOTER_MOTOR_KP = 0.00028;
+        public static int INTAKE_SPEED = 1;
+        public static int COUNTS_PER_BAY = 157;
+        public static int POSITION_TOLERANCE = 10;
+        public static double HELIDEXER_P = 1;
 
         public static double SPINDEXER_OFFSET_PROG = 0.587;
     }
 
     public static Command commandHumanLoad() {
         return new SequentialCommandGroup(
-                ballevator.commandDown(),
+                /*ballevator.commandDown(),
                 spindexer.commandHpLoadUntilBall(1),
                 spindexer.commandHpLoadUntilBall(2),
-                spindexer.commandHpLoadUntilBall(3)
+                spindexer.commandHpLoadUntilBall(3)*/
         );
     }
 
     public static Command commandFloorLoad() {
-        return new ParallelDeadlineGroup(
+        return new ParallelCommandGroup(
                 new SequentialCommandGroup(
                         turret.setLedCommand(GoBildaLedColors.Blue),
-                        ballevator.commandDown(),
+                        /*ballevator.commandDown(),
                         spindexer.commandFloorLoadUntilBall(1),
                         spindexer.commandFloorLoadUntilBall(2),
-                        spindexer.commandFloorLoadUntilBall(3),
-                        turret.setLedCommand(GoBildaLedColors.Orange),
-                        spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.Shoot)
+                        spindexer.commandFloorLoadUntilBall(3),*/
+                        turret.setLedCommand(GoBildaLedColors.Orange)
+                        //spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.Shoot)
                 ),
                 intake.runIntake());
     }
@@ -277,13 +278,13 @@ public class Robot {
                 hoodAngle.calibrateShot(),
                 intake.runIntake(),
                 new RepeatCommand(new SequentialCommandGroup(
-                        ballevator.commandDown(),
+                        /*ballevator.commandDown(),
                         spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.FloorIntake),
                         spindexer.commandFloorLoadUntilBall(1),
                         spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.Shoot),
                         ballevator.commandUp(),
                         new WaitCommand(300),
-                        spindexer.clearCurrentBay()
+                        spindexer.clearCurrentBay()*/
                 ))
         );
     }
@@ -292,11 +293,11 @@ public class Robot {
         var fastTimer = new LoggerCommandTimer("FastBall" + bay);
         return new SequentialCommandGroup(
                 fastTimer.startLog(),
-                ballevator.commandDown().alongWith(fastTimer.addEntry(bay + "BallStart")),
+                /*ballevator.commandDown().alongWith(fastTimer.addEntry(bay + "BallStart")),
                 spindexer.commandSpindexerPos(bay, Spindexer.SpindexerType.Shoot).alongWith(fastTimer.addEntry(bay + "BallElevatorDown")),
                 new WaitCommand(RobotConfig.SPINDEXER_SHOT_DELAY).alongWith(fastTimer.addEntry(bay + "BallSpindexer")),
                 ballevator.commandUp().withTimeout(RobotConfig.BALLEVATOR_UP_TIMEOUT).alongWith(fastTimer.addEntry(bay + "BallSleep")),
-                spindexer.clearBayState(bay).alongWith(fastTimer.addEntry(bay + "BallElevatorUp")),
+                spindexer.clearBayState(bay).alongWith(fastTimer.addEntry(bay + "BallElevatorUp")),*/
                 fastTimer.finishLog(bay + "BallCleared")
 
         );
@@ -311,15 +312,15 @@ public class Robot {
                 new SequentialCommandGroup(
                         new WaitUntilCommand(readyToShoot()).withTimeout(2000),
                         logTimer.addEntry("StartShot"),
-                        new ConditionalCommand(fastShot(1), new InstantCommand(), spindexer.hasBall(1)),
+                        //new ConditionalCommand(fastShot(1), new InstantCommand(), spindexer.hasBall(1)),
                         logTimer.addEntry("Ball1Shot"),
-                        new ConditionalCommand(fastShot(2), new InstantCommand(), spindexer.hasBall(2)),
+                        //new ConditionalCommand(fastShot(2), new InstantCommand(), spindexer.hasBall(2)),
                         logTimer.addEntry("Ball2Shot"),
-                        new ConditionalCommand(fastShot(3), new InstantCommand(), spindexer.hasBall(3)),
+                        //new ConditionalCommand(fastShot(3), new InstantCommand(), spindexer.hasBall(3)),
                         logTimer.finishLog("Ball3Shot"),
                         turret.setLedCommand(GoBildaLedColors.Off),
-                        ballevator.commandDown(),
-                        spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.FloorIntake),
+                        //ballevator.commandDown(),
+                        //spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.FloorIntake),
                         new InstantCommand(() -> {
                             CommandScheduler.getInstance().cancelAll();
                             CommandScheduler.getInstance().schedule(commandFloorLoad());
@@ -335,12 +336,12 @@ public class Robot {
 
     public static Command shootMotif() {
         var map = new HashMap<Object, Command>();
-        map.put(Vision.Motifs.GPP, shootMotif(Spindexer.BayState.Green, Spindexer.BayState.Purple, Spindexer.BayState.Purple));
-        map.put(Vision.Motifs.PGP, shootMotif(Spindexer.BayState.Purple, Spindexer.BayState.Green, Spindexer.BayState.Purple));
-        map.put(Vision.Motifs.PPG, shootMotif(Spindexer.BayState.Purple, Spindexer.BayState.Purple, Spindexer.BayState.Green));
+        //map.put(Vision.Motifs.GPP, shootMotif(Spindexer.BayState.Green, Spindexer.BayState.Purple, Spindexer.BayState.Purple));
+        //map.put(Vision.Motifs.PGP, shootMotif(Spindexer.BayState.Purple, Spindexer.BayState.Green, Spindexer.BayState.Purple));
+        //map.put(Vision.Motifs.PPG, shootMotif(Spindexer.BayState.Purple, Spindexer.BayState.Purple, Spindexer.BayState.Green));
         return new SelectCommand(map,() -> Robot.vision.getSeenMotif());
     }
-
+/*
     public static Command shootMotif(Spindexer.BayState color1, Spindexer.BayState color2, Spindexer.BayState color3) {
         return new ParallelDeadlineGroup(
                 new SequentialCommandGroup(
@@ -372,7 +373,7 @@ public class Robot {
                 turret.centerTurretViaPosition()
         );
     }
-
+*/
     public static Command flipAlliance() {
         return new CommandBase() {
             @Override
@@ -421,15 +422,15 @@ public class Robot {
                     turret.stopTurret(),
                     drivetrain.holdAtSpot(),
                     fastTimer.addEntry(bay + "BallStart"),
-                    ballevator.commandDown(),
+                    //ballevator.commandDown(),
                     fastTimer.addEntry(bay + "BallElevatorDown"),
-                    spindexer.commandSpindexerPos(bay, Spindexer.SpindexerType.Shoot),
+                    //spindexer.commandSpindexerPos(bay, Spindexer.SpindexerType.Shoot),
                     fastTimer.addEntry(bay + "BallSpindexer"),
                     new WaitCommand(RobotConfig.SPINDEXER_SHOT_DELAY),
                     fastTimer.addEntry(bay + "BallSleep"),
-                    ballevator.commandUp().withTimeout(RobotConfig.BALLEVATOR_UP_TIMEOUT),
+                    //ballevator.commandUp().withTimeout(RobotConfig.BALLEVATOR_UP_TIMEOUT),
                     fastTimer.addEntry(bay + "BallElevatorUp"),
-                    spindexer.clearBayState(bay),
+                    //spindexer.clearBayState(bay),
                     fastTimer.finishLog(bay + "BallCleared")
             );
             for(var command : sequence) {

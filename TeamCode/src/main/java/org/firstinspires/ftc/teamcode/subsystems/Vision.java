@@ -52,12 +52,12 @@ public class Vision extends SubsystemBase {
         seenMotif = Motifs.PPG;
 
         limelightServo = Robot.opMode.hardwareMap.get(Servo.class, "CameraServo");
-        limelightServo.setPosition(0.4);
+        //limelightServo.setPosition(0.4);
     }
 
     @Override
     public void periodic() {
-        limelightServo.setPosition(0.4);
+        //limelightServo.setPosition(0.4);
 
         updateVision();
         packet.put("Vision/IsConnected", limelight.isConnected());

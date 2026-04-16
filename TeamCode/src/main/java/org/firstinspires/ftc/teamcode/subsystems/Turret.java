@@ -105,7 +105,7 @@ public class Turret extends SubsystemBase {
                 output = 0;
             }
             var outClamp = MathUtil.clamp(output + 0.5, 0.35, 0.65);
-            turretSpin.setPosition(outClamp);
+            //turretSpin.setPosition(outClamp);
             packet.put("Turret/OutClamp", outClamp);
             lastTime = currentTime;
         } else {
@@ -189,7 +189,7 @@ public class Turret extends SubsystemBase {
 
         @Override
         public void end(boolean interrupted) {
-            turretSpin.setPosition(0.5);
+            //turretSpin.setPosition(0.5);
         }
     }
 
@@ -211,7 +211,7 @@ public class Turret extends SubsystemBase {
 
         @Override
         public void end(boolean interrupted) {
-            turretSpin.setPosition(0.5);
+            //turretSpin.setPosition(0.5);
         }
     }
 
@@ -229,7 +229,7 @@ public class Turret extends SubsystemBase {
     private class StopTurret extends CommandBase {
         @Override
         public void execute() {
-            turretSpin.setPosition(0.5);
+            //turretSpin.setPosition(0.5);
         }
 
         @Override
