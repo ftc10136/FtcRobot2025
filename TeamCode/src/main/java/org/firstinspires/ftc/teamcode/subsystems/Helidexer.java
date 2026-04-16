@@ -22,11 +22,13 @@ public class Helidexer extends SubsystemBase {
     public Helidexer() {
         packet = new TelemetryPacket();
         helixMotor = Robot.opMode.hardwareMap.get(DcMotorEx.class, "Helidexer");
-        helixMotor.setDirection(DcMotor.Direction.FORWARD);
+        helixMotor.setDirection(DcMotor.Direction.REVERSE);
         helixMotor.setTargetPositionTolerance((int)(Robot.RobotConfig.POSITION_TOLERANCE * 0.8));
-        helixMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        helixMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         sensorHome = helixMotor.getCurrentPosition();
+        helixMotor.setTargetPosition(sensorHome);
+        helixMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        helixMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+
         currentBay = 0;
     }
 

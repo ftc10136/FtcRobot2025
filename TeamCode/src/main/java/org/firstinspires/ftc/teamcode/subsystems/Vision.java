@@ -18,8 +18,9 @@ import org.livoniawarriors.RobotUtil;
 import java.util.function.BooleanSupplier;
 
 public class Vision extends SubsystemBase {
-    public final boolean CAMERA_ENABLED = false;
-    private final Limelight3A limelight;
+    public final boolean HUSKYLEN_ENABLED = false;
+    public final boolean LIMELIGHT_ENABLED = false;
+    private Limelight3A limelight;
     private final TelemetryPacket packet;
     private HuskyLens huskyLens;
     private double turretError = 0;
@@ -37,37 +38,42 @@ public class Vision extends SubsystemBase {
     }
     public Vision() {
         packet = new TelemetryPacket();
-        limelight = Robot.opMode.hardwareMap.get(Limelight3A.class, "limelight");
-        limelight.start();
 
-        if (CAMERA_ENABLED) {
+        if (LIMELIGHT_ENABLED) {
+            limelight = Robot.opMode.hardwareMap.get(Limelight3A.class, "limelight");
+            limelight.start();
+            // LimelightPipelines: 1=20/BlueAlliance, 2=24/RedAlliance, 3=20,21,22
+            limelight.pipelineSwitch(6);
+            limelightServo = Robot.opMode.hardwareMap.get(Servo.class, "CameraServo");
+            limelightServo.setPosition(0.4);
+        }
+        if (HUSKYLEN_ENABLED) {
             huskyLens = Robot.opMode.hardwareMap.get(HuskyLens.class, "HuskyLens");
             huskyLens.selectAlgorithm(HuskyLens.Algorithm.COLOR_RECOGNITION);
         }
         blocks = new HuskyLens.Block[0];
 
-        // LimelightPipelines: 1=20/BlueAlliance, 2=24/RedAlliance, 3=20,21,22
-        limelight.pipelineSwitch(6);
         visionPose = new Pose();
         seenMotif = Motifs.PPG;
-
-        limelightServo = Robot.opMode.hardwareMap.get(Servo.class, "CameraServo");
-        //limelightServo.setPosition(0.4);
     }
 
     @Override
     public void periodic() {
-        //limelightServo.setPosition(0.4);
-
-        updateVision();
-        packet.put("Vision/IsConnected", limelight.isConnected());
-        packet.put("Vision/IsRunning", limelight.isRunning());
+        if(LIMELIGHT_ENABLED) {
+            limelightServo.setPosition(0.4);
+            if(!isCameraConnected()) {
+                limelight.pipelineSwitch(6);
+            }
+            packet.put("Vision/IsConnected", limelight.isConnected());
+            packet.put("Vision/IsRunning", limelight.isRunning());
+            updateVision();
+        }
         packet.put("Vision/CameraConnected", isCameraConnected());
         packet.put("Vision/DistToTarget", distToTarget);
         packet.put("Vision/Motif", seenMotif.name());
         packet.put("Vision/TurretError", getTurretError());
 
-        if (CAMERA_ENABLED) {
+        if (HUSKYLEN_ENABLED) {
             //blocks = huskyLens.blocks();
             for (int i = 0; i < blocks.length; i++) {
                 packet.put("Vision/Block/" + i + "/X", blocks[i].x);
@@ -76,9 +82,6 @@ public class Vision extends SubsystemBase {
             }
         }
         Robot.logPacket(packet);
-        if(!isCameraConnected()) {
-            //limelight.pipelineSwitch(6);
-        }
         Robot.opMode.telemetry.addData("Motif", seenMotif.name());
     }
 
@@ -199,7 +202,10 @@ public class Vision extends SubsystemBase {
     }
 
     public boolean isCameraConnected() {
-        return ((System.nanoTime() - lastReading) < 500_000_000) && limelight.isConnected();
+        if(LIMELIGHT_ENABLED) {
+            return ((System.nanoTime() - lastReading) < 500_000_000) && limelight.isConnected();
+        }
+        return false;
     }
 
     public HuskyLens.Block[] getBlocks() {

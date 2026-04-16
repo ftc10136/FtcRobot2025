@@ -30,12 +30,12 @@ public class Shooter extends SubsystemBase {
         TurretShooterMotor.setDirection(DcMotor.Direction.FORWARD);
         TurretShooterMotor.setVelocityPIDFCoefficients(55, 0.01, 0, 12.2);
         TurretShooterMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        TurretShooterMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        TurretShooterMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         TurretShooterMotor2 = (DcMotorEx)Robot.opMode.hardwareMap.get(DcMotor.class, "TurretShooterMotor2");
         TurretShooterMotor2.setDirection(DcMotor.Direction.REVERSE);
         TurretShooterMotor2.setVelocityPIDFCoefficients(55, 0.01, 0, 12.2);
         TurretShooterMotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        TurretShooterMotor2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        TurretShooterMotor2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         atTarget = false;
 
         //shot rpm table, input distance in inches, output rpm
@@ -89,7 +89,7 @@ public class Shooter extends SubsystemBase {
         //TurretShooterMotor.setPower(power);
         //TurretShooterMotor2.setPower(power);
         //hardware based PID shots
-        TurretShooterMotor.setVelocity((28. / 60) * rpm);
+        //TurretShooterMotor.setVelocity((28. / 60) * rpm);
         TurretShooterMotor2.setVelocity((28. / 60) * rpm);
         atTarget = Math.abs(rpm - veloRPM) < 50;
     }

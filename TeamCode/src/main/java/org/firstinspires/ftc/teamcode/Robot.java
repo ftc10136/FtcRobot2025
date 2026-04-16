@@ -240,9 +240,9 @@ public class Robot {
         /// How much power do we add based on the amount of error we have
         public static double SHOOTER_MOTOR_KP = 0.00028;
         public static int INTAKE_SPEED = 1;
-        public static int COUNTS_PER_BAY = 157;
-        public static int POSITION_TOLERANCE = 10;
-        public static double HELIDEXER_P = 1;
+        public static int COUNTS_PER_BAY = 433;
+        public static int POSITION_TOLERANCE = 30;
+        public static double HELIDEXER_P = 0.8;
 
         public static double SPINDEXER_OFFSET_PROG = 0.587;
     }
