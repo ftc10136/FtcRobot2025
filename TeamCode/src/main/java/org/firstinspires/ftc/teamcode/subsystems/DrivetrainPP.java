@@ -187,26 +187,33 @@ public class DrivetrainPP extends SubsystemBase {
     }
 
     public double getGoalDistance() {
+        return getGoalDistance(follower.getPose());
+    }
+    public static double getGoalDistance(Pose pose) {
         Pose goal;
         if (Robot.IsRed) {
-            goal = new Pose(144, 144, 0, PedroCoordinates.INSTANCE);
+            goal = new Pose(138, 144, 0, PedroCoordinates.INSTANCE);
         } else {
-            goal = new Pose(0, 144, 0, PedroCoordinates.INSTANCE);
+            goal = new Pose(6, 144, 0, PedroCoordinates.INSTANCE);
         }
-        var deltaX = goal.getX() - follower.getPose().getX();
-        var deltaY = goal.getY() - follower.getPose().getY();
+        var deltaX = goal.getX() - pose.getX();
+        var deltaY = goal.getY() - pose.getY();
         return Math.sqrt((deltaX * deltaX) + (deltaY * deltaY));
     }
 
     public double getGoalAngle() {
+        return getGoalAngle(follower.getPose());
+    }
+
+    public static double getGoalAngle(Pose pose) {
         Pose goal;
         if(Robot.IsRed) {
-            goal = new Pose(144,144,0, PedroCoordinates.INSTANCE);
+            goal = new Pose(138,144,0, PedroCoordinates.INSTANCE);
         } else {
-            goal = new Pose(0,144,0, PedroCoordinates.INSTANCE);
+            goal = new Pose(6,144,0, PedroCoordinates.INSTANCE);
         }
-        var deltaX = goal.getX() - follower.getPose().getX();
-        var angleRad = Math.acos(deltaX / getGoalDistance());
+        var deltaX = goal.getX() - pose.getX();
+        var angleRad = Math.acos(deltaX / getGoalDistance(pose));
         return 90-Math.toDegrees(angleRad);
     }
 

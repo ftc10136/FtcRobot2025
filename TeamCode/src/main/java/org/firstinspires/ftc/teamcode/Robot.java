@@ -228,7 +228,7 @@ public class Robot {
     @Config
     public static class RobotConfig {
         //read position feedback from the dashboard and this should match
-        public static double SPINDEXER_OFFSET_COMP = 0.287;
+        public static double SPINDEXER_OFFSET_COMP = 0.364;
         public static double CALIBRATE_SHOT_RPM = 1000;
         public static double CALIBRATE_SHOT_HOOD = 0.3;
         public static long SPINDEXER_SHOT_DELAY = 120;
@@ -265,10 +265,13 @@ public class Robot {
                         spindexer.commandFloorLoadUntilBall(1),
                         spindexer.commandFloorLoadUntilBall(2),
                         spindexer.commandFloorLoadUntilBall(3),
-                        turret.setLedCommand(GoBildaLedColors.Orange),
-                        spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.Shoot)
+                        turret.setLedCommand(GoBildaLedColors.Orange)
                 ),
-                intake.runIntake());
+                intake.runIntake()
+        ).andThen(new ParallelCommandGroup(
+                intake.runOuttake().withTimeout(1000),
+                spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.Shoot)
+        ));
     }
 
     public static Command calibrateShooter() {

@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.subsystems;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
@@ -30,6 +31,7 @@ public class Turret extends SubsystemBase {
     private final PIDController pid;
     private long lastTime;
     private double offsetAngle;
+    private ElapsedTime timer;
 
     public Turret() {
         packet = new TelemetryPacket();
@@ -43,6 +45,7 @@ public class Turret extends SubsystemBase {
         lastSensorVoltage = 1.5;
         continuousVoltage = lastSensorVoltage;
         offsetAngle = 0;
+        timer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
         //cannot have I term, as we don't reset the pids in continous modes
         pid = new PIDController(0.0025, 0,0, 0.05);
         resetPid();
@@ -86,6 +89,7 @@ public class Turret extends SubsystemBase {
         var clamp = MathUtil.clamp(angleDeg, -60., 300.);
         long currentTime = System.nanoTime();
         double deltaTime = (currentTime - lastTime) / 1_000_000_000.;
+        boolean inRange = Math.abs(angleDeg - getAngle()) < 1.5;
 
         var output = pid.calculate(getAngle(), clamp, deltaTime);
         if(!Double.isNaN(output)) {
@@ -104,6 +108,10 @@ public class Turret extends SubsystemBase {
             } else if (output > 0 && getAngle() > 300) {
                 output = 0;
             }
+
+            if(inRange) {
+                output = 0;
+            }
             var outClamp = MathUtil.clamp(output + 0.5, 0.35, 0.65);
             turretSpin.setPosition(outClamp);
             packet.put("Turret/OutClamp", outClamp);
@@ -115,7 +123,11 @@ public class Turret extends SubsystemBase {
         packet.put("Turret/DeltaTime", deltaTime);
         Robot.opMode.telemetry.addData("LoopTime", deltaTime);
         packet.put("Turret/RequestAngle", angleDeg);
-        atTarget = Math.abs(angleDeg - getAngle()) < 2;
+
+        if(!inRange) {
+            timer.reset();
+        }
+        atTarget = timer.time() > 100;
     }
 
     private void resetPid() {
@@ -196,6 +208,11 @@ public class Turret extends SubsystemBase {
     private class CenterTurretViaPosition extends CommandBase {
         public CenterTurretViaPosition() {
             addRequirements(Robot.turret);
+        }
+
+        @Override
+        public void initialize() {
+            timer.reset();
         }
 
         @Override
