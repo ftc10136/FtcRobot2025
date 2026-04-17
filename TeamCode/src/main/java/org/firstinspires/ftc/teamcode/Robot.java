@@ -242,6 +242,8 @@ public class Robot {
         public static double SHOOTER_MOTOR_KV = 0.00019;
         /// How much power do we add based on the amount of error we have
         public static double SHOOTER_MOTOR_KP = 0.00028;
+        ///the higher this value, the more of current readings we use
+        public static double SHOOTER_RPM_SMOOTHER = 0.25;
 
         public static double SPINDEXER_OFFSET_PROG = 0.587;
     }
