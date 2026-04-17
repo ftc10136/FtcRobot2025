@@ -44,18 +44,18 @@ public class Shooter extends SubsystemBase {
         //values are from testing calibrateShot command at different distances
         //also set HoodAngle.shootingTable for hood angles
         shootingTable = new InterpolatingDoubleTreeMap();
-        shootingTable.put(34.73, 2528.);
-        shootingTable.put(46.68, 2742.);
-        shootingTable.put(58.66, 2800.);
-        shootingTable.put(70.57, 2975.);
-        shootingTable.put(82.5, 3200.);
-        shootingTable.put(94.68, 3525.);
-        shootingTable.put(106.56, 3800.);
-        shootingTable.put(118.46, 3920.);
-        shootingTable.put(129.94, 4075.);
+        shootingTable.put(34.73, 2728.);
+        shootingTable.put(46.68, 2942.);
+        shootingTable.put(58.66, 3000.);
+        shootingTable.put(70.57, 3175.);
+        shootingTable.put(82.5, 3450.);
+        shootingTable.put(94.68, 3725.);
+        shootingTable.put(106.56, 4000.);
+        shootingTable.put(118.46, 4120.);
+        shootingTable.put(129.94, 4275.);
         shootingTable.put(142.32, 4300.);
-        shootingTable.put(154., 4350.);
-        shootingTable.put(166.28, 4500.);
+        shootingTable.put(154., 4300.);
+        shootingTable.put(166.28, 4350.);
     }
 
     @Override
@@ -78,11 +78,13 @@ public class Shooter extends SubsystemBase {
         packet.put("Shooter/Command", RobotUtil.getCommandName(getCurrentCommand()));
         packet.put("Shooter/AtTarget", atTarget);
         packet.put("Currents/Shooter1", TurretShooterMotor.getCurrent(CurrentUnit.AMPS));
-        packet.put("Currents/Shooter2", TurretShooterMotor.getCurrent(CurrentUnit.AMPS));
+        packet.put("Currents/Shooter2", TurretShooterMotor2.getCurrent(CurrentUnit.AMPS));
         Robot.logPacket(packet);
     }
 
     private void setRpmMotor(double rpm) {
+        packet.put("Shooter/TargetRpm", rpm);
+
         //software based PID
         //double feedForward = Robot.RobotConfig.SHOOTER_MOTOR_KS + (rpm * Robot.RobotConfig.SHOOTER_MOTOR_KV);
         //double feedBack = (rpm - veloRPM) * Robot.RobotConfig.SHOOTER_MOTOR_KP;
@@ -92,10 +94,27 @@ public class Shooter extends SubsystemBase {
         //}
         //TurretShooterMotor.setPower(power);
         //TurretShooterMotor2.setPower(power);
+
         //hardware based PID shots
-        TurretShooterMotor.setVelocity((28. / 60) * rpm);
-        TurretShooterMotor2.setVelocity((28. / 60) * rpm);
-        atTarget = Math.abs(rpm - smoothRpm) < 50;
+        double deltaRpm = rpm - smoothRpm;
+        if (deltaRpm > 120) {
+            //need to command a bigger power to catch up faster.  (This might be better P tuning)
+            double power = (rpm / 6000.) * 1.22;
+            TurretShooterMotor.setPower(power);
+            TurretShooterMotor2.setPower(power);
+        }
+        else if (deltaRpm < -120) {
+            //need to slow down hard by commanding a slower motor power.  When the power is too far off,
+            //the rev controller drops to 0 power, which would be coast or brake mode kicking in,
+            //not motor forcing slowdown
+            double power = (rpm / 6000.) * 0.93;
+            TurretShooterMotor.setPower(power);
+            TurretShooterMotor2.setPower(power);
+        } else {
+            TurretShooterMotor.setVelocity((28. / 60) * rpm);
+            TurretShooterMotor2.setVelocity((28. / 60) * rpm);
+        }
+        atTarget = Math.abs(deltaRpm) < 50;
     }
 
     public boolean atTarget() {
