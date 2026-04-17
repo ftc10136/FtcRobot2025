@@ -11,10 +11,12 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.Robot;
 import org.livoniawarriors.RobotUtil;
 
+import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
 public class Vision extends SubsystemBase {
@@ -28,7 +30,7 @@ public class Vision extends SubsystemBase {
     private HuskyLens.Block[] blocks;
     private Servo limelightServo;
     private Motifs seenMotif;
-    private Pose visionPose;
+    private Optional<Pose> visionPose;
 
     public enum Motifs {
         GPP, //21
@@ -48,7 +50,7 @@ public class Vision extends SubsystemBase {
 
         // LimelightPipelines: 1=20/BlueAlliance, 2=24/RedAlliance, 3=20,21,22
         limelight.pipelineSwitch(6);
-        visionPose = new Pose();
+        visionPose = Optional.empty();
         seenMotif = Motifs.PPG;
 
         limelightServo = Robot.opMode.hardwareMap.get(Servo.class, "CameraServo");
@@ -77,7 +79,7 @@ public class Vision extends SubsystemBase {
         }
         Robot.logPacket(packet);
         if(!isCameraConnected()) {
-            //limelight.pipelineSwitch(6);
+            limelight.pipelineSwitch(6);
         }
         Robot.opMode.telemetry.addData("Motif", seenMotif.name());
     }
@@ -89,10 +91,10 @@ public class Vision extends SubsystemBase {
         var result = limelight.getLatestResult();
         if (result != null) {
             var mt2Pose = result.getBotpose_MT2();
-            visionPose = new Pose(-mt2Pose.getPosition().y, mt2Pose.getPosition().x, mt2Pose.getOrientation().getYaw(AngleUnit.RADIANS), FTCCoordinates.INSTANCE).getAsCoordinateSystem(PedroCoordinates.INSTANCE);
             logPose(result.getBotpose(), "BotPose");
             logPose(mt2Pose, "BotPose_MT2");
             var fiducialResults = result.getFiducialResults();
+            boolean hasLocatingTag = false;
             for (LLResultTypes.FiducialResult fiducialResult : fiducialResults) {
                 var tagId = fiducialResult.getFiducialId();
                 packet.put("Vision/TagId", tagId);
@@ -114,7 +116,20 @@ public class Vision extends SubsystemBase {
                 } else if(tagId == 23) {
                     seenMotif = Motifs.PPG;
                 }
+
+                if(tagId == 20 || tagId == 24) {
+                    hasLocatingTag = true;
+                }
             }
+
+            if (hasLocatingTag) {
+                var pos = mt2Pose.getPosition().toUnit(DistanceUnit.INCH);
+                visionPose = Optional.of(new Pose(72 + pos.y, 72 - pos.x, result.getBotpose().getOrientation().getYaw(AngleUnit.RADIANS) - (Math.PI / 2), PedroCoordinates.INSTANCE));
+            } else {
+                visionPose = Optional.empty();
+            }
+        } else {
+            visionPose = Optional.empty();
         }
     }
 
@@ -126,7 +141,7 @@ public class Vision extends SubsystemBase {
         packet.put("Vision/Pedro " + name + " heading", pedroPose.getHeading()+Math.PI);
     }
 
-    public Pose getVisionPose() {
+    public Optional<Pose> getVisionPose() {
         return visionPose;
     }
 

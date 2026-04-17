@@ -134,4 +134,8 @@ public class Controls {
             }
         };
     }
+
+    public boolean resetPose() {
+        return Robot.opMode.gamepad1.guide;
+    }
 }
