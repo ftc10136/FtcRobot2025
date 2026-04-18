@@ -62,7 +62,8 @@ public class Robot {
 
     public enum RobotTypeEnum {
         Competition,
-        Programming
+        Programming,
+        Helidexer
     }
 
     public static void Init(OpMode inMode) {
@@ -70,7 +71,7 @@ public class Robot {
         isEnabled = false;
         CommandScheduler.getInstance().setBulkReading(opMode.hardwareMap, LynxModule.BulkCachingMode.AUTO);
         packet = new TelemetryPacket();
-        var pose = new Pose(72,72, Math.toRadians(135), PedroCoordinates.INSTANCE);
+        var pose = new Pose(72,72, Math.toRadians(180), PedroCoordinates.INSTANCE);
         //if we have already run, clear out the old running subsystems
         if (drivetrain != null) {
             pose = drivetrain.getPose();

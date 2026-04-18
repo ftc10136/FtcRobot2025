@@ -14,6 +14,21 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.Robot;
 
 public class Constants {
+    public static FollowerConstants followerConstantsHeli = new FollowerConstants()
+            .mass(13.38)  //in KG?, 29.5 lbs on 3/7/26
+            .forwardZeroPowerAcceleration(-10.3166)
+            .lateralZeroPowerAcceleration(-8.1215);
+
+    public static PinpointConstants localizerConstantsHeli = new PinpointConstants()
+            .forwardPodY(-7.625)     //forward pod -1.4375, -7.625
+            .strafePodX(-0.1875)   //strafe  pod -0.1875, 7.5
+            .distanceUnit(DistanceUnit.INCH)
+            .hardwareMapName("pinpoint")
+            .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
+            .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
+            .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED);
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
     public static FollowerConstants followerConstantsComp = new FollowerConstants()
             .mass(13.38)  //in KG?, 29.5 lbs on 3/7/26
             .forwardZeroPowerAcceleration(-10.3166)
@@ -60,12 +75,18 @@ public class Constants {
             .yVelocity(46.3710);
 
     public static Follower createFollower(HardwareMap hardwareMap) {
-        if(Robot.RobotType == Robot.RobotTypeEnum.Competition) {
-            return new FollowerBuilder(followerConstantsComp, hardwareMap)
+        if(Robot.RobotType == Robot.RobotTypeEnum.Helidexer) {
+            return new FollowerBuilder(followerConstantsHeli, hardwareMap)
                     .pathConstraints(pathConstraints)
-                    .pinpointLocalizer(localizerConstantsComp)  //must be before mecanum!
+                    .pinpointLocalizer(localizerConstantsHeli)  //must be before mecanum!
                     .mecanumDrivetrain(driveConstants)
                     .build();
+        } else if(Robot.RobotType == Robot.RobotTypeEnum.Competition) {
+                return new FollowerBuilder(followerConstantsComp, hardwareMap)
+                        .pathConstraints(pathConstraints)
+                        .pinpointLocalizer(localizerConstantsComp)  //must be before mecanum!
+                        .mecanumDrivetrain(driveConstants)
+                        .build();
         } else {
             return new FollowerBuilder(followerConstantsProg, hardwareMap)
                     .pathConstraints(pathConstraints)
