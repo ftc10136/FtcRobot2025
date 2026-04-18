@@ -114,6 +114,7 @@ public class Robot {
 
         double deltaTime = (System.nanoTime() - startTime) / 1_000_000.;
         packet.put("TimingMs/LoggingTime", loggingTime);
+        packet.put("TimingMs/CommandTime", deltaTime);
         logPacket(packet);
 
         opMode.telemetry.addData("TurretAngle", turret.getAngle());

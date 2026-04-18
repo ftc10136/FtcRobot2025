@@ -150,7 +150,7 @@ public class Spindexer extends SubsystemBase {
         if (Robot.RobotType == Robot.RobotTypeEnum.Programming) {
             return 0.188;
         } else {
-            return 0.133;
+            return 0.139;
         }
     }
 
