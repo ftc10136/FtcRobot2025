@@ -463,9 +463,12 @@ public class Robot {
 
     public static Command autoShootMotif() {
         return new SequentialCommandGroup(
-                new ConditionalCommand(fastShot(1), new InstantCommand(), spindexer.hasBall(1)),
-                new ConditionalCommand(fastShot(2), new InstantCommand(), spindexer.hasBall(2)),
-                new ConditionalCommand(fastShot(3), new InstantCommand(), spindexer.hasBall(3)),
+                //new ConditionalCommand(fastShot(1), new InstantCommand(), spindexer.hasBall(1)),
+                //new ConditionalCommand(fastShot(2), new InstantCommand(), spindexer.hasBall(2)),
+                //new ConditionalCommand(fastShot(3), new InstantCommand(), spindexer.hasBall(3)),
+                fastShot(1),
+                fastShot(2),
+                fastShot(3),
                 ballevator.commandDown()
         );
     }
