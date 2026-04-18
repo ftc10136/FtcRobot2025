@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -23,7 +24,6 @@ public class Turret extends SubsystemBase {
     private final Servo topLight;
     private double estimatedAngle;
     private boolean atTarget;
-    private boolean visionAiming;
     private double lastSensorVoltage;
     private double lastGoodVoltage;
     private double continuousVoltage;
@@ -31,7 +31,7 @@ public class Turret extends SubsystemBase {
     private final PIDController pid;
     private long lastTime;
     private double offsetAngle;
-    private ElapsedTime timer;
+    private final ElapsedTime timer;
 
     public Turret() {
         packet = new TelemetryPacket();
@@ -40,7 +40,6 @@ public class Turret extends SubsystemBase {
         turretSpin.setDirection(Servo.Direction.FORWARD);
         topLight = Robot.opMode.hardwareMap.get(Servo.class, "RGB_VisionAcquired");
         atTarget = false;
-        visionAiming = false;
         //start in middle of sensor range
         lastSensorVoltage = 1.5;
         continuousVoltage = lastSensorVoltage;
@@ -159,6 +158,9 @@ public class Turret extends SubsystemBase {
         return new StopTurret();
     }
 
+    public Command preShotTurret(Pose shootingPose) {
+        return new PreShotTurret(shootingPose);
+    }
 
     public Command commandTurretAngle(double angleDeg) {
         return new CommandTurretAngle(angleDeg);
@@ -229,6 +231,27 @@ public class Turret extends SubsystemBase {
         @Override
         public void end(boolean interrupted) {
             turretSpin.setPosition(0.5);
+        }
+    }
+
+    private class PreShotTurret extends CommandBase {
+        Pose pose;
+        double angle;
+        public PreShotTurret(Pose shootingPose) {
+            this.pose = shootingPose;
+            addRequirements(Robot.turret);
+        }
+
+        @Override
+        public void initialize() {
+            angle = DrivetrainPP.getGoalAngle(pose) - (90 - Math.toDegrees(pose.getHeading()));
+            timer.reset();
+            setAngle(angle);
+        }
+
+        @Override
+        public void execute() {
+            setAngle(angle);
         }
     }
 
