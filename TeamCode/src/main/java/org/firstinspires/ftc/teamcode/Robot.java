@@ -251,7 +251,7 @@ public class Robot {
                 ),
                 intake.runIntake()
         ).andThen(new ParallelCommandGroup(
-                intake.runOuttake().withTimeout(1000),
+                new WaitCommand(250).andThen(intake.runOuttake().withTimeout(1000)),
                 spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.Shoot)
         ));
     }
@@ -466,7 +466,6 @@ public class Robot {
                 new ConditionalCommand(fastShot(1), new InstantCommand(), spindexer.hasBall(1)),
                 new ConditionalCommand(fastShot(2), new InstantCommand(), spindexer.hasBall(2)),
                 new ConditionalCommand(fastShot(3), new InstantCommand(), spindexer.hasBall(3)),
-                turret.setLedCommand(GoBildaLedColors.Off),
                 ballevator.commandDown()
         );
     }
