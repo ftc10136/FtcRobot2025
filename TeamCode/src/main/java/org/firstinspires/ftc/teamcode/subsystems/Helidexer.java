@@ -15,6 +15,8 @@ import org.livoniawarriors.GoBildaLedColors;
 import org.livoniawarriors.RobotUtil;
 
 import java.util.HashMap;
+import java.util.Objects;
+import java.util.function.BooleanSupplier;
 
 import edu.wpi.first.wpilibj.util.Color;
 
@@ -95,6 +97,15 @@ public class Helidexer extends SubsystemBase {
         return bayStateToLedCommands.get(state);
     }
 
+    public BooleanSupplier hasBall(int bay) {
+        return new BooleanSupplier() {
+            @Override
+            public boolean getAsBoolean() {
+                return Objects.requireNonNull(bays.get("Bay" + bay)).getState() != SpinBay.BayState.None;
+            }
+        };
+    }
+
     public void resetHome() {
         sensorHome = helixMotor.getCurrentPosition();
     }
@@ -113,12 +124,26 @@ public class Helidexer extends SubsystemBase {
         };
     }
 
+    private int getBayPos(int bay) {
+        return sensorHome + (bay * Robot.RobotConfig.COUNTS_PER_BAY);
+    }
+
+    public void resetBayStates() {
+        bays.get("Bay1").resetBayState();
+        bays.get("Bay2").resetBayState();
+        bays.get("Bay3").resetBayState();
+    }
+
     public Command advanceBay() {
         return new AdvanceBay();
     }
 
     public Command shootAll() {
         return new ShootAll();
+    }
+
+    public Command primeForShot() {
+        return new PrimeForShot();
     }
 
     private class AdvanceBay extends CommandBase {
@@ -133,7 +158,7 @@ public class Helidexer extends SubsystemBase {
         @Override
         public void initialize() {
             currentBay++;
-            pos = sensorHome + (currentBay * Robot.RobotConfig.COUNTS_PER_BAY);
+            pos = getBayPos(currentBay);
             helixMotor.setTargetPosition(pos);
             helixMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             helixMotor.setPower(Robot.RobotConfig.HELIDEXER_P);
@@ -183,6 +208,49 @@ public class Helidexer extends SubsystemBase {
             pos = sensorHome;
             helixMotor.setTargetPosition(pos);
             helixMotor.setPower(-Robot.RobotConfig.HELIDEXER_P);
+        }
+
+        @Override
+        public boolean isFinished() {
+            return Math.abs(helixMotor.getCurrentPosition() - pos) < Robot.RobotConfig.POSITION_TOLERANCE;
+        }
+
+        @Override
+        public void end(boolean interrupted) {
+            resetBayStates();
+        }
+    }
+
+    private class PrimeForShot extends CommandBase {
+        int pos;
+        public PrimeForShot() {
+            addRequirements(Robot.helidexer);
+        }
+
+        @Override
+        public void initialize() {
+            int minBays;
+            //check if we have gone enough bays to shoot
+            if(bays.get("Bay3").getState() != SpinBay.BayState.None) {
+                minBays = 3;
+            } else if (bays.get("Bay2").getState() != SpinBay.BayState.None) {
+                minBays = 2;
+            } else if (bays.get("Bay1").getState() != SpinBay.BayState.None) {
+                minBays = 1;
+            } else {
+                minBays = 0;
+            }
+
+            int minPos = getBayPos(minBays);
+            if(helixMotor.getCurrentPosition() > minPos) {
+                //we are in position, no need to change
+                pos = helixMotor.getCurrentPosition();
+            } else {
+                pos = minPos;
+                helixMotor.setTargetPosition(pos);
+                helixMotor.setPower(Robot.RobotConfig.HELIDEXER_P);
+            }
+
         }
 
         @Override

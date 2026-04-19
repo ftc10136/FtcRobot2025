@@ -27,12 +27,12 @@ public class Shooter extends SubsystemBase {
         //batteryVoltage = Robot.opMode.hardwareMap.get(VoltageSensor.class, "Control Hub");
         TurretShooterMotor = (DcMotorEx)Robot.opMode.hardwareMap.get(DcMotor.class, "TurretShooterMotor");
         TurretShooterMotor.setDirection(DcMotor.Direction.FORWARD);
-        TurretShooterMotor.setVelocityPIDFCoefficients(45, 0.01, 0, 12.2);
+        TurretShooterMotor.setVelocityPIDFCoefficients(55, 0.04, 0, 12.2);
         TurretShooterMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         TurretShooterMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         TurretShooterMotor2 = (DcMotorEx)Robot.opMode.hardwareMap.get(DcMotor.class, "TurretShooterMotor2");
         TurretShooterMotor2.setDirection(DcMotor.Direction.REVERSE);
-        TurretShooterMotor2.setVelocityPIDFCoefficients(45, 0.01, 0, 12.2);
+        TurretShooterMotor2.setVelocityPIDFCoefficients(55, 0.04, 0, 12.2);
         TurretShooterMotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         TurretShooterMotor2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 		smoothRpm = 0;

@@ -16,6 +16,7 @@ import com.seattlesolvers.solverslib.command.ConditionalCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.ParallelDeadlineGroup;
+import com.seattlesolvers.solverslib.command.ParallelRaceGroup;
 import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.SelectCommand;
 import com.seattlesolvers.solverslib.command.Subsystem;
@@ -149,14 +150,14 @@ public class Robot {
         drivetrain.startTeleopDrive(true);
         drivetrain.setDefaultCommand(drivetrain.teleopDrive());
         //turret.setDefaultCommand(turret.centerTurretViaPosition().perpetually());
-        //shooter.setDefaultCommand(shooter.autoShotRpm().perpetually());
+        shooter.setDefaultCommand(shooter.autoShotRpm().perpetually());
         hoodAngle.setDefaultCommand(hoodAngle.autoShotHood().perpetually());
         helidexer.resetHome();
 
         //button commands
         controls.floorLoadActive().toggleWhenActive(commandFloorLoad());
         controls.resetFieldOriented().whenActive(drivetrain.resetFieldOriented());
-        controls.shootActive().toggleWhenActive(helidexer.shootAll());
+        controls.shootActive().toggleWhenActive(shootAllBalls());
         controls.bumpSpindexerLeft().whileActiveContinuous(helidexer.shootAll());
         controls.bumpSpindexerRight().whileActiveContinuous(helidexer.advanceBay());
         controls.shootMotif().whileActiveContinuous(shootMotif());
@@ -261,38 +262,15 @@ public class Robot {
         );
     }
 
-    public static Command shootBall(int bay) {
-        var fastTimer = new LoggerCommandTimer("FastBall" + bay);
-        return new SequentialCommandGroup(
-                fastTimer.startLog(),
-                /*ballevator.commandDown().alongWith(fastTimer.addEntry(bay + "BallStart")),
-                spindexer.commandSpindexerPos(bay, Spindexer.SpindexerType.Shoot).alongWith(fastTimer.addEntry(bay + "BallElevatorDown")),
-                new WaitCommand(RobotConfig.SPINDEXER_SHOT_DELAY).alongWith(fastTimer.addEntry(bay + "BallSpindexer")),
-                ballevator.commandUp().withTimeout(RobotConfig.BALLEVATOR_UP_TIMEOUT).alongWith(fastTimer.addEntry(bay + "BallSleep")),
-                spindexer.clearBayState(bay).alongWith(fastTimer.addEntry(bay + "BallElevatorUp")),*/
-                fastTimer.finishLog(bay + "BallCleared")
-
-        );
-    }
-
-    public static Command fastShot(int bay) {
-        return new FastSequentialCommand(bay);
-    }
-
     public static Command shootAllBalls() {
         return new ParallelDeadlineGroup(
                 new SequentialCommandGroup(
-                        new WaitUntilCommand(readyToShoot()).withTimeout(2000),
-                        logTimer.addEntry("StartShot"),
-                        //new ConditionalCommand(fastShot(1), new InstantCommand(), spindexer.hasBall(1)),
-                        logTimer.addEntry("Ball1Shot"),
-                        //new ConditionalCommand(fastShot(2), new InstantCommand(), spindexer.hasBall(2)),
-                        logTimer.addEntry("Ball2Shot"),
-                        //new ConditionalCommand(fastShot(3), new InstantCommand(), spindexer.hasBall(3)),
-                        logTimer.finishLog("Ball3Shot"),
+                        new ParallelCommandGroup(
+                                new WaitUntilCommand(readyToShoot()).withTimeout(2000),
+                                helidexer.primeForShot()
+                        ),
+                        helidexer.shootAll(),
                         turret.setLedCommand(GoBildaLedColors.Off),
-                        //ballevator.commandDown(),
-                        //spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.FloorIntake),
                         new InstantCommand(() -> {
                             CommandScheduler.getInstance().cancelAll();
                             CommandScheduler.getInstance().schedule(commandFloorLoad());
@@ -313,39 +291,7 @@ public class Robot {
         //map.put(Vision.Motifs.PPG, shootMotif(Spindexer.BayState.Purple, Spindexer.BayState.Purple, Spindexer.BayState.Green));
         return new SelectCommand(map,() -> Robot.vision.getSeenMotif());
     }
-/*
-    public static Command shootMotif(Spindexer.BayState color1, Spindexer.BayState color2, Spindexer.BayState color3) {
-        return new ParallelDeadlineGroup(
-                new SequentialCommandGroup(
-                        //this is needed to run the spindexer initially to "wake up" the servo
-                        ballevator.commandDown(),
-                        spindexer.commandSpindexerPos(Spindexer.getOffset() + 0.2825).withTimeout(100),
-                        spindexer.commandSpindexerPos(Spindexer.getOffset() + 0.2525).withTimeout(100),
-                        spindexer.commandSpindexerColor(color1),
-                        new WaitCommand(RobotConfig.SPINDEXER_SHOT_DELAY),
-                        new WaitUntilCommand(readyToShoot()).withTimeout(2000),
-                        ballevator.commandUp().withTimeout(RobotConfig.BALLEVATOR_UP_TIMEOUT),
-                        spindexer.clearCurrentBay(),
-                        ballevator.commandDown(),
-                        spindexer.commandSpindexerColor(color2),
-                        new WaitCommand(RobotConfig.SPINDEXER_SHOT_DELAY),
-                        ballevator.commandUp().withTimeout(RobotConfig.BALLEVATOR_UP_TIMEOUT),
-                        spindexer.clearCurrentBay(),
-                        ballevator.commandDown(),
-                        spindexer.commandSpindexerColor(color3),
-                        new WaitCommand(RobotConfig.SPINDEXER_SHOT_DELAY),
-                        ballevator.commandUp().withTimeout(RobotConfig.BALLEVATOR_UP_TIMEOUT),
-                        spindexer.clearCurrentBay(),
-                        ballevator.commandDown(),
-                        turret.setLedCommand(GoBildaLedColors.Off),
-                        spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.FloorIntake)
-                ),
-                shooter.autoShotRpm().perpetually(),
-                hoodAngle.autoShotHood().perpetually(),
-                turret.centerTurretViaPosition()
-        );
-    }
-*/
+
     public static Command flipAlliance() {
         return new CommandBase() {
             @Override
@@ -369,68 +315,6 @@ public class Robot {
         }
     }
 
-    private static class FastSequentialCommand extends CommandBase {
-
-        private final int bay;
-        private LoggerCommandTimer fastTimer;
-
-        public FastSequentialCommand(int bay) {
-            this.bay = bay;
-        }
-
-        @Override
-        public void initialize() {
-            fastTimer = new LoggerCommandTimer("FastBall" + bay);
-            var allHubs = opMode.hardwareMap.getAll(LynxModule.class);
-            for (LynxModule hub : allHubs) {
-                hub.setBulkCachingMode(LynxModule.BulkCachingMode.OFF);
-            }
-        }
-
-        @Override
-        public void execute() {
-            var sequence = List.of(
-                    fastTimer.startLog(),
-                    turret.stopTurret(),
-                    drivetrain.holdAtSpot(),
-                    fastTimer.addEntry(bay + "BallStart"),
-                    //ballevator.commandDown(),
-                    fastTimer.addEntry(bay + "BallElevatorDown"),
-                    //spindexer.commandSpindexerPos(bay, Spindexer.SpindexerType.Shoot),
-                    fastTimer.addEntry(bay + "BallSpindexer"),
-                    new WaitCommand(RobotConfig.SPINDEXER_SHOT_DELAY),
-                    fastTimer.addEntry(bay + "BallSleep"),
-                    //ballevator.commandUp().withTimeout(RobotConfig.BALLEVATOR_UP_TIMEOUT),
-                    fastTimer.addEntry(bay + "BallElevatorUp"),
-                    //spindexer.clearBayState(bay),
-                    fastTimer.finishLog(bay + "BallCleared")
-            );
-            for(var command : sequence) {
-                runCommand(command);
-            }
-        }
-
-        @Override
-        public void end(boolean interrupted) {
-            CommandScheduler.getInstance().setBulkReading(opMode.hardwareMap, LynxModule.BulkCachingMode.AUTO);
-        }
-
-        @Override
-        public boolean isFinished() {
-            return true;
-        }
-
-        private void runCommand(Command command) {
-            Timing.Timer timer = new Timing.Timer(500, TimeUnit.MILLISECONDS);
-            command.initialize();
-            timer.start();
-            do {
-                command.execute();
-            } while(!command.isFinished() && !timer.done());
-            command.end(timer.done());
-        }
-    }
-
     public static Command resetRobot(Pose startPose) {
         return new ParallelCommandGroup(
                 drivetrain.DriveToPose(startPose),
@@ -448,14 +332,6 @@ public class Robot {
     }
 
     public static Command autoShootMotif() {
-        return new SequentialCommandGroup(
-                //new ConditionalCommand(fastShot(1), new InstantCommand(), spindexer.hasBall(1)),
-                //new ConditionalCommand(fastShot(2), new InstantCommand(), spindexer.hasBall(2)),
-                //new ConditionalCommand(fastShot(3), new InstantCommand(), spindexer.hasBall(3)),
-                fastShot(1),
-                fastShot(2),
-                fastShot(3)
-                //ballevator.commandDown()
-        );
+        return shootMotif();
     }
 }
