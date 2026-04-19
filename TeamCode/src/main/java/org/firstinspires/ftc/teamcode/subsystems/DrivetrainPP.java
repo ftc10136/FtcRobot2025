@@ -84,6 +84,16 @@ public class DrivetrainPP extends SubsystemBase {
             packet.put("Drivetrain/" + motorName + "/Velocity", motor.getVelocity());
             packet.put("Currents/" + motorName, motor.getCurrent(CurrentUnit.AMPS));
         }
+
+        if (Robot.controls.resetPose()) {
+            var visionPose = Robot.vision.getVisionPose();
+            if (visionPose.isPresent()) {
+                Robot.opMode.telemetry.addLine("PedroPose: " + getPose());
+                Robot.opMode.telemetry.addLine("VisionPose: " + Robot.vision.getVisionPose());
+                setPose(visionPose.get());
+            }
+        }
+
         Robot.logPacket(packet);
     }
 
@@ -98,6 +108,7 @@ public class DrivetrainPP extends SubsystemBase {
     public Command holdAtSpot() {
         return new HoldAtSpot();
     }
+
     public Command followPath(PathChain path) {
         return followPath(path, true);
     }
@@ -176,30 +187,33 @@ public class DrivetrainPP extends SubsystemBase {
     }
 
     public double getGoalDistance() {
-        //if(Robot.vision.isCameraConnected()) {
-        //    return Robot.vision.getDistance();
-        //} else {
-            Pose goal;
-            if (Robot.IsRed) {
-                goal = new Pose(144, 144, 0, PedroCoordinates.INSTANCE);
-            } else {
-                goal = new Pose(0, 144, 0, PedroCoordinates.INSTANCE);
-            }
-            var deltaX = goal.getX() - follower.getPose().getX();
-            var deltaY = goal.getY() - follower.getPose().getY();
-            return Math.sqrt((deltaX * deltaX) + (deltaY * deltaY));
-        //}
+        return getGoalDistance(follower.getPose());
+    }
+    public static double getGoalDistance(Pose pose) {
+        Pose goal;
+        if (Robot.IsRed) {
+            goal = new Pose(138, 144, 0, PedroCoordinates.INSTANCE);
+        } else {
+            goal = new Pose(6, 144, 0, PedroCoordinates.INSTANCE);
+        }
+        var deltaX = goal.getX() - pose.getX();
+        var deltaY = goal.getY() - pose.getY();
+        return Math.sqrt((deltaX * deltaX) + (deltaY * deltaY));
     }
 
     public double getGoalAngle() {
+        return getGoalAngle(follower.getPose());
+    }
+
+    public static double getGoalAngle(Pose pose) {
         Pose goal;
         if(Robot.IsRed) {
-            goal = new Pose(144,144,0, PedroCoordinates.INSTANCE);
+            goal = new Pose(138,144,0, PedroCoordinates.INSTANCE);
         } else {
-            goal = new Pose(0,144,0, PedroCoordinates.INSTANCE);
+            goal = new Pose(6,144,0, PedroCoordinates.INSTANCE);
         }
-        var deltaX = goal.getX() - follower.getPose().getX();
-        var angleRad = Math.acos(deltaX / getGoalDistance());
+        var deltaX = goal.getX() - pose.getX();
+        var angleRad = Math.acos(deltaX / getGoalDistance(pose));
         return 90-Math.toDegrees(angleRad);
     }
 

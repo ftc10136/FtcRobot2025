@@ -154,7 +154,6 @@ public class Robot {
         helidexer.resetHome();
 
         //button commands
-        controls.hpLoadActive().whileActiveContinuous(commandHumanLoad());
         controls.floorLoadActive().toggleWhenActive(commandFloorLoad());
         controls.resetFieldOriented().whenActive(drivetrain.resetFieldOriented());
         controls.shootActive().toggleWhenActive(helidexer.shootAll());
@@ -210,14 +209,11 @@ public class Robot {
 
     @Config
     public static class RobotConfig {
-        //read position feedback from the dashboard and this should match
-        public static double SPINDEXER_OFFSET_COMP = 0.287;
         public static double CALIBRATE_SHOT_RPM = 1000;
         public static double CALIBRATE_SHOT_HOOD = 0.3;
         public static long SPINDEXER_SHOT_DELAY = 120;
-        public static long BALLEVATOR_UP_TIMEOUT = 300;
-        /// How long must a ball be read before we update the bay status with a ball
-        public static double BALL_BAY_TIME_MS = 1;
+        /// How long must a ball be read before we update the bay status with a color
+        public static double BALL_BAY_TIME_MS = 15;
         public static double TURRET_OFFSET_DEG = 26.3;
         /// How much power do we need to start the motor from zero
         public static double SHOOTER_MOTOR_KS = 0.02;
@@ -230,17 +226,6 @@ public class Robot {
         public static int POSITION_TOLERANCE = 30;
         public static double HELIDEXER_P = 0.7;
 		public static double SHOOTER_RPM_SMOOTHER = 0.25;
-
-        public static double SPINDEXER_OFFSET_PROG = 0.587;
-    }
-
-    public static Command commandHumanLoad() {
-        return new SequentialCommandGroup(
-                /*ballevator.commandDown(),
-                spindexer.commandHpLoadUntilBall(1),
-                spindexer.commandHpLoadUntilBall(2),
-                spindexer.commandHpLoadUntilBall(3)*/
-        );
     }
 
     public static Command commandFloorLoad() {
@@ -444,5 +429,33 @@ public class Robot {
             } while(!command.isFinished() && !timer.done());
             command.end(timer.done());
         }
+    }
+
+    public static Command resetRobot(Pose startPose) {
+        return new ParallelCommandGroup(
+                drivetrain.DriveToPose(startPose),
+                turret.commandTurretAngle(0),
+                shooter.setRpm(0)
+        );
+    }
+
+    public static Command presetShot(Pose shootingPose) {
+        return new ParallelCommandGroup(
+                shooter.preShotRpm(shootingPose),
+                turret.preShotTurret(shootingPose),
+                hoodAngle.preShotHood(shootingPose)
+        );
+    }
+
+    public static Command autoShootMotif() {
+        return new SequentialCommandGroup(
+                //new ConditionalCommand(fastShot(1), new InstantCommand(), spindexer.hasBall(1)),
+                //new ConditionalCommand(fastShot(2), new InstantCommand(), spindexer.hasBall(2)),
+                //new ConditionalCommand(fastShot(3), new InstantCommand(), spindexer.hasBall(3)),
+                fastShot(1),
+                fastShot(2),
+                fastShot(3)
+                //ballevator.commandDown()
+        );
     }
 }

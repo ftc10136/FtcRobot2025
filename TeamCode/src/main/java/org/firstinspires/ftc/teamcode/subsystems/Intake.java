@@ -42,7 +42,7 @@ public class Intake extends SubsystemBase {
             addRequirements(Robot.intake);
         }
         @Override
-        public void execute() {
+        public void initialize() {
             Intake_Motor.setPower(Robot.RobotConfig.INTAKE_SPEED);
         }
         @Override
@@ -56,7 +56,7 @@ public class Intake extends SubsystemBase {
             addRequirements(Robot.intake);
         }
         @Override
-        public void execute() {
+        public void initialize() {
             Intake_Motor.setPower(-Robot.RobotConfig.INTAKE_SPEED);
         }
         @Override

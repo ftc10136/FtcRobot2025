@@ -1,10 +1,9 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.VoltageSensor;
-import com.qualcomm.robotcore.util.Range;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
@@ -95,9 +94,24 @@ public class Shooter extends SubsystemBase {
         //TurretShooterMotor2.setPower(power);
 
         //hardware based PID shots
-		double deltaRpm = rpm - smoothRpm;
-        TurretShooterMotor.setVelocity((28. / 60) * rpm);
-        TurretShooterMotor2.setVelocity((28. / 60) * rpm);
+        double deltaRpm = rpm - smoothRpm;
+        if (deltaRpm > 120) {
+            //need to command a bigger power to catch up faster.  (This might be better P tuning)
+            double power = (rpm / 6000.) * 1.22;
+            TurretShooterMotor.setPower(power);
+            TurretShooterMotor2.setPower(power);
+        }
+        else if (deltaRpm < -120) {
+            //need to slow down hard by commanding a slower motor power.  When the power is too far off,
+            //the rev controller drops to 0 power, which would be coast or brake mode kicking in,
+            //not motor forcing slowdown
+            double power = (rpm / 6000.) * 0.93;
+            TurretShooterMotor.setPower(power);
+            TurretShooterMotor2.setPower(power);
+        } else {
+            TurretShooterMotor.setVelocity((28. / 60) * rpm);
+            TurretShooterMotor2.setVelocity((28. / 60) * rpm);
+        }
         atTarget = Math.abs(deltaRpm) < 50;
     }
 
@@ -115,6 +129,10 @@ public class Shooter extends SubsystemBase {
 
     public Command autoShotRpm() {
         return new AutoShotRpm();
+    }
+
+    public Command preShotRpm(Pose shootingPose) {
+        return new PreShotRpm(shootingPose);
     }
 
     private class SetRpm extends CommandBase {
@@ -141,6 +159,25 @@ public class Shooter extends SubsystemBase {
         public void execute() {
             double dist = Robot.drivetrain.getGoalDistance();
             var rpm = shootingTable.get(dist);
+            setRpmMotor(rpm);
+        }
+    }
+
+    private class PreShotRpm extends CommandBase {
+        Pose pose;
+        double rpm;
+        public PreShotRpm(Pose shootingPose) {
+            this.pose = shootingPose;
+            addRequirements(Robot.shooter);
+        }
+        @Override
+        public void initialize() {
+            double dist = DrivetrainPP.getGoalDistance(pose);
+            rpm = shootingTable.get(dist);
+            setRpmMotor(rpm);
+        }
+        @Override
+        public void execute() {
             setRpmMotor(rpm);
         }
     }

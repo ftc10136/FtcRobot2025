@@ -1,8 +1,10 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
@@ -22,7 +24,6 @@ public class Turret extends SubsystemBase {
     private final Servo topLight;
     private double estimatedAngle;
     private boolean atTarget;
-    private boolean visionAiming;
     private double lastSensorVoltage;
     private double lastGoodVoltage;
     private double continuousVoltage;
@@ -30,6 +31,7 @@ public class Turret extends SubsystemBase {
     private final PIDController pid;
     private long lastTime;
     private double offsetAngle;
+    private final ElapsedTime timer;
 
     public Turret() {
         packet = new TelemetryPacket();
@@ -38,11 +40,11 @@ public class Turret extends SubsystemBase {
         turretSpin.setDirection(Servo.Direction.FORWARD);
         topLight = Robot.opMode.hardwareMap.get(Servo.class, "RGB_VisionAcquired");
         atTarget = false;
-        visionAiming = false;
         //start in middle of sensor range
         lastSensorVoltage = 1.5;
         continuousVoltage = lastSensorVoltage;
         offsetAngle = 0;
+        timer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
         //cannot have I term, as we don't reset the pids in continous modes
         pid = new PIDController(0.0025, 0,0, 0.05);
         resetPid();
@@ -86,6 +88,7 @@ public class Turret extends SubsystemBase {
         var clamp = MathUtil.clamp(angleDeg, -60., 300.);
         long currentTime = System.nanoTime();
         double deltaTime = (currentTime - lastTime) / 1_000_000_000.;
+        boolean inRange = Math.abs(angleDeg - getAngle()) < 1.5;
 
         var output = pid.calculate(getAngle(), clamp, deltaTime);
         if(!Double.isNaN(output)) {
@@ -104,6 +107,10 @@ public class Turret extends SubsystemBase {
             } else if (output > 0 && getAngle() > 300) {
                 output = 0;
             }
+
+            if(inRange) {
+                output = 0;
+            }
             var outClamp = MathUtil.clamp(output + 0.5, 0.35, 0.65);
             //turretSpin.setPosition(outClamp);
             packet.put("Turret/OutClamp", outClamp);
@@ -115,7 +122,11 @@ public class Turret extends SubsystemBase {
         packet.put("Turret/DeltaTime", deltaTime);
         Robot.opMode.telemetry.addData("LoopTime", deltaTime);
         packet.put("Turret/RequestAngle", angleDeg);
-        atTarget = Math.abs(angleDeg - getAngle()) < 2;
+
+        if(!inRange) {
+            timer.reset();
+        }
+        atTarget = timer.time() > 100;
     }
 
     private void resetPid() {
@@ -147,6 +158,9 @@ public class Turret extends SubsystemBase {
         return new StopTurret();
     }
 
+    public Command preShotTurret(Pose shootingPose) {
+        return new PreShotTurret(shootingPose);
+    }
 
     public Command commandTurretAngle(double angleDeg) {
         return new CommandTurretAngle(angleDeg);
@@ -189,13 +203,18 @@ public class Turret extends SubsystemBase {
 
         @Override
         public void end(boolean interrupted) {
-            //turretSpin.setPosition(0.5);
+            turretSpin.setPosition(0.5);
         }
     }
 
     private class CenterTurretViaPosition extends CommandBase {
         public CenterTurretViaPosition() {
             addRequirements(Robot.turret);
+        }
+
+        @Override
+        public void initialize() {
+            timer.reset();
         }
 
         @Override
@@ -211,7 +230,28 @@ public class Turret extends SubsystemBase {
 
         @Override
         public void end(boolean interrupted) {
-            //turretSpin.setPosition(0.5);
+            turretSpin.setPosition(0.5);
+        }
+    }
+
+    private class PreShotTurret extends CommandBase {
+        Pose pose;
+        double angle;
+        public PreShotTurret(Pose shootingPose) {
+            this.pose = shootingPose;
+            addRequirements(Robot.turret);
+        }
+
+        @Override
+        public void initialize() {
+            angle = DrivetrainPP.getGoalAngle(pose) - (90 - Math.toDegrees(pose.getHeading()));
+            timer.reset();
+            setAngle(angle);
+        }
+
+        @Override
+        public void execute() {
+            setAngle(angle);
         }
     }
 
@@ -229,7 +269,7 @@ public class Turret extends SubsystemBase {
     private class StopTurret extends CommandBase {
         @Override
         public void execute() {
-            //turretSpin.setPosition(0.5);
+            turretSpin.setPosition(0.5);
         }
 
         @Override

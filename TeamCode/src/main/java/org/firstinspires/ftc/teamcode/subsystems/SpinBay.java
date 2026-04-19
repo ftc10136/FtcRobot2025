@@ -62,23 +62,32 @@ public class SpinBay {
             return;
         }
         //do 1 sensor read for the color
-        if(reading.dist < 2) {
+        if(reading.dist < 4) {
             readTime += reading.loopTimeMs;
-            //we want 50ms of reads before we trust a reading
-            if(readTime < Robot.RobotConfig.BALL_BAY_TIME_MS) {
-                return;
-            }
-            //var sensedState = Robot.spindexer.matchColor(getColor());
 
-            //if (sensedState == Spindexer.BayState.Green || sensedState == Spindexer.BayState.Purple) {
-            //    state = sensedState;
-            //} else if (state == Spindexer.BayState.None || state == Spindexer.BayState.Something) {
-            //    state = Spindexer.BayState.Something;
-            //}
+            BayState sensedState;
+
+            //we want 50ms of reads before we trust a color reading
+            if (readTime < Robot.RobotConfig.BALL_BAY_TIME_MS) {
+                sensedState = BayState.Something;
+            } else {
+                Color color = getColor();
+                if (color.blue > color.green) {
+                    sensedState = BayState.Purple;
+                } else {
+                    sensedState = BayState.Green;
+                }
+            }
+
+            if (sensedState == BayState.Green || sensedState == BayState.Purple) {
+                state = sensedState;
+            } else if (state == BayState.None || state == BayState.Something) {
+                state = BayState.Something;
+            }
         } else {
             readTime = 0;
         }
-        //led.setPosition(Robot.spindexer.getLedColor(state));
+        led.setPosition(Robot.helidexer.getLedColor(state));
     }
 
     public BayState getState() {
@@ -105,6 +114,8 @@ public class SpinBay {
     public ColorSensorResult getResult() {
         var localResult = new ColorSensorResult();
         long startTime = System.nanoTime();
+        //optimized reads
+        /*
         if(state == BayState.None) {
             localResult.dist = distSensor.getDistance(DistanceUnit.CM);
         } else if(state == BayState.Something) {
@@ -112,6 +123,12 @@ public class SpinBay {
             var reading = colorSensor.getNormalizedColors();
             localResult.color = new Color(reading.red * 16, reading.green * 16, reading.blue * 16);
         }
+*/
+        //always read
+        localResult.dist = distSensor.getDistance(DistanceUnit.CM);
+        var reading = colorSensor.getNormalizedColors();
+        localResult.color = new Color(reading.red * 16, reading.green * 16, reading.blue * 16);
+
         localResult.loopTimeMs = (System.nanoTime() - startTime) / 1000000.;
         localResult.count = count;
         return localResult;

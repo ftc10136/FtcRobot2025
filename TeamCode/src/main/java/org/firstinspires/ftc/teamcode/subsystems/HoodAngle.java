@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
@@ -84,6 +85,9 @@ public class HoodAngle extends SubsystemBase {
     public Command autoShotHood() {
         return new AutoShotHood();
     }
+    public Command preShotHood(Pose shootingPose) {
+        return new PreShotHood(shootingPose);
+    }
 
     private class CalibrateShot extends CommandBase {
         public CalibrateShot() {
@@ -103,6 +107,25 @@ public class HoodAngle extends SubsystemBase {
         public void execute() {
             double dist = Robot.drivetrain.getGoalDistance();
             var angle = shootingTable.get(dist);
+            setHoodAngle(angle);
+        }
+    }
+
+    private class PreShotHood extends CommandBase {
+        Pose pose;
+        double angle;
+        public PreShotHood(Pose shootingPose) {
+            pose = shootingPose;
+            addRequirements(Robot.hoodAngle);
+        }
+        @Override
+        public void initialize() {
+            double dist = DrivetrainPP.getGoalDistance(pose);
+            angle = shootingTable.get(dist);
+            setHoodAngle(angle);
+        }
+        @Override
+        public void execute() {
             setHoodAngle(angle);
         }
     }

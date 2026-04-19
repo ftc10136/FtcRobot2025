@@ -27,15 +27,6 @@ public class Controls {
         return Robot.opMode.gamepad1.left_trigger >= 0.2;
     }
 
-    public Trigger hpLoadActive() {
-        return new Trigger() {
-            @Override
-            public boolean get() {
-                return Robot.opMode.gamepad1.x || Robot.opMode.gamepad2.x;
-            }
-        };
-    }
-
     public Trigger floorLoadActive() {
         return new Trigger() {
             @Override
@@ -133,5 +124,9 @@ public class Controls {
                 return Robot.opMode.gamepad1.dpad_down;
             }
         };
+    }
+
+    public boolean resetPose() {
+        return Robot.opMode.gamepad1.guide;
     }
 }

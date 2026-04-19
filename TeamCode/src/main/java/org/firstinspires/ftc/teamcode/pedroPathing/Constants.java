@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
 
+import com.pedropathing.control.PredictiveBrakingCoefficients;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.follower.FollowerConstants;
 import com.pedropathing.ftc.FollowerBuilder;
@@ -15,13 +16,18 @@ import org.firstinspires.ftc.teamcode.Robot;
 
 public class Constants {
     public static FollowerConstants followerConstantsHeli = new FollowerConstants()
-            .mass(13.38)  //in KG?, 29.5 lbs on 3/7/26
-            .forwardZeroPowerAcceleration(-10.3166)
-            .lateralZeroPowerAcceleration(-8.1215);
+            .mass(17.417)  //in KG, measured 4/19
+            .forwardZeroPowerAcceleration(-31.5309)
+            .lateralZeroPowerAcceleration(-72.959)
+            .predictiveBrakingCoefficients(new PredictiveBrakingCoefficients(
+                    0.10,
+                    0.09015,
+                    0.001467))
+            .centripetalScaling(0);
 
     public static PinpointConstants localizerConstantsHeli = new PinpointConstants()
-            .forwardPodY(-7.625)     //forward pod -1.4375, -7.625
-            .strafePodX(-0.1875)   //strafe  pod -0.1875, 7.5
+            .forwardPodY(-7.625)     //forward pod 2, -7.625
+            .strafePodX(0)   //strafe  pod 0, 7.5
             .distanceUnit(DistanceUnit.INCH)
             .hardwareMapName("pinpoint")
             .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
@@ -58,7 +64,7 @@ public class Constants {
             .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED);
 
-    public static PathConstraints pathConstraints = new PathConstraints(0.99, 100, 1, 1);
+    public static PathConstraints pathConstraints = new PathConstraints(0.97, 100, 1, 1);
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)
@@ -71,8 +77,8 @@ public class Constants {
             .rightFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
             .rightRearMotorDirection(DcMotorSimple.Direction.REVERSE)
             .useBrakeModeInTeleOp(false)
-            .xVelocity(56.9842)
-            .yVelocity(46.3710);
+            .xVelocity(63.15)       //forward velocity tuner
+            .yVelocity(43.11);      //lateral velocity tuner
 
     public static Follower createFollower(HardwareMap hardwareMap) {
         if(Robot.RobotType == Robot.RobotTypeEnum.Helidexer) {
