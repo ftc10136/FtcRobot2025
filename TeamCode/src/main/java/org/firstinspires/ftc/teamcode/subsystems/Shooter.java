@@ -21,21 +21,22 @@ public class Shooter extends SubsystemBase {
     private final TelemetryPacket packet;
     private final InterpolatingDoubleTreeMap shootingTable;
     private boolean atTarget;
-    private double veloRPM;
+    private double smoothRpm;
 
     public Shooter() {
         packet = new TelemetryPacket();
         //batteryVoltage = Robot.opMode.hardwareMap.get(VoltageSensor.class, "Control Hub");
         TurretShooterMotor = (DcMotorEx)Robot.opMode.hardwareMap.get(DcMotor.class, "TurretShooterMotor");
         TurretShooterMotor.setDirection(DcMotor.Direction.FORWARD);
-        TurretShooterMotor.setVelocityPIDFCoefficients(55, 0.01, 0, 12.2);
+        TurretShooterMotor.setVelocityPIDFCoefficients(45, 0.01, 0, 12.2);
         TurretShooterMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         TurretShooterMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         TurretShooterMotor2 = (DcMotorEx)Robot.opMode.hardwareMap.get(DcMotor.class, "TurretShooterMotor2");
         TurretShooterMotor2.setDirection(DcMotor.Direction.REVERSE);
-        TurretShooterMotor2.setVelocityPIDFCoefficients(55, 0.01, 0, 12.2);
+        TurretShooterMotor2.setVelocityPIDFCoefficients(45, 0.01, 0, 12.2);
         TurretShooterMotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         TurretShooterMotor2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+		smoothRpm = 0;
         atTarget = false;
 
         //shot rpm table, input distance in inches, output rpm
@@ -60,13 +61,15 @@ public class Shooter extends SubsystemBase {
     public void periodic() {
         double veloTicksPerSec = TurretShooterMotor.getVelocity();
         //there are 28 pulses per revolution
-        veloRPM = veloTicksPerSec * 60/28;
+        double veloRPM = veloTicksPerSec * 60 / 28;
         double veloTicksPerSec2 = TurretShooterMotor2.getVelocity();
         //there are 28 pulses per revolution
         double veloRPM2 = veloTicksPerSec2 * 60/28;
+        smoothRpm = (veloRPM * Robot.RobotConfig.SHOOTER_RPM_SMOOTHER) + (smoothRpm * (1-Robot.RobotConfig.SHOOTER_RPM_SMOOTHER));
         packet.put("Shooter/VelocityTicksSec1", veloTicksPerSec);
         packet.put("Shooter/VelocityRpm1", veloRPM);
         packet.put("Shooter/VelocityRpm2", veloRPM2);
+        packet.put("Shooter/SmoothRpm", smoothRpm);
         //packet.put("Shooter/Voltage1", TurretShooterMotor.getPower());
         //packet.put("Shooter/Current1", TurretShooterMotor.getCurrent(CurrentUnit.AMPS));
         //packet.put("Shooter/Voltage2", TurretShooterMotor2.getPower());
@@ -74,11 +77,13 @@ public class Shooter extends SubsystemBase {
         packet.put("Shooter/Command", RobotUtil.getCommandName(getCurrentCommand()));
         packet.put("Shooter/AtTarget", atTarget);
         packet.put("Currents/Shooter1", TurretShooterMotor.getCurrent(CurrentUnit.AMPS));
-        packet.put("Currents/Shooter2", TurretShooterMotor.getCurrent(CurrentUnit.AMPS));
+        packet.put("Currents/Shooter2", TurretShooterMotor2.getCurrent(CurrentUnit.AMPS));
         Robot.logPacket(packet);
     }
 
     private void setRpmMotor(double rpm) {
+        packet.put("Shooter/TargetRpm", rpm);
+
         //software based PID
         //double feedForward = Robot.RobotConfig.SHOOTER_MOTOR_KS + (rpm * Robot.RobotConfig.SHOOTER_MOTOR_KV);
         //double feedBack = (rpm - veloRPM) * Robot.RobotConfig.SHOOTER_MOTOR_KP;
@@ -88,10 +93,12 @@ public class Shooter extends SubsystemBase {
         //}
         //TurretShooterMotor.setPower(power);
         //TurretShooterMotor2.setPower(power);
+
         //hardware based PID shots
-        //TurretShooterMotor.setVelocity((28. / 60) * rpm);
+		double deltaRpm = rpm - smoothRpm;
+        TurretShooterMotor.setVelocity((28. / 60) * rpm);
         TurretShooterMotor2.setVelocity((28. / 60) * rpm);
-        atTarget = Math.abs(rpm - veloRPM) < 50;
+        atTarget = Math.abs(deltaRpm) < 50;
     }
 
     public boolean atTarget() {

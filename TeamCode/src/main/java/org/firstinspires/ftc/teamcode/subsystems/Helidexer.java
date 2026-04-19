@@ -3,8 +3,7 @@ package org.firstinspires.ftc.teamcode.subsystems;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.PIDFCoefficients;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
@@ -18,6 +17,7 @@ public class Helidexer extends SubsystemBase {
     private final TelemetryPacket packet;
     private int sensorHome;
     private int currentBay;
+    private double motorCurrent;
 
     public Helidexer() {
         packet = new TelemetryPacket();
@@ -34,6 +34,7 @@ public class Helidexer extends SubsystemBase {
 
     @Override
     public void periodic() {
+        motorCurrent = helixMotor.getCurrent(CurrentUnit.AMPS);
         packet.put("Helidexer/Power", helixMotor.getPower());
         packet.put("Helidexer/Command", RobotUtil.getCommandName(getCurrentCommand()));
         packet.put("Helidexer/Position", helixMotor.getCurrentPosition());
@@ -70,6 +71,8 @@ public class Helidexer extends SubsystemBase {
 
     private class AdvanceBay extends CommandBase {
         int pos;
+        ElapsedTime timer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
+        boolean overcurrent;
 
         public AdvanceBay() {
             addRequirements(Robot.helidexer);
@@ -80,7 +83,33 @@ public class Helidexer extends SubsystemBase {
             currentBay++;
             pos = sensorHome + (currentBay * Robot.RobotConfig.COUNTS_PER_BAY);
             helixMotor.setTargetPosition(pos);
+            helixMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             helixMotor.setPower(Robot.RobotConfig.HELIDEXER_P);
+            overcurrent = false;
+        }
+
+        @Override
+        public void execute() {
+            if (overcurrent) {
+                if(timer.milliseconds() > 300) {
+                    overcurrent = false;
+                    helixMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                    helixMotor.setPower(Robot.RobotConfig.HELIDEXER_P);
+                } else {
+                    helixMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                    helixMotor.setPower(-0.5);
+                }
+            } else {
+                if (motorCurrent > 6) {
+                    overcurrent = true;
+                    timer.reset();
+                    helixMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                    helixMotor.setPower(-0.5);
+                } else {
+                    helixMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                    helixMotor.setPower(Robot.RobotConfig.HELIDEXER_P);
+                }
+            }
         }
 
         @Override
