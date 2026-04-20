@@ -62,19 +62,27 @@ public class SpinBay {
         if(reading.dist < 4) {
             readTime += reading.loopTimeMs;
 
+            //always read the color sensor immediately
             BayState sensedState;
+            Color color = getColor();
+            if (color.blue > color.green) {
+                sensedState = BayState.Purple;
+            } else {
+                sensedState = BayState.Green;
+            }
 
-            //we want 50ms of reads before we trust a color reading
+            /*//we want 50ms of reads before we trust a color reading
             if (readTime < Robot.RobotConfig.BALL_BAY_TIME_MS) {
                 sensedState = BayState.Something;
             } else {
+                BayState sensedState;
                 Color color = getColor();
                 if (color.blue > color.green) {
                     sensedState = BayState.Purple;
                 } else {
                     sensedState = BayState.Green;
                 }
-            }
+            }*/
 
             if (sensedState == BayState.Green || sensedState == BayState.Purple) {
                 state = sensedState;
