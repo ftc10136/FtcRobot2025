@@ -149,10 +149,10 @@ public class Robot {
         //button commands
         controls.floorLoadActive().toggleWhenActive(commandFloorLoad());
         controls.resetFieldOriented().whenActive(drivetrain.resetFieldOriented());
-        controls.shootActive().toggleWhenActive(shootAllBalls());
+        controls.shootActive().toggleWhenActive(shootAllBalls(false));
         //controls.bumpSpindexerLeft().whileActiveContinuous(helidexer.shootAll());
-        //controls.bumpSpindexerRight().whileActiveContinuous(helidexer.advanceBay());
-        controls.shootMotif().toggleWhenActive(shootMotif());
+        controls.bumpSpindexerRight().whileActiveContinuous(helidexer.advanceBay());
+        controls.shootMotif().toggleWhenActive(shootAllBalls(true));
 
         controls.flipAlliance().whenActive(flipAlliance());
         controls.resetTurretAngle().whenActive(turret.resetZero());
@@ -233,7 +233,7 @@ public class Robot {
                 intake.runIntake()
         ).andThen(new ParallelCommandGroup(
                 intake.runOuttake().withTimeout(1000),
-                helidexer.primeForShot()
+                helidexer.primeForMotif()
         ));
     }
 
@@ -252,12 +252,19 @@ public class Robot {
         );
     }
 
-    public static Command shootAllBalls() {
+    public static Command shootAllBalls(boolean motif) {
+        Command primeCommand;
+        if(motif) {
+            primeCommand = helidexer.primeForMotif();
+        } else {
+            primeCommand = helidexer.primeForShot();
+        }
+
         return new ParallelDeadlineGroup(
                 new SequentialCommandGroup(
                         new ParallelCommandGroup(
                                 new WaitUntilCommand(readyToShoot()).withTimeout(2000),
-                                helidexer.primeForShot()
+                                primeCommand
                         ),
                         helidexer.shootAll(),
                         turret.setLedCommand(GoBildaLedColors.Off),
@@ -272,14 +279,6 @@ public class Robot {
                 turret.centerTurretViaPosition().perpetually(),
                 drivetrain.holdAtSpot().perpetually()
         );
-    }
-
-    public static Command shootMotif() {
-        var map = new HashMap<Object, Command>();
-        //map.put(Vision.Motifs.GPP, shootMotif(Spindexer.BayState.Green, Spindexer.BayState.Purple, Spindexer.BayState.Purple));
-        //map.put(Vision.Motifs.PGP, shootMotif(Spindexer.BayState.Purple, Spindexer.BayState.Green, Spindexer.BayState.Purple));
-        //map.put(Vision.Motifs.PPG, shootMotif(Spindexer.BayState.Purple, Spindexer.BayState.Purple, Spindexer.BayState.Green));
-        return new SelectCommand(map,() -> Robot.vision.getSeenMotif());
     }
 
     public static Command flipAlliance() {
@@ -322,6 +321,6 @@ public class Robot {
     }
 
     public static Command autoShootMotif() {
-        return shootMotif();
+        return shootAllBalls(true);
     }
 }

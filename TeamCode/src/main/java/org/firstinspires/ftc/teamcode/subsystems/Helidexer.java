@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.ConditionalCommand;
+import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
@@ -24,7 +25,6 @@ public class Helidexer extends SubsystemBase {
     private final DcMotorEx helixMotor;
     private final TelemetryPacket packet;
     private int sensorHome;
-    private int currentBay;
     private double motorCurrent;
     private final HashMap<SpinBay.BayState, Double> bayStateToLedCommands;
     private final HashMap<String, SpinBay> bays;
@@ -38,8 +38,6 @@ public class Helidexer extends SubsystemBase {
         helixMotor.setTargetPosition(sensorHome);
         helixMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         helixMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-
-        currentBay = 0;
 
         bayStateToLedCommands = new HashMap<>();
         bayStateToLedCommands.put(SpinBay.BayState.None, GoBildaLedColors.Off);
@@ -71,8 +69,7 @@ public class Helidexer extends SubsystemBase {
         packet.put("Helidexer/Power", helixMotor.getPower());
         packet.put("Helidexer/Command", RobotUtil.getCommandName(getCurrentCommand()));
         packet.put("Helidexer/Position", helixMotor.getCurrentPosition());
-        packet.put("Helidexer/CurrentBay", currentBay);
-        packet.put("Helidexer/CalcCurrentBay", getCurrentBay());
+        packet.put("Helidexer/CurrentBay", getCurrentBay());
         packet.put("Currents/Helidexer", helixMotor.getCurrent(CurrentUnit.AMPS));
         Robot.logPacket(packet);
     }
@@ -154,7 +151,7 @@ public class Helidexer extends SubsystemBase {
     }
 
     public Command primeForMotif() {
-        return new ConditionalCommand(primeForMotif(), primeForShot(), this::isMotifPossible);
+        return new ConditionalCommand(new PrimeForMotif(), primeForShot(), this::isMotifPossible);
     }
 
     public Command commandFloorLoadUntilBall(int bay) {
@@ -172,8 +169,7 @@ public class Helidexer extends SubsystemBase {
 
         @Override
         public void initialize() {
-            currentBay++;
-            pos = getBayPos(currentBay);
+            pos = getBayPos(getCurrentBay()+1);
             helixMotor.setTargetPosition(pos);
             helixMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             helixMotor.setPower(Robot.RobotConfig.HELIDEXER_P);
@@ -219,8 +215,7 @@ public class Helidexer extends SubsystemBase {
 
         @Override
         public void initialize() {
-            currentBay = 0;
-            pos = sensorHome;
+            pos = getBayPos(0);
             helixMotor.setTargetPosition(pos);
             helixMotor.setPower(-Robot.RobotConfig.HELIDEXER_P);
         }
@@ -317,26 +312,63 @@ public class Helidexer extends SubsystemBase {
 
         @Override
         public void initialize() {
-            Vision.Motifs motif = Robot.vision.getSeenMotif();
-
-            //TODO calculate target bay!
-            int targetBay = 0;
-
-            int currentBay = getCurrentBay();
-            int curRotations = currentBay / 3;
-            int curBay = currentBay % 3;
-            int outBay;
-
-            if (curBay == targetBay) {
-                outBay = currentBay;
-            } else if (curBay > targetBay) {
-                outBay = (curRotations + 1) * 3 + targetBay;
-            } else {
-                outBay = (curRotations) * 3 + targetBay;
-            }
-            pos = getBayPos(outBay);
+            pos = getBayPos(getTargetBay());
             helixMotor.setTargetPosition(pos);
             helixMotor.setPower(Robot.RobotConfig.HELIDEXER_P);
+        }
+
+        private int getTargetBay() {
+            Vision.Motifs motif = Robot.vision.getSeenMotif();
+
+            int currentBay = getCurrentBay();
+            int targetGreenBay;
+            if(motif == Vision.Motifs.GPP) {
+                targetGreenBay = 1;
+            } else if (motif == Vision.Motifs.PGP) {
+                targetGreenBay = 2;
+            } else {
+                //Unknown or PPG
+                targetGreenBay = 0;
+            }
+
+            int currentGreenBay = 1;
+            for(int i = 1; i<=3; i++) {
+                if(Objects.requireNonNull(bays.get("Bay" + i)).getState() == SpinBay.BayState.Green) {
+                    int modBay = currentBay % 3;
+                    if(i == 1 && modBay == 0) currentGreenBay = 0;
+                    if(i == 1 && modBay == 1) currentGreenBay = 1;
+                    if(i == 1 && modBay == 2) currentGreenBay = 2;
+                    if(i == 2 && modBay == 0) currentGreenBay = 2;
+                    if(i == 2 && modBay == 1) currentGreenBay = 0;
+                    if(i == 2 && modBay == 2) currentGreenBay = 1;
+                    if(i == 3 && modBay == 0) currentGreenBay = 1;
+                    if(i == 3 && modBay == 1) currentGreenBay = 2;
+                    if(i == 3 && modBay == 2) currentGreenBay = 0;
+                }
+            }
+
+            //steven hates this, but the formula is too hard and it's too late
+            int targetBay=0;
+            if(targetGreenBay == 0 && currentGreenBay == 0) targetBay = 0;
+            if(targetGreenBay == 0 && currentGreenBay == 1) targetBay = 2;
+            if(targetGreenBay == 0 && currentGreenBay == 2) targetBay = 1;
+            if(targetGreenBay == 1 && currentGreenBay == 0) targetBay = 1;
+            if(targetGreenBay == 1 && currentGreenBay == 1) targetBay = 0;
+            if(targetGreenBay == 1 && currentGreenBay == 2) targetBay = 2;
+            if(targetGreenBay == 2 && currentGreenBay == 0) targetBay = 2;
+            if(targetGreenBay == 2 && currentGreenBay == 1) targetBay = 1;
+            if(targetGreenBay == 2 && currentGreenBay == 2) targetBay = 0;
+
+            int outBay = currentBay + targetBay;
+            if(outBay < 3) {
+                outBay += 3;
+            }
+
+            packet.put("Helidexer/targetGreenBay", targetGreenBay);
+            packet.put("Helidexer/currentGreenBay", currentGreenBay);
+            packet.put("Helidexer/targetBay", targetBay);
+            packet.put("Helidexer/outBay", outBay);
+            return outBay;
         }
 
         @Override

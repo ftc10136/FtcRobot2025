@@ -33,6 +33,7 @@ public class Vision extends SubsystemBase {
     private Optional<Pose> visionPose;
 
     public enum Motifs {
+        Unknown,
         GPP, //21
         PGP, //22
         PPG  //23
@@ -55,7 +56,7 @@ public class Vision extends SubsystemBase {
         blocks = new HuskyLens.Block[0];
 
         visionPose = Optional.empty();
-        seenMotif = Motifs.PPG;
+        seenMotif = Motifs.Unknown;
     }
 
     @Override
@@ -63,7 +64,7 @@ public class Vision extends SubsystemBase {
         if(LIMELIGHT_ENABLED) {
             //limelightServo.setPosition(0.4);
             if(!isCameraConnected()) {
-                limelight.pipelineSwitch(6);
+                //limelight.pipelineSwitch(6);
             }
             packet.put("Vision/IsConnected", limelight.isConnected());
             packet.put("Vision/IsRunning", limelight.isRunning());
