@@ -4,9 +4,9 @@ import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.revrobotics.ColorMatch;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
+import com.seattlesolvers.solverslib.command.ConditionalCommand;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
@@ -26,9 +26,7 @@ public class Helidexer extends SubsystemBase {
     private int sensorHome;
     private int currentBay;
     private double motorCurrent;
-    private final ColorMatch matcher;
     private final HashMap<SpinBay.BayState, Double> bayStateToLedCommands;
-    private final HashMap<Color, SpinBay.BayState> colorToBayState;
     private final HashMap<String, SpinBay> bays;
 
     public Helidexer() {
@@ -42,20 +40,6 @@ public class Helidexer extends SubsystemBase {
         helixMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
         currentBay = 0;
-
-        Color purpleInput = new Color(0.571, 0.654, 0.971);
-        Color greenInput = new Color(0.303, 1., 0.753);
-
-        matcher = new ColorMatch();
-        matcher.setConfidenceThreshold(0.65);
-        matcher.addColorMatch(purpleInput);
-        matcher.addColorMatch(greenInput);
-
-        colorToBayState = new HashMap<>();
-        colorToBayState.put(purpleInput, SpinBay.BayState.Purple);
-        colorToBayState.put(greenInput, SpinBay.BayState.Green);
-        colorToBayState.put(Color.kOrange, SpinBay.BayState.Something);
-        colorToBayState.put(Color.kBlack, SpinBay.BayState.None);
 
         bayStateToLedCommands = new HashMap<>();
         bayStateToLedCommands.put(SpinBay.BayState.None, GoBildaLedColors.Off);
@@ -88,6 +72,7 @@ public class Helidexer extends SubsystemBase {
         packet.put("Helidexer/Command", RobotUtil.getCommandName(getCurrentCommand()));
         packet.put("Helidexer/Position", helixMotor.getCurrentPosition());
         packet.put("Helidexer/CurrentBay", currentBay);
+        packet.put("Helidexer/CalcCurrentBay", getCurrentBay());
         packet.put("Currents/Helidexer", helixMotor.getCurrent(CurrentUnit.AMPS));
         Robot.logPacket(packet);
     }
@@ -124,14 +109,36 @@ public class Helidexer extends SubsystemBase {
         };
     }
 
+    /// Get how many counts to drive to a position at that bay, can be >3
     private int getBayPos(int bay) {
         return sensorHome + (bay * Robot.RobotConfig.COUNTS_PER_BAY);
     }
 
+    /// Based on counts, what bay have we currently rotated to
+    private int getCurrentBay() {
+        double estBay = (double)(helixMotor.getCurrentPosition() - sensorHome) / Robot.RobotConfig.COUNTS_PER_BAY;
+        return Math.toIntExact(Math.round(estBay));
+    }
+
+    public boolean isMotifPossible() {
+        int purple = 0;
+        int green = 0;
+
+        for (int i=1; i<=3; i++) {
+            var state = Objects.requireNonNull(bays.get("Bay" + i)).getState();
+            if (state == SpinBay.BayState.Green) {
+                green++;
+            } else if (state == SpinBay.BayState.Purple) {
+                purple++;
+            }
+        }
+        return (purple == 2) && (green == 1);
+    }
+
     public void resetBayStates() {
-        bays.get("Bay1").resetBayState();
-        bays.get("Bay2").resetBayState();
-        bays.get("Bay3").resetBayState();
+        Objects.requireNonNull(bays.get("Bay1")).resetBayState();
+        Objects.requireNonNull(bays.get("Bay2")).resetBayState();
+        Objects.requireNonNull(bays.get("Bay3")).resetBayState();
     }
 
     public Command advanceBay() {
@@ -144,6 +151,14 @@ public class Helidexer extends SubsystemBase {
 
     public Command primeForShot() {
         return new PrimeForShot();
+    }
+
+    public Command primeForMotif() {
+        return new ConditionalCommand(primeForMotif(), primeForShot(), this::isMotifPossible);
+    }
+
+    public Command commandFloorLoadUntilBall(int bay) {
+        return new CommandFloorLoadUntilBall(bay);
     }
 
     private class AdvanceBay extends CommandBase {
@@ -231,11 +246,11 @@ public class Helidexer extends SubsystemBase {
         public void initialize() {
             int minBays;
             //check if we have gone enough bays to shoot
-            if(bays.get("Bay3").getState() != SpinBay.BayState.None) {
+            if(Objects.requireNonNull(bays.get("Bay3")).getState() != SpinBay.BayState.None) {
                 minBays = 3;
-            } else if (bays.get("Bay2").getState() != SpinBay.BayState.None) {
+            } else if (Objects.requireNonNull(bays.get("Bay2")).getState() != SpinBay.BayState.None) {
                 minBays = 2;
-            } else if (bays.get("Bay1").getState() != SpinBay.BayState.None) {
+            } else if (Objects.requireNonNull(bays.get("Bay1")).getState() != SpinBay.BayState.None) {
                 minBays = 1;
             } else {
                 minBays = 0;
@@ -251,6 +266,77 @@ public class Helidexer extends SubsystemBase {
                 helixMotor.setPower(Robot.RobotConfig.HELIDEXER_P);
             }
 
+        }
+
+        @Override
+        public boolean isFinished() {
+            return Math.abs(helixMotor.getCurrentPosition() - pos) < Robot.RobotConfig.POSITION_TOLERANCE;
+        }
+    }
+
+    public class CommandFloorLoadUntilBall extends CommandBase {
+        int targetBay;
+        int pos;
+
+        public CommandFloorLoadUntilBall(int bay) {
+            targetBay = bay-1;
+            addRequirements(Robot.helidexer);
+        }
+
+        @Override
+        public void initialize() {
+            int currentBay = getCurrentBay();
+            int curRotations = currentBay / 3;
+            int curBay = currentBay % 3;
+            int outBay;
+
+            if (curBay == targetBay) {
+                outBay = currentBay;
+            } else if (curBay > targetBay) {
+                outBay = (curRotations + 1) * 3 + targetBay;
+            } else {
+                outBay = (curRotations) * 3 + targetBay;
+            }
+            pos = getBayPos(outBay);
+            helixMotor.setTargetPosition(pos);
+            helixMotor.setPower(Robot.RobotConfig.HELIDEXER_P);
+        }
+
+        @Override
+        public boolean isFinished() {
+            return Objects.requireNonNull(bays.get("Bay" + (targetBay + 1))).getState() != SpinBay.BayState.None;
+        }
+    }
+
+
+    private class PrimeForMotif extends CommandBase {
+        int pos;
+        public PrimeForMotif() {
+            addRequirements(Robot.helidexer);
+        }
+
+        @Override
+        public void initialize() {
+            Vision.Motifs motif = Robot.vision.getSeenMotif();
+
+            //TODO calculate target bay!
+            int targetBay = 0;
+
+            int currentBay = getCurrentBay();
+            int curRotations = currentBay / 3;
+            int curBay = currentBay % 3;
+            int outBay;
+
+            if (curBay == targetBay) {
+                outBay = currentBay;
+            } else if (curBay > targetBay) {
+                outBay = (curRotations + 1) * 3 + targetBay;
+            } else {
+                outBay = (curRotations) * 3 + targetBay;
+            }
+            pos = getBayPos(outBay);
+            helixMotor.setTargetPosition(pos);
+            helixMotor.setPower(Robot.RobotConfig.HELIDEXER_P);
         }
 
         @Override

@@ -12,18 +12,14 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
-import com.seattlesolvers.solverslib.command.ConditionalCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.ParallelDeadlineGroup;
-import com.seattlesolvers.solverslib.command.ParallelRaceGroup;
 import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.SelectCommand;
-import com.seattlesolvers.solverslib.command.Subsystem;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.command.button.Trigger;
-import com.seattlesolvers.solverslib.util.Timing;
 
 import org.firstinspires.ftc.teamcode.subsystems.DrivetrainPP;
 import org.firstinspires.ftc.teamcode.subsystems.Helidexer;
@@ -36,11 +32,7 @@ import org.livoniawarriors.GoBildaLedColors;
 import org.livoniawarriors.LoggerCommandTimer;
 import org.livoniawarriors.SequentialCommandGroup;
 
-import java.lang.reflect.Field;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
@@ -158,9 +150,9 @@ public class Robot {
         controls.floorLoadActive().toggleWhenActive(commandFloorLoad());
         controls.resetFieldOriented().whenActive(drivetrain.resetFieldOriented());
         controls.shootActive().toggleWhenActive(shootAllBalls());
-        controls.bumpSpindexerLeft().whileActiveContinuous(helidexer.shootAll());
-        controls.bumpSpindexerRight().whileActiveContinuous(helidexer.advanceBay());
-        controls.shootMotif().whileActiveContinuous(shootMotif());
+        //controls.bumpSpindexerLeft().whileActiveContinuous(helidexer.shootAll());
+        //controls.bumpSpindexerRight().whileActiveContinuous(helidexer.advanceBay());
+        controls.shootMotif().toggleWhenActive(shootMotif());
 
         controls.flipAlliance().whenActive(flipAlliance());
         controls.resetTurretAngle().whenActive(turret.resetZero());
@@ -222,7 +214,7 @@ public class Robot {
         public static double SHOOTER_MOTOR_KV = 0.00019;
         /// How much power do we add based on the amount of error we have
         public static double SHOOTER_MOTOR_KP = 0.00028;
-        public static int INTAKE_SPEED = -1;
+        public static int INTAKE_SPEED = 1;
         public static int COUNTS_PER_BAY = 433;
         public static int POSITION_TOLERANCE = 30;
         public static double HELIDEXER_P = 0.7;
@@ -230,17 +222,19 @@ public class Robot {
     }
 
     public static Command commandFloorLoad() {
-        return new ParallelCommandGroup(
+        return new ParallelDeadlineGroup(
                 new SequentialCommandGroup(
                         turret.setLedCommand(GoBildaLedColors.Blue),
-                        /*ballevator.commandDown(),
-                        spindexer.commandFloorLoadUntilBall(1),
-                        spindexer.commandFloorLoadUntilBall(2),
-                        spindexer.commandFloorLoadUntilBall(3),*/
+                        helidexer.commandFloorLoadUntilBall(1),
+                        helidexer.commandFloorLoadUntilBall(2),
+                        helidexer.commandFloorLoadUntilBall(3),
                         turret.setLedCommand(GoBildaLedColors.Orange)
-                        //spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.Shoot)
                 ),
-                intake.runIntake());
+                intake.runIntake()
+        ).andThen(new ParallelCommandGroup(
+                intake.runOuttake().withTimeout(1000),
+                helidexer.primeForShot()
+        ));
     }
 
     public static Command calibrateShooter() {
@@ -251,13 +245,9 @@ public class Robot {
                 hoodAngle.calibrateShot(),
                 intake.runIntake(),
                 new RepeatCommand(new SequentialCommandGroup(
-                        /*ballevator.commandDown(),
-                        spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.FloorIntake),
-                        spindexer.commandFloorLoadUntilBall(1),
-                        spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.Shoot),
-                        ballevator.commandUp(),
-                        new WaitCommand(300),
-                        spindexer.clearCurrentBay()*/
+                        helidexer.commandFloorLoadUntilBall(1),
+                        helidexer.primeForShot(),
+                        helidexer.shootAll()
                 ))
         );
     }

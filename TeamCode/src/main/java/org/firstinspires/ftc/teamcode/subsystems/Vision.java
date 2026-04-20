@@ -17,11 +17,10 @@ import org.firstinspires.ftc.teamcode.Robot;
 import org.livoniawarriors.RobotUtil;
 
 import java.util.Optional;
-import java.util.function.BooleanSupplier;
 
 public class Vision extends SubsystemBase {
     public final boolean HUSKYLEN_ENABLED = false;
-    public final boolean LIMELIGHT_ENABLED = false;
+    public final boolean LIMELIGHT_ENABLED = true;
     private Limelight3A limelight;
     private final TelemetryPacket packet;
     private HuskyLens huskyLens;
@@ -47,7 +46,7 @@ public class Vision extends SubsystemBase {
             // LimelightPipelines: 1=20/BlueAlliance, 2=24/RedAlliance, 3=20,21,22
             limelight.pipelineSwitch(6);
             limelightServo = Robot.opMode.hardwareMap.get(Servo.class, "CameraServo");
-            limelightServo.setPosition(0.4);
+            //limelightServo.setPosition(0.4);
         }
         if (HUSKYLEN_ENABLED) {
             huskyLens = Robot.opMode.hardwareMap.get(HuskyLens.class, "HuskyLens");
@@ -62,13 +61,13 @@ public class Vision extends SubsystemBase {
     @Override
     public void periodic() {
         if(LIMELIGHT_ENABLED) {
-            limelightServo.setPosition(0.4);
+            //limelightServo.setPosition(0.4);
             if(!isCameraConnected()) {
                 limelight.pipelineSwitch(6);
             }
             packet.put("Vision/IsConnected", limelight.isConnected());
             packet.put("Vision/IsRunning", limelight.isRunning());
-            updateVision();
+            updateLimeLight();
         }
         packet.put("Vision/CameraConnected", isCameraConnected());
         packet.put("Vision/DistToTarget", distToTarget);
@@ -87,7 +86,7 @@ public class Vision extends SubsystemBase {
         Robot.opMode.telemetry.addData("Motif", seenMotif.name());
     }
 
-    private void updateVision() {
+    private void updateLimeLight() {
         var headingDeg = -Robot.drivetrain.getHeading() + 180;
         headingDeg = RobotUtil.inputModulus(headingDeg, -180, 180);
         limelight.updateRobotOrientation(headingDeg);
@@ -121,7 +120,7 @@ public class Vision extends SubsystemBase {
                 }
 
                 if(tagId == 20 || tagId == 24) {
-                    hasLocatingTag = true;
+                    //hasLocatingTag = true;
                 }
             }
 
@@ -148,62 +147,6 @@ public class Vision extends SubsystemBase {
         return visionPose;
     }
 
-    public void initScanning() {
-        var status = limelight.getStatus();
-        var result = limelight.getLatestResult();
-        if (result != null) {
-            // Access general information.
-            // Access fiducial results.
-            var fiducialResults = result.getFiducialResults();
-            for (LLResultTypes.FiducialResult fiducialResult_item : fiducialResults) {
-                var fiducialResult = fiducialResult_item;
-                //telemetry.addData("Fiducial", "ID: " + fiducialResult.getFiducialId() + ", Family: " + fiducialResult.getFamily() + ", X: " + JavaUtil.formatNumber(fiducialResult.getTargetXDegrees(), 2) + ", Y: " + JavaUtil.formatNumber(fiducialResult.getTargetYDegrees(), 2));
-                var AutonMode = fiducialResult.getFiducialId();
-                //telemetry.update();
-            }
-        } else {
-            //telemetry.addData("Limelight", "No data available");
-        }
-    }
-
-    public void teleopScanning() {
-        Pose3D botpose;
-        double captureLatency;
-        double targetingLatency;
-        double X_Error;
-        double GainFactor;
-        double CorrectionNeeded;
-
-        var status = limelight.getStatus();
-        var result = limelight.getLatestResult();
-        if (result != null) {
-            // Access general information.
-            var VisionAcquired = 1;
-            botpose = result.getBotpose();
-            captureLatency = result.getCaptureLatency();
-            targetingLatency = result.getTargetingLatency();
-            X_Error = result.getTx();
-            if (Math.abs(X_Error) < 0.8) {
-                GainFactor = 0;
-            } else if (Math.abs(X_Error) < 10) {
-                GainFactor = 0.8;
-            } else {
-                GainFactor = 1;
-            }
-            CorrectionNeeded = X_Error * -0.005 * GainFactor;
-            //if (TurretMode == 1) {
-            //    TurretSpin.setPosition(TurretSpin.getPosition() - CorrectionNeeded);
-            //}
-            // Access fiducial results.
-            var fiducialResults = result.getFiducialResults();
-            for (LLResultTypes.FiducialResult fiducialResult_item2 : fiducialResults) {
-                var fiducialResult = fiducialResult_item2;
-                //telemetry.addData("Fiducial", "ID: " + fiducialResult.getFiducialId() + ", Family: " + fiducialResult.getFamily() + ", X: " + JavaUtil.formatNumber(fiducialResult.getTargetXDegrees(), 2) + ", Y: " + JavaUtil.formatNumber(fiducialResult.getTargetYDegrees(), 2));
-            }
-        } else {
-        }
-    }
-
     public double getTurretError() {
         return turretError;
     }
@@ -227,16 +170,7 @@ public class Vision extends SubsystemBase {
         return blocks;
     }
 
-    public boolean seeBalls() {
+    public boolean seesBalls() {
         return blocks.length > 0;
-    }
-
-    public BooleanSupplier seesBalls() {
-        return new BooleanSupplier() {
-            @Override
-            public boolean getAsBoolean() {
-                return blocks.length > 0;
-            }
-        };
     }
 }

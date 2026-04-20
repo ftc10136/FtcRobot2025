@@ -52,9 +52,6 @@ public class SpinBay {
             return;
         }
         count++;
-        /*if(reading.count == newReading.count) {
-            return;
-        }*/
         //slowing down reads to just 1 bay per periodic call
         if((count % 3) == bayNum) {
             reading = getResult();
