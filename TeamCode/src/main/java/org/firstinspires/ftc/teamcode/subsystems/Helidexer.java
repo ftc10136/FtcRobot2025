@@ -29,6 +29,9 @@ public class Helidexer extends SubsystemBase {
     private final HashMap<SpinBay.BayState, Double> bayStateToLedCommands;
     private final HashMap<String, SpinBay> bays;
 
+    private int loops = 0;
+    private int priorityBay = 1;
+
     public Helidexer() {
         packet = new TelemetryPacket();
         helixMotor = Robot.opMode.hardwareMap.get(DcMotorEx.class, "Helidexer");
@@ -53,6 +56,22 @@ public class Helidexer extends SubsystemBase {
 
     @Override
     public void periodic() {
+        loops++;
+        int currentBay = (getCurrentBay() % 3) + 1;
+        if (Robot.intake.isRunning() && bays.get("Bay" + currentBay).getState() == SpinBay.BayState.None) {
+            //if we are intaking a bay, see if it has a ball ASAP
+            priorityBay = currentBay;
+        } else {
+            //default to checking each bay once a loop
+            priorityBay = (loops % 3) + 1;
+            for(int i=1; i<=3; i++) {
+                //if a bay is something, it gets more priority to find a color
+                if (bays.get("Bay" + i).getState() == SpinBay.BayState.Something) {
+                    priorityBay = i;
+                    break;
+                }
+            }
+        }
         for (var entry : bays.entrySet()) {
             var key = entry.getKey();
             var bay = entry.getValue();
@@ -77,6 +96,10 @@ public class Helidexer extends SubsystemBase {
     public double getLedColor(SpinBay.BayState state) {
         //noinspection DataFlowIssue
         return bayStateToLedCommands.get(state);
+    }
+
+    public int getPriorityBay() {
+        return priorityBay;
     }
 
     public BooleanSupplier hasBall(int bay) {

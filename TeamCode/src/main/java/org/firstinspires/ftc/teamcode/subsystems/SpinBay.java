@@ -22,7 +22,6 @@ public class SpinBay {
     public ColorSensorResult reading;
     //private final ReadColorSensorThread thread;
     private double readTime;
-    int count;
     int bayNum;
 
     private final RevColorSensorV3 colorSensor;
@@ -37,7 +36,6 @@ public class SpinBay {
         reading = new ColorSensorResult();
         state = BayState.None;
         readTime = 0;
-        count = 0;
         lastResetTime = 0;
 
         colorSensor = Robot.opMode.hardwareMap.get(RevColorSensorV3.class, colorSensorName);
@@ -51,9 +49,8 @@ public class SpinBay {
             //if we reset the bay, we want to wait 100ms before we read it again
             return;
         }
-        count++;
         //slowing down reads to just 1 bay per periodic call
-        if((count % 3) == bayNum) {
+        if(Robot.helidexer.getPriorityBay() == bayNum) {
             reading = getResult();
         } else {
             return;
@@ -135,7 +132,6 @@ public class SpinBay {
         localResult.color = new Color(reading.red * 16, reading.green * 16, reading.blue * 16);
 
         localResult.loopTimeMs = (System.nanoTime() - startTime) / 1000000.;
-        localResult.count = count;
         return localResult;
     }
 
@@ -143,13 +139,11 @@ public class SpinBay {
         public double dist;
         public Color color;
         public double loopTimeMs;
-        public int count;
 
         public ColorSensorResult() {
             dist = 20;
             color = Color.kBlack;
             loopTimeMs = 0;
-            count = 0;
         }
     }
     /*
