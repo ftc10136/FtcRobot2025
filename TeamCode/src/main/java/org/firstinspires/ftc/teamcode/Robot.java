@@ -6,6 +6,7 @@ import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.lynx.LynxModule;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.seattlesolvers.solverslib.command.Command;
@@ -17,7 +18,6 @@ import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.ParallelDeadlineGroup;
 import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.SelectCommand;
-import com.seattlesolvers.solverslib.command.Subsystem;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.command.button.Trigger;
@@ -35,12 +35,11 @@ import org.livoniawarriors.GoBildaLedColors;
 import org.livoniawarriors.LoggerCommandTimer;
 import org.livoniawarriors.SequentialCommandGroup;
 
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 public class Robot {
     public static OpMode opMode;
@@ -102,18 +101,16 @@ public class Robot {
         controls.resetTurretAngle().whenActive(turret.resetZero());
 
         logTimer = new LoggerCommandTimer("Shot Times");
-        //uncomment this line to do timing analysis on commands.  This will cause them to run twice.
-        //CommandScheduler.getInstance().onCommandExecute(Robot::logCommandTiming);
     }
 
     public static void Periodic() {
         long startTime = System.nanoTime();
         loggingTime = 0;
         CommandScheduler.getInstance().run();
-        //periodicTiming();  //note, this causes all the periodic functions to run twice!
 
         double deltaTime = (System.nanoTime() - startTime) / 1_000_000.;
         packet.put("TimingMs/LoggingTime", loggingTime);
+        packet.put("TimingMs/CommandTime", deltaTime);
         logPacket(packet);
 
         opMode.telemetry.addData("TurretAngle", turret.getAngle());
@@ -123,42 +120,6 @@ public class Robot {
         opMode.telemetry.addData("_Turret Ready", turret.atTarget());
         opMode.telemetry.addData("_Hood Ready", hoodAngle.atTarget());
         opMode.telemetry.update();
-    }
-
-    private static void logCommandTiming(Command command) {
-        long startTime2 = System.nanoTime();
-        command.execute();
-        double deltaTime = (System.nanoTime() - startTime2) / 1_000_000.;
-        packet.put("TimingMs/" + command, deltaTime);
-    }
-
-    private void periodicTiming() {
-        try {
-            Class<?> clazz = CommandScheduler.class;
-
-            // 2. Get the specific private field
-            // Use getDeclaredField() to access private fields declared within the class
-            // getFields() only returns public fields
-            Field privateStringField = clazz.getDeclaredField("m_subsystems");
-
-            // 3. Make the private field accessible
-            // This is necessary to bypass Java language access control checks
-            privateStringField.setAccessible(true);
-
-            // 4. Get the value of the field from the specific object instance
-            @SuppressWarnings("unchecked")
-            Map<Subsystem, Command> fieldValue = (Map<Subsystem, Command>) privateStringField.get(CommandScheduler.getInstance());
-            assert fieldValue != null;
-            for (Subsystem subsystem : fieldValue.keySet()) {
-                long startTime2 = System.nanoTime();
-                subsystem.periodic();
-                double deltaTime = (System.nanoTime() - startTime2) / 1_000_000.;
-                packet.put("TimingMs/"+subsystem.toString(), deltaTime);
-            }
-
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     static double loggingTime;
@@ -221,6 +182,27 @@ public class Robot {
         CommandScheduler.getInstance().schedule(autoSequence);
     }
 
+    public static void runAutonomous(LinearOpMode opMode, Supplier<Command> autoSequence, boolean isRed) {
+        Robot.Init(opMode);
+        Robot.IsRed = isRed;
+        var autoCommand = autoSequence.get();
+
+        //run logic while disabled
+        while (!opMode.opModeIsActive()) {
+            Robot.Periodic();
+        }
+
+        //clear out auto
+        CommandScheduler.getInstance().cancelAll();
+        CommandScheduler.getInstance().clearButtons();
+        CommandScheduler.getInstance().schedule(autoCommand);
+
+        //run while enabled
+        while (!opMode.isStopRequested()) {
+            Robot.Periodic();
+        }
+    }
+
     public static boolean isEnabled() {
         return isEnabled;
     }
@@ -228,7 +210,7 @@ public class Robot {
     @Config
     public static class RobotConfig {
         //read position feedback from the dashboard and this should match
-        public static double SPINDEXER_OFFSET_COMP = 0.287;
+        public static double SPINDEXER_OFFSET_COMP = 0.364;
         public static double CALIBRATE_SHOT_RPM = 1000;
         public static double CALIBRATE_SHOT_HOOD = 0.3;
         public static long SPINDEXER_SHOT_DELAY = 120;
@@ -242,6 +224,8 @@ public class Robot {
         public static double SHOOTER_MOTOR_KV = 0.00019;
         /// How much power do we add based on the amount of error we have
         public static double SHOOTER_MOTOR_KP = 0.00028;
+        ///the higher this value, the more of current readings we use
+        public static double SHOOTER_RPM_SMOOTHER = 0.25;
 
         public static double SPINDEXER_OFFSET_PROG = 0.587;
     }
@@ -263,10 +247,13 @@ public class Robot {
                         spindexer.commandFloorLoadUntilBall(1),
                         spindexer.commandFloorLoadUntilBall(2),
                         spindexer.commandFloorLoadUntilBall(3),
-                        turret.setLedCommand(GoBildaLedColors.Orange),
-                        spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.Shoot)
+                        turret.setLedCommand(GoBildaLedColors.Orange)
                 ),
-                intake.runIntake());
+                intake.runIntake()
+        ).andThen(new ParallelCommandGroup(
+                new WaitCommand(250).andThen(intake.runOuttake().withTimeout(1000)),
+                spindexer.commandSpindexerPos(1, Spindexer.SpindexerType.Shoot)
+        ));
     }
 
     public static Command calibrateShooter() {
@@ -456,5 +443,33 @@ public class Robot {
             } while(!command.isFinished() && !timer.done());
             command.end(timer.done());
         }
+    }
+
+    public static Command resetRobot(Pose startPose) {
+        return new ParallelCommandGroup(
+                drivetrain.DriveToPose(startPose),
+                turret.commandTurretAngle(0),
+                shooter.setRpm(0)
+        );
+    }
+
+    public static Command presetShot(Pose shootingPose) {
+        return new ParallelCommandGroup(
+                shooter.preShotRpm(shootingPose),
+                turret.preShotTurret(shootingPose),
+                hoodAngle.preShotHood(shootingPose)
+        );
+    }
+
+    public static Command autoShootMotif() {
+        return new SequentialCommandGroup(
+                //new ConditionalCommand(fastShot(1), new InstantCommand(), spindexer.hasBall(1)),
+                //new ConditionalCommand(fastShot(2), new InstantCommand(), spindexer.hasBall(2)),
+                //new ConditionalCommand(fastShot(3), new InstantCommand(), spindexer.hasBall(3)),
+                fastShot(1),
+                fastShot(2),
+                fastShot(3),
+                ballevator.commandDown()
+        );
     }
 }

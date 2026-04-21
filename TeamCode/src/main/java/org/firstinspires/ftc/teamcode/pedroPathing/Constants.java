@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
 
+import com.pedropathing.control.PredictiveBrakingCoefficients;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.follower.FollowerConstants;
 import com.pedropathing.ftc.FollowerBuilder;
@@ -16,8 +17,13 @@ import org.firstinspires.ftc.teamcode.Robot;
 public class Constants {
     public static FollowerConstants followerConstantsComp = new FollowerConstants()
             .mass(13.38)  //in KG?, 29.5 lbs on 3/7/26
-            .forwardZeroPowerAcceleration(-10.3166)
-            .lateralZeroPowerAcceleration(-8.1215);
+            .forwardZeroPowerAcceleration(-28.58)
+            .lateralZeroPowerAcceleration(-61.1396)
+            .predictiveBrakingCoefficients(new PredictiveBrakingCoefficients(
+                    0.12,
+                    0.06432,
+                    0.001944))
+            .centripetalScaling(0);
 
     public static PinpointConstants localizerConstantsComp = new PinpointConstants()
             .forwardPodY(-5)     //forward pod 3.75, -5
@@ -43,7 +49,7 @@ public class Constants {
             .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED);
 
-    public static PathConstraints pathConstraints = new PathConstraints(0.99, 100, 1, 1);
+    public static PathConstraints pathConstraints = new PathConstraints(0.97, 100, 1, 1);
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)

@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.subsystems;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.revrobotics.ColorMatch;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
@@ -149,7 +150,7 @@ public class Spindexer extends SubsystemBase {
         if (Robot.RobotType == Robot.RobotTypeEnum.Programming) {
             return 0.188;
         } else {
-            return 0.133;
+            return 0.139;
         }
     }
 
@@ -238,6 +239,7 @@ public class Spindexer extends SubsystemBase {
         private int passes;
         private double lastFeedback;
         private double command;
+        private ElapsedTime timer;
         public SetSpindexerPos(double position) {
             pos = position;
             addRequirements(Robot.spindexer);
@@ -252,6 +254,7 @@ public class Spindexer extends SubsystemBase {
             packet.put("Spindexer/CommandedPosition", pos);
             lastFeedback = readFeedback();
             command = pos;
+            timer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
         }
         @Override
         public void execute() {
@@ -262,6 +265,7 @@ public class Spindexer extends SubsystemBase {
                 passes++;
             } else {
                 passes = 0;
+                timer.reset();
                 var deltaFeedback = feedback - lastFeedback;
                 if(Math.abs(deltaFeedback) < 0.01) {
                     //command += Math.signum(pos - feedback) * 0.001;
@@ -271,7 +275,7 @@ public class Spindexer extends SubsystemBase {
         }
         @Override
         public boolean isFinished() {
-            return passes > 3;
+            return timer.time() > Robot.RobotConfig.SPINDEXER_SHOT_DELAY;
         }
     }
 

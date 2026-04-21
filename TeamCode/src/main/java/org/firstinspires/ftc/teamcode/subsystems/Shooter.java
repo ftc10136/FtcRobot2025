@@ -1,10 +1,9 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.VoltageSensor;
-import com.qualcomm.robotcore.util.Range;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
@@ -21,7 +20,7 @@ public class Shooter extends SubsystemBase {
     private final TelemetryPacket packet;
     private final InterpolatingDoubleTreeMap shootingTable;
     private boolean atTarget;
-    private double veloRPM;
+    private double smoothRpm;
 
     public Shooter() {
         packet = new TelemetryPacket();
@@ -36,37 +35,40 @@ public class Shooter extends SubsystemBase {
         TurretShooterMotor2.setVelocityPIDFCoefficients(55, 0.01, 0, 12.2);
         TurretShooterMotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         TurretShooterMotor2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        smoothRpm = 0;
         atTarget = false;
 
         //shot rpm table, input distance in inches, output rpm
         //values are from testing calibrateShot command at different distances
         //also set HoodAngle.shootingTable for hood angles
         shootingTable = new InterpolatingDoubleTreeMap();
-        shootingTable.put(34.73, 2528.);
-        shootingTable.put(46.68, 2742.);
-        shootingTable.put(58.66, 2800.);
-        shootingTable.put(70.57, 2975.);
-        shootingTable.put(82.5, 3200.);
-        shootingTable.put(94.68, 3525.);
-        shootingTable.put(106.56, 3800.);
-        shootingTable.put(118.46, 3920.);
-        shootingTable.put(129.94, 4075.);
+        shootingTable.put(34.73, 2728.);
+        shootingTable.put(46.68, 2942.);
+        shootingTable.put(58.66, 3000.);
+        shootingTable.put(70.57, 3175.);
+        shootingTable.put(82.5, 3450.);
+        shootingTable.put(94.68, 3725.);
+        shootingTable.put(106.56, 4000.);
+        shootingTable.put(118.46, 4120.);
+        shootingTable.put(129.94, 4275.);
         shootingTable.put(142.32, 4300.);
-        shootingTable.put(154., 4350.);
-        shootingTable.put(166.28, 4500.);
+        shootingTable.put(154., 4300.);
+        shootingTable.put(166.28, 4350.);
     }
 
     @Override
     public void periodic() {
         double veloTicksPerSec = TurretShooterMotor.getVelocity();
         //there are 28 pulses per revolution
-        veloRPM = veloTicksPerSec * 60/28;
+        double veloRPM = veloTicksPerSec * 60 / 28;
         double veloTicksPerSec2 = TurretShooterMotor2.getVelocity();
         //there are 28 pulses per revolution
         double veloRPM2 = veloTicksPerSec2 * 60/28;
+        smoothRpm = (veloRPM * Robot.RobotConfig.SHOOTER_RPM_SMOOTHER) + (smoothRpm * (1-Robot.RobotConfig.SHOOTER_RPM_SMOOTHER));
         packet.put("Shooter/VelocityTicksSec1", veloTicksPerSec);
         packet.put("Shooter/VelocityRpm1", veloRPM);
         packet.put("Shooter/VelocityRpm2", veloRPM2);
+        packet.put("Shooter/SmoothRpm", smoothRpm);
         //packet.put("Shooter/Voltage1", TurretShooterMotor.getPower());
         //packet.put("Shooter/Current1", TurretShooterMotor.getCurrent(CurrentUnit.AMPS));
         //packet.put("Shooter/Voltage2", TurretShooterMotor2.getPower());
@@ -74,11 +76,13 @@ public class Shooter extends SubsystemBase {
         packet.put("Shooter/Command", RobotUtil.getCommandName(getCurrentCommand()));
         packet.put("Shooter/AtTarget", atTarget);
         packet.put("Currents/Shooter1", TurretShooterMotor.getCurrent(CurrentUnit.AMPS));
-        packet.put("Currents/Shooter2", TurretShooterMotor.getCurrent(CurrentUnit.AMPS));
+        packet.put("Currents/Shooter2", TurretShooterMotor2.getCurrent(CurrentUnit.AMPS));
         Robot.logPacket(packet);
     }
 
     private void setRpmMotor(double rpm) {
+        packet.put("Shooter/TargetRpm", rpm);
+
         //software based PID
         //double feedForward = Robot.RobotConfig.SHOOTER_MOTOR_KS + (rpm * Robot.RobotConfig.SHOOTER_MOTOR_KV);
         //double feedBack = (rpm - veloRPM) * Robot.RobotConfig.SHOOTER_MOTOR_KP;
@@ -88,10 +92,27 @@ public class Shooter extends SubsystemBase {
         //}
         //TurretShooterMotor.setPower(power);
         //TurretShooterMotor2.setPower(power);
+
         //hardware based PID shots
-        TurretShooterMotor.setVelocity((28. / 60) * rpm);
-        TurretShooterMotor2.setVelocity((28. / 60) * rpm);
-        atTarget = Math.abs(rpm - veloRPM) < 50;
+        double deltaRpm = rpm - smoothRpm;
+        if (deltaRpm > 120) {
+            //need to command a bigger power to catch up faster.  (This might be better P tuning)
+            double power = (rpm / 6000.) * 1.22;
+            TurretShooterMotor.setPower(power);
+            TurretShooterMotor2.setPower(power);
+        }
+        else if (deltaRpm < -120) {
+            //need to slow down hard by commanding a slower motor power.  When the power is too far off,
+            //the rev controller drops to 0 power, which would be coast or brake mode kicking in,
+            //not motor forcing slowdown
+            double power = (rpm / 6000.) * 0.93;
+            TurretShooterMotor.setPower(power);
+            TurretShooterMotor2.setPower(power);
+        } else {
+            TurretShooterMotor.setVelocity((28. / 60) * rpm);
+            TurretShooterMotor2.setVelocity((28. / 60) * rpm);
+        }
+        atTarget = Math.abs(deltaRpm) < 50;
     }
 
     public boolean atTarget() {
@@ -108,6 +129,10 @@ public class Shooter extends SubsystemBase {
 
     public Command autoShotRpm() {
         return new AutoShotRpm();
+    }
+
+    public Command preShotRpm(Pose shootingPose) {
+        return new PreShotRpm(shootingPose);
     }
 
     private class SetRpm extends CommandBase {
@@ -134,6 +159,25 @@ public class Shooter extends SubsystemBase {
         public void execute() {
             double dist = Robot.drivetrain.getGoalDistance();
             var rpm = shootingTable.get(dist);
+            setRpmMotor(rpm);
+        }
+    }
+
+    private class PreShotRpm extends CommandBase {
+        Pose pose;
+        double rpm;
+        public PreShotRpm(Pose shootingPose) {
+            this.pose = shootingPose;
+            addRequirements(Robot.shooter);
+        }
+        @Override
+        public void initialize() {
+            double dist = DrivetrainPP.getGoalDistance(pose);
+            rpm = shootingTable.get(dist);
+            setRpmMotor(rpm);
+        }
+        @Override
+        public void execute() {
             setRpmMotor(rpm);
         }
     }
