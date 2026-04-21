@@ -61,11 +61,11 @@ public class Turret extends SubsystemBase {
 
         //sometimes on rollover, we catch 3.2, then 1.4, then 0.1 during the transition of rollover,
         //this if check catches when we settle
-        if(Math.abs(lastSensorVoltage - voltage) < 0.4) {
+        if(Math.abs(lastSensorVoltage - voltage) < 0.9) {
             //voltage hops from 0 to 3.22v, then back to zero
-            if (lastGoodVoltage > 2.7 && voltage < 0.5) {
+            if (lastGoodVoltage > 2.2 && voltage < 1.1) {
                 rollovers++;
-            } else if (voltage > 2.7 && lastGoodVoltage < 0.5) {
+            } else if (voltage > 2.2 && lastGoodVoltage < 1.1) {
                 rollovers--;
             }
             continuousVoltage = (3.22 * rollovers) + voltage;
