@@ -247,7 +247,7 @@ public class Turret extends SubsystemBase {
 
         @Override
         public void initialize() {
-            angle = DrivetrainPP.getGoalAngle(pose) - (90 - Math.toDegrees(pose.getHeading()));
+            angle = DrivetrainPP.getGoalTarget(pose).GoalAngle - (90 - Math.toDegrees(pose.getHeading()));
             timer.reset();
             setAngle(angle);
         }

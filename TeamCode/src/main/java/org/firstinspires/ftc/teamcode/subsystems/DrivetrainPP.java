@@ -4,7 +4,6 @@ import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.BezierLine;
-import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
@@ -73,10 +72,10 @@ public class DrivetrainPP extends SubsystemBase {
         packet.put("Drivetrain/PedroX", pedroPose.getX());
         packet.put("Drivetrain/PedroY", pedroPose.getY());
         packet.put("Drivetrain/PedroHeading", pedroPose.getHeading());
-        //packet.put("Drivetrain/EncoderX", odo.getEncoderX());
-        //packet.put("Drivetrain/EncoderY", odo.getEncoderY());
-        packet.put("Drivetrain/GoalDist", getGoalDistance());
-        packet.put("Drivetrain/GoalAngle", getGoalAngle());
+        var reading = getGoalTarget(getPose());
+        packet.put("Drivetrain/GoalDist", reading.GoalDistance);
+        packet.put("Drivetrain/TurretToPlateDist", reading.TagDistance);
+        packet.put("Drivetrain/GoalAngle", reading.GoalAngle);
 
         for(var motorName : motors.keySet()) {
             var motor = motors.get(motorName);
@@ -187,34 +186,61 @@ public class DrivetrainPP extends SubsystemBase {
     }
 
     public double getGoalDistance() {
-        return getGoalDistance(follower.getPose());
+        return getGoalTarget(follower.getPose()).GoalDistance;
     }
-    public static double getGoalDistance(Pose pose) {
-        Pose goal;
+
+    public static class DistanceResults {
+        double TurretPoseX;
+        double TurretPoseY;
+        /// What angle to shoot at the goal, 0* north, cw increments in degrees
+        double GoalAngle;
+        /// How far is the target away in inches
+        double GoalDistance;
+        double TagDistance;
+    }
+
+    public static DistanceResults getGoalTarget(Pose robotPose) {
+        double CAMERA_X = 4;
+        double CAMERA_Y = 0;
+        DistanceResults results = new DistanceResults();
+
+        //calculate where the turret is based on the rotation of the robot
+        double hyp = Math.sqrt(CAMERA_X * CAMERA_X + CAMERA_Y * CAMERA_Y);
+        double cameraRad = Math.asin(CAMERA_X / hyp);
+        //Pedro coordinates are 0* to the east, ccw increments, we use 0* north, cw increments
+        double headRad = Math.PI/2 - robotPose.getHeading() + cameraRad;
+
+        results.TurretPoseX = robotPose.getX() + hyp * Math.sin(headRad);
+        results.TurretPoseY = robotPose.getY() + hyp * Math.cos(headRad);
+
+        //currently, we are always shooting at the back corner of the goals, at logo height to bounce off
+        double goalX, goalY, tagX, tagY;
         if (Robot.IsRed) {
-            goal = new Pose(138, 144, 0, PedroCoordinates.INSTANCE);
+            goalX = 144;
+            tagX = 129;
+            tagY = 131;
         } else {
-            goal = new Pose(6, 144, 0, PedroCoordinates.INSTANCE);
+            goalX = 0;
+            tagX = 15;
+            tagY = 131;
         }
-        var deltaX = goal.getX() - pose.getX();
-        var deltaY = goal.getY() - pose.getY();
-        return Math.sqrt((deltaX * deltaX) + (deltaY * deltaY));
+        goalY = 144;
+
+        //calculate the goal offsets
+        double deltaX = goalX - results.TurretPoseX;
+        double deltaY = goalY - results.TurretPoseY;
+        results.GoalDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        results.GoalAngle = Math.toDegrees(Math.atan(deltaX / deltaY));
+
+        deltaX = tagX - results.TurretPoseX;
+        deltaY = tagY - results.TurretPoseY;
+        results.TagDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+        return results;
     }
 
     public double getGoalAngle() {
-        return getGoalAngle(follower.getPose());
-    }
-
-    public static double getGoalAngle(Pose pose) {
-        Pose goal;
-        if(Robot.IsRed) {
-            goal = new Pose(138,144,0, PedroCoordinates.INSTANCE);
-        } else {
-            goal = new Pose(6,144,0, PedroCoordinates.INSTANCE);
-        }
-        var deltaX = goal.getX() - pose.getX();
-        var angleRad = Math.acos(deltaX / getGoalDistance(pose));
-        return 90-Math.toDegrees(angleRad);
+        return getGoalTarget(follower.getPose()).GoalAngle;
     }
 
     //zero = look at goal side, clockwise positive

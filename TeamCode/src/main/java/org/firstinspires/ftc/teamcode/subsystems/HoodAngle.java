@@ -120,7 +120,7 @@ public class HoodAngle extends SubsystemBase {
         }
         @Override
         public void initialize() {
-            double dist = DrivetrainPP.getGoalDistance(pose);
+            double dist = DrivetrainPP.getGoalTarget(pose).GoalDistance;
             angle = shootingTable.get(dist);
             setHoodAngle(angle);
         }

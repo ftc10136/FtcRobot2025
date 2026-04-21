@@ -172,7 +172,7 @@ public class Shooter extends SubsystemBase {
         }
         @Override
         public void initialize() {
-            double dist = DrivetrainPP.getGoalDistance(pose);
+            double dist = DrivetrainPP.getGoalTarget(pose).GoalDistance;
             rpm = shootingTable.get(dist);
             setRpmMotor(rpm);
         }
