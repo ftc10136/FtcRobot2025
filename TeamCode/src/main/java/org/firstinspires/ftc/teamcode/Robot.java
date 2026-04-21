@@ -246,7 +246,8 @@ public class Robot {
                 intake.runIntake(),
                 new RepeatCommand(new SequentialCommandGroup(
                         helidexer.commandFloorLoadUntilBall(1),
-                        helidexer.primeForShot(),
+                        helidexer.advanceBay(),
+                        helidexer.advanceBay(),
                         helidexer.shootAll()
                 ))
         );
