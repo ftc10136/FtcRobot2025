@@ -42,18 +42,19 @@ public class Shooter extends SubsystemBase {
         //values are from testing calibrateShot command at different distances
         //also set HoodAngle.shootingTable for hood angles
         shootingTable = new InterpolatingDoubleTreeMap();
-        shootingTable.put(34.73, 2528.);
-        shootingTable.put(46.68, 2742.);
-        shootingTable.put(58.66, 2800.);
-        shootingTable.put(70.57, 2975.);
-        shootingTable.put(82.5, 3200.);
-        shootingTable.put(94.68, 3525.);
-        shootingTable.put(106.56, 3800.);
-        shootingTable.put(118.46, 3920.);
-        shootingTable.put(129.94, 4075.);
-        shootingTable.put(142.32, 4300.);
-        shootingTable.put(154., 4350.);
-        shootingTable.put(166.28, 4500.);
+        shootingTable.put(35.35, 2785.);
+        shootingTable.put(47.93, 2850.);
+        shootingTable.put(60.1, 3000.);
+        shootingTable.put(67.59, 3100.); //48"
+        shootingTable.put(79.8, 3300.); //60"
+        shootingTable.put(92.09, 3550.); //72"
+        shootingTable.put(104.78, 3700.); //84
+        shootingTable.put(116.58, 3900.); //96
+        shootingTable.put(132.33, 4050.); //108
+        shootingTable.put(143.21, 4200.); //120
+        shootingTable.put(151.91, 4300.); //132
+        shootingTable.put(164.51, 4550.); //144
+        shootingTable.put(175.52, 4800.); //156
     }
 
     @Override
