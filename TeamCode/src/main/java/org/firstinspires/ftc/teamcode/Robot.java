@@ -25,6 +25,7 @@ import org.firstinspires.ftc.teamcode.subsystems.DrivetrainPP;
 import org.firstinspires.ftc.teamcode.subsystems.Helidexer;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
+import org.firstinspires.ftc.teamcode.subsystems.SpinBay;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 import org.firstinspires.ftc.teamcode.subsystems.HoodAngle;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
@@ -47,13 +48,13 @@ public class Robot {
     public static Vision vision;
     private static Servo allianceLed;
     public static Helidexer helidexer;
-
-    public static boolean IsRed = false;
+    public static boolean IsRed = true;
     public static RobotTypeEnum RobotType = RobotTypeEnum.Helidexer;
     private static TelemetryPacket packet;
 
     private static LoggerCommandTimer logTimer;
     private static boolean isEnabled;
+    private static boolean autonomous = false;
 
     public enum RobotTypeEnum {
         Competition,
@@ -100,6 +101,7 @@ public class Robot {
     public static void Periodic() {
         long startTime = System.nanoTime();
         loggingTime = 0;
+        setLed();
         CommandScheduler.getInstance().run();
 
         double deltaTime = (System.nanoTime() - startTime) / 1_000_000.;
@@ -107,6 +109,13 @@ public class Robot {
         packet.put("TimingMs/CommandTime", deltaTime);
         logPacket(packet);
 
+        String alliance;
+        if(IsRed) {
+            alliance = "Red";
+        } else {
+            alliance = "Blue";
+        }
+        opMode.telemetry.addData("Alliance", alliance);
         opMode.telemetry.addData("TurretAngle", turret.getAngle());
         opMode.telemetry.addData("ShotDistance", drivetrain.getGoalDistance());
         opMode.telemetry.addData("Command TimeMs", deltaTime);
@@ -141,7 +150,7 @@ public class Robot {
         //default commands that run when the robot is idle
         drivetrain.startTeleopDrive(true);
         drivetrain.setDefaultCommand(drivetrain.teleopDrive());
-        //turret.setDefaultCommand(turret.centerTurretViaPosition().perpetually());
+        turret.setDefaultCommand(turret.centerTurretViaPosition().perpetually());
         shooter.setDefaultCommand(shooter.autoShotRpm().perpetually());
         hoodAngle.setDefaultCommand(hoodAngle.autoShotHood().perpetually());
         helidexer.resetHome();
@@ -151,13 +160,13 @@ public class Robot {
         controls.resetFieldOriented().whenActive(drivetrain.resetFieldOriented());
         controls.shootActive().toggleWhenActive(shootAllBalls(false));
         //controls.bumpSpindexerLeft().whileActiveContinuous(helidexer.shootAll());
-        controls.bumpSpindexerRight().whileActiveContinuous(helidexer.advanceBay());
+        //controls.bumpSpindexerRight().whileActiveContinuous(helidexer.advanceBay());
         controls.shootMotif().toggleWhenActive(shootAllBalls(true));
 
         controls.flipAlliance().whenActive(flipAlliance());
         controls.resetTurretAngle().whenActive(turret.resetZero());
-        controls.bumpTurretRotationsLeft().whenActive(turret.bumpRotations(-1));
-        controls.bumpTurretRotationsRight().whenActive(turret.bumpRotations(1));
+        //controls.bumpTurretRotationsLeft().whenActive(turret.bumpRotations(-1));
+        //controls.bumpTurretRotationsRight().whenActive(turret.bumpRotations(1));
 
         //test commands
         Trigger shootCalibration = new Trigger(() -> Robot.opMode.gamepad1.start);
@@ -178,6 +187,7 @@ public class Robot {
     public static void runAutonomous(LinearOpMode opMode, Supplier<Command> autoSequence, boolean isRed) {
         Robot.Init(opMode);
         Robot.IsRed = isRed;
+        autonomous = true;
         var autoCommand = autoSequence.get();
 
         //run logic while disabled
@@ -189,7 +199,7 @@ public class Robot {
         CommandScheduler.getInstance().cancelAll();
         CommandScheduler.getInstance().clearButtons();
         CommandScheduler.getInstance().schedule(autoCommand);
-
+        Robot.isEnabled = true;
         //run while enabled
         while (!opMode.isStopRequested()) {
             Robot.Periodic();
@@ -207,7 +217,7 @@ public class Robot {
         public static long SPINDEXER_SHOT_DELAY = 120;
         /// How long must a ball be read before we update the bay status with a color
         public static double BALL_BAY_TIME_MS = 15;
-        public static double TURRET_OFFSET_DEG = 26.3;
+        public static double TURRET_OFFSET_DEG = -84.62;
         /// How much power do we need to start the motor from zero
         public static double SHOOTER_MOTOR_KS = 0.02;
         /// What is the power needed to get to certain RPMs
@@ -219,6 +229,7 @@ public class Robot {
         public static int POSITION_TOLERANCE = 30;
         public static double HELIDEXER_P = 0.7;
 		public static double SHOOTER_RPM_SMOOTHER = 0.25;
+        public static double CAMERA_SERVO_POS = 0.5;
     }
 
     public static Command commandFloorLoad() {
@@ -240,7 +251,7 @@ public class Robot {
     public static Command calibrateShooter() {
         //drop balls in the HP hole and the robot shoots them
         return new ParallelCommandGroup(
-                turret.commandTurretAngle(0),
+                //turret.commandTurretAngle(0),
                 shooter.calibrateShot(),
                 hoodAngle.calibrateShot(),
                 intake.runIntake(),
@@ -263,10 +274,11 @@ public class Robot {
 
         return new ParallelDeadlineGroup(
                 new SequentialCommandGroup(
-                        new ParallelCommandGroup(
+                        primeCommand,
+                        /*new ParallelCommandGroup(
                                 new WaitUntilCommand(readyToShoot()).withTimeout(2000),
-                                primeCommand
-                        ),
+
+                        ),*/
                         helidexer.shootAll(),
                         turret.setLedCommand(GoBildaLedColors.Off),
                         new InstantCommand(() -> {
@@ -277,8 +289,8 @@ public class Robot {
                 logTimer.startLog(),
                 shooter.autoShotRpm().perpetually(),
                 hoodAngle.autoShotHood().perpetually(),
-                turret.centerTurretViaPosition().perpetually(),
-                drivetrain.holdAtSpot().perpetually()
+                turret.centerTurretViaPosition().perpetually()
+                //drivetrain.holdAtSpot().perpetually()
         );
     }
 
@@ -298,7 +310,52 @@ public class Robot {
     }
 
     private static void setLed() {
-        if (Robot.IsRed) {
+        boolean ready = true;
+        if (isEnabled() == false) {
+            if (helidexer.isMotifPossible() == false) {
+                opMode.telemetry.addLine("3 balls not loaded correctly.");
+                ready = false;
+            }
+            if (helidexer.getBayState(1) != SpinBay.BayState.Green) {
+                opMode.telemetry.addLine("Green must be loaded in bay 1 and pointed at intake.");
+                ready = false;
+            }
+            if(Math.abs(turret.getAngle()) > 10) {
+                opMode.telemetry.addLine("Turret must be pointed straight forward or zeroed.");
+                ready = false;
+            }
+            //check position
+            if(autonomous && !vision.seesMotif() ) {
+                opMode.telemetry.addLine("Limelight does not see motif tag.");
+                ready = false;
+                /*
+                //this logic won't work because we can't get an accurate vision pose with a disabled servo
+                var visionPose = vision.getVisionPose();
+                var drivePose = drivetrain.getPose();
+                if (!vision.seesMotif() || visionPose.isEmpty()) {
+                    opMode.telemetry.addLine("Limelight does not see motif and goal tag.");
+                    ready = false;
+                }
+
+                if(visionPose.isPresent()) {
+                    var deltaX = drivePose.getX() - visionPose.get().getX();
+                    var deltaY = drivePose.getY() - visionPose.get().getY();
+                    var dist = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                    //inches off from auto pose
+                    if (dist > 4) {
+                        opMode.telemetry.addLine("Robot is not in the right position.");
+                        ready = false;
+                    }
+                }
+                 */
+            }
+        }
+        //show status
+        if (ready == false) {
+            allianceLed.setPosition(GoBildaLedColors.Yellow);
+        } else if (readyToShoot().getAsBoolean()) {
+            allianceLed.setPosition(GoBildaLedColors.Green);
+        } else if (Robot.IsRed) {
             allianceLed.setPosition(GoBildaLedColors.Red);
         } else {
             allianceLed.setPosition(GoBildaLedColors.Blue);

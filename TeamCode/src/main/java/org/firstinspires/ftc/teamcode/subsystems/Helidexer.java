@@ -7,7 +7,6 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.ConditionalCommand;
-import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
@@ -58,20 +57,22 @@ public class Helidexer extends SubsystemBase {
     public void periodic() {
         loops++;
         int currentBay = (getCurrentBay() % 3) + 1;
-        if (Robot.intake.isRunning() && bays.get("Bay" + currentBay).getState() == SpinBay.BayState.None) {
+        priorityBay = (loops % 3) + 1;
+        /*
+        if (Robot.intake.isRunning() && getBayState(currentBay) == SpinBay.BayState.None) {
             //if we are intaking a bay, see if it has a ball ASAP
-            priorityBay = currentBay;
+
         } else {
             //default to checking each bay once a loop
             priorityBay = (loops % 3) + 1;
             for(int i=1; i<=3; i++) {
                 //if a bay is something, it gets more priority to find a color
-                if (bays.get("Bay" + i).getState() == SpinBay.BayState.Something) {
+                if (getBayState(i) == SpinBay.BayState.Something) {
                     priorityBay = i;
                     break;
                 }
             }
-        }
+        }*/
         for (var entry : bays.entrySet()) {
             var key = entry.getKey();
             var bay = entry.getValue();
@@ -102,11 +103,15 @@ public class Helidexer extends SubsystemBase {
         return priorityBay;
     }
 
+    public SpinBay.BayState getBayState(int bay) {
+        return Objects.requireNonNull(bays.get("Bay" + bay)).getState();
+    }
+
     public BooleanSupplier hasBall(int bay) {
         return new BooleanSupplier() {
             @Override
             public boolean getAsBoolean() {
-                return Objects.requireNonNull(bays.get("Bay" + bay)).getState() != SpinBay.BayState.None;
+                return getBayState(bay) != SpinBay.BayState.None;
             }
         };
     }
@@ -145,7 +150,7 @@ public class Helidexer extends SubsystemBase {
         int green = 0;
 
         for (int i=1; i<=3; i++) {
-            var state = Objects.requireNonNull(bays.get("Bay" + i)).getState();
+            var state = getBayState(i);
             if (state == SpinBay.BayState.Green) {
                 green++;
             } else if (state == SpinBay.BayState.Purple) {
@@ -227,6 +232,11 @@ public class Helidexer extends SubsystemBase {
         public boolean isFinished() {
             return Math.abs(helixMotor.getCurrentPosition() - pos) < Robot.RobotConfig.POSITION_TOLERANCE;
         }
+
+        @Override
+        public void end(boolean interrupted) {
+            helixMotor.setPower(0);
+        }
     }
 
     private class ShootAll extends CommandBase {
@@ -251,6 +261,7 @@ public class Helidexer extends SubsystemBase {
         @Override
         public void end(boolean interrupted) {
             resetBayStates();
+            helixMotor.setPower(0);
         }
     }
 
@@ -290,6 +301,11 @@ public class Helidexer extends SubsystemBase {
         public boolean isFinished() {
             return Math.abs(helixMotor.getCurrentPosition() - pos) < Robot.RobotConfig.POSITION_TOLERANCE;
         }
+
+        @Override
+        public void end(boolean interrupted) {
+            helixMotor.setPower(0);
+        }
     }
 
     public class CommandFloorLoadUntilBall extends CommandBase {
@@ -322,7 +338,12 @@ public class Helidexer extends SubsystemBase {
 
         @Override
         public boolean isFinished() {
-            return Objects.requireNonNull(bays.get("Bay" + (targetBay + 1))).getState() != SpinBay.BayState.None;
+            return getBayState(targetBay + 1) != SpinBay.BayState.None;
+        }
+
+        @Override
+        public void end(boolean interrupted) {
+            helixMotor.setPower(0);
         }
     }
 
@@ -356,7 +377,7 @@ public class Helidexer extends SubsystemBase {
 
             int currentGreenBay = 1;
             for(int i = 1; i<=3; i++) {
-                if(Objects.requireNonNull(bays.get("Bay" + i)).getState() == SpinBay.BayState.Green) {
+                if(getBayState(i) == SpinBay.BayState.Green) {
                     int modBay = currentBay % 3;
                     if(i == 1 && modBay == 0) currentGreenBay = 0;
                     if(i == 1 && modBay == 1) currentGreenBay = 1;
@@ -397,6 +418,11 @@ public class Helidexer extends SubsystemBase {
         @Override
         public boolean isFinished() {
             return Math.abs(helixMotor.getCurrentPosition() - pos) < Robot.RobotConfig.POSITION_TOLERANCE;
+        }
+
+        @Override
+        public void end(boolean interrupted) {
+            helixMotor.setPower(0);
         }
     }
 }

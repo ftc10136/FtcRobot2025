@@ -31,6 +31,7 @@ public class Vision extends SubsystemBase {
     private Servo limelightServo;
     private Motifs seenMotif;
     private Optional<Pose> visionPose;
+    private boolean hasMotifTag;
 
     public enum Motifs {
         Unknown,
@@ -47,7 +48,7 @@ public class Vision extends SubsystemBase {
             // LimelightPipelines: 1=20/BlueAlliance, 2=24/RedAlliance, 3=20,21,22
             limelight.pipelineSwitch(6);
             limelightServo = Robot.opMode.hardwareMap.get(Servo.class, "CameraServo");
-            //limelightServo.setPosition(0.4);
+            limelightServo.setPosition(0.5);
         }
         if (HUSKYLEN_ENABLED) {
             huskyLens = Robot.opMode.hardwareMap.get(HuskyLens.class, "HuskyLens");
@@ -61,8 +62,9 @@ public class Vision extends SubsystemBase {
 
     @Override
     public void periodic() {
+        hasMotifTag = false;
         if(LIMELIGHT_ENABLED) {
-            //limelightServo.setPosition(0.4);
+            limelightServo.setPosition(Robot.RobotConfig.CAMERA_SERVO_POS);
             if(!isCameraConnected()) {
                 //limelight.pipelineSwitch(6);
             }
@@ -114,14 +116,17 @@ public class Vision extends SubsystemBase {
 
                 if(tagId == 21) {
                     seenMotif = Motifs.GPP;
+                    hasMotifTag = true;
                 } else if(tagId == 22) {
                     seenMotif = Motifs.PGP;
+                    hasMotifTag = true;
                 } else if(tagId == 23) {
                     seenMotif = Motifs.PPG;
+                    hasMotifTag = true;
                 }
 
                 if(tagId == 20 || tagId == 24) {
-                    //hasLocatingTag = true;
+                    hasLocatingTag = true;
                 }
             }
 
@@ -139,8 +144,8 @@ public class Vision extends SubsystemBase {
     private void logPose(Pose3D pose, String name) {
         var pedroPose = new Pose(-pose.getPosition().y, pose.getPosition().x, pose.getOrientation().getYaw(AngleUnit.RADIANS), FTCCoordinates.INSTANCE).getAsCoordinateSystem(PedroCoordinates.INSTANCE);
 
-        packet.put("Vision/Pedro " + name + " x", pedroPose.getX()*39.37);
-        packet.put("Vision/Pedro " + name + " y", pedroPose.getY()*39.37);
+        packet.put("Vision/Pedro " + name + " x", pedroPose.getX());
+        packet.put("Vision/Pedro " + name + " y", pedroPose.getY());
         packet.put("Vision/Pedro " + name + " heading", pedroPose.getHeading()+Math.PI);
     }
 
@@ -174,4 +179,5 @@ public class Vision extends SubsystemBase {
     public boolean seesBalls() {
         return blocks.length > 0;
     }
+    public boolean seesMotif() {return hasMotifTag;}
 }

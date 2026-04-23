@@ -57,6 +57,8 @@ public class Turret extends SubsystemBase {
 
     @Override
     public void periodic() {
+        //enable this if you want to do zeroing of the turret easily
+        offsetAngle = Robot.RobotConfig.TURRET_OFFSET_DEG;
         double voltage = turretEncoder.getVoltage();
 
         //sometimes on rollover, we catch 3.2, then 1.4, then 0.1 during the transition of rollover,
@@ -68,7 +70,7 @@ public class Turret extends SubsystemBase {
             } else if (voltage > 2.2 && lastGoodVoltage < 1.1) {
                 rollovers--;
             }
-            continuousVoltage = (3.22 * rollovers) + voltage;
+            continuousVoltage = (3.296 * rollovers) + voltage;
             lastGoodVoltage = voltage;
         }
         lastSensorVoltage = voltage;
@@ -81,11 +83,10 @@ public class Turret extends SubsystemBase {
         packet.put("Turret/Command", RobotUtil.getCommandName(getCurrentCommand()));
         packet.put("Turret/AtTarget", atTarget);
         Robot.logPacket(packet);
-        Robot.opMode.telemetry.addData("TurretFeedback", turretEncoder.getVoltage());
     }
 
     private void setAngle(double angleDeg) {
-        var clamp = MathUtil.clamp(angleDeg, -60., 300.);
+        var clamp = MathUtil.clamp(angleDeg, -120., 120);
         long currentTime = System.nanoTime();
         double deltaTime = (currentTime - lastTime) / 1_000_000_000.;
         boolean inRange = Math.abs(angleDeg - getAngle()) < 1.5;
@@ -103,31 +104,29 @@ public class Turret extends SubsystemBase {
             output *= -1;
 
             //make soft limits for requests
-            if(output < 0 && getAngle() < -45) {
+            if(output < 0 && getAngle() < -120) {
                 output = 0;
-            } else if (output > 0 && getAngle() > 225) {
+            } else if (output > 0 && getAngle() > 120) {
                 output = 0;
             }
 
             if(inRange) {
                 output = 0;
             }
-            var outClamp = MathUtil.clamp(output + 0.5, 0.35, 0.65);
-            //TODO enable me
-            //turretSpin.setPosition(outClamp);
+            var outClamp = MathUtil.clamp(output + 0.5, 0.30, 0.70);
+            turretSpin.setPosition(outClamp);
             packet.put("Turret/OutClamp", outClamp);
             lastTime = currentTime;
         } else {
             pid.reset();
         }
 
-        packet.put("Turret/DeltaTime", deltaTime);
         packet.put("Turret/RequestAngle", angleDeg);
 
         if(!inRange) {
             timer.reset();
         }
-        atTarget = timer.time() > 100;
+        atTarget = timer.time() > 200;
     }
 
     private void resetPid() {
@@ -148,9 +147,7 @@ public class Turret extends SubsystemBase {
     }
 
     public double getAngle() {
-        //return estimatedAngle - offsetAngle;
-        //TODO remove me
-        return 0;
+        return estimatedAngle - offsetAngle;
     }
 
     public Command centerTurretViaPosition() {
@@ -192,6 +189,11 @@ public class Turret extends SubsystemBase {
         public CommandTurretAngle(double angle) {
             this.angle = angle;
             addRequirements(Robot.turret);
+        }
+
+        @Override
+        public void initialize() {
+            timer.reset();
         }
 
         @Override
@@ -249,7 +251,6 @@ public class Turret extends SubsystemBase {
         public void initialize() {
             angle = DrivetrainPP.getGoalTarget(pose).GoalAngle - (90 - Math.toDegrees(pose.getHeading()));
             timer.reset();
-            setAngle(angle);
         }
 
         @Override
@@ -262,6 +263,7 @@ public class Turret extends SubsystemBase {
         @Override
         public void execute() {
             offsetAngle = estimatedAngle;
+            rollovers = 0;
         }
 
         @Override

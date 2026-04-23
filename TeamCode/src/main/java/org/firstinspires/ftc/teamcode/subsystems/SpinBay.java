@@ -29,7 +29,7 @@ public class SpinBay {
     private long lastResetTime;
 
     public SpinBay(String colorSensorName, String ledName, int bayNum) {
-        this.bayNum = bayNum - 1;
+        this.bayNum = bayNum;
         //thread = new ReadColorSensorThread(colorSensorName);
         reading = new ColorSensorResult();
         led = Robot.opMode.hardwareMap.get(Servo.class, ledName);
