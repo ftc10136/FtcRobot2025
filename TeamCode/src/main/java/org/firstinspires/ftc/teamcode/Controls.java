@@ -129,4 +129,13 @@ public class Controls {
     public boolean resetPose() {
         return Robot.opMode.gamepad1.guide;
     }
+
+    public Trigger outtakeBalls() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad1.x;
+            }
+        };
+    }
 }

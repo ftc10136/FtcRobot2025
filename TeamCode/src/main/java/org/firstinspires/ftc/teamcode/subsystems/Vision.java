@@ -48,7 +48,6 @@ public class Vision extends SubsystemBase {
             // LimelightPipelines: 1=20/BlueAlliance, 2=24/RedAlliance, 3=20,21,22
             limelight.pipelineSwitch(6);
             limelightServo = Robot.opMode.hardwareMap.get(Servo.class, "CameraServo");
-            limelightServo.setPosition(0.5);
         }
         if (HUSKYLEN_ENABLED) {
             huskyLens = Robot.opMode.hardwareMap.get(HuskyLens.class, "HuskyLens");
@@ -64,10 +63,12 @@ public class Vision extends SubsystemBase {
     public void periodic() {
         hasMotifTag = false;
         if(LIMELIGHT_ENABLED) {
-            limelightServo.setPosition(Robot.RobotConfig.CAMERA_SERVO_POS);
-            if(!isCameraConnected()) {
-                //limelight.pipelineSwitch(6);
+            if(Robot.isEnabled()) {
+                limelightServo.setPosition(Robot.RobotConfig.CAMERA_SERVO_POS);
             }
+            //if(!isCameraConnected()) {
+                //limelight.pipelineSwitch(6);
+            //}
             packet.put("Vision/IsConnected", limelight.isConnected());
             packet.put("Vision/IsRunning", limelight.isRunning());
             updateLimeLight();

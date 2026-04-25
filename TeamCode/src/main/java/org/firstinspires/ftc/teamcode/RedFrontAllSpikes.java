@@ -10,14 +10,15 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.ParallelDeadlineGroup;
+import com.seattlesolvers.solverslib.command.ParallelRaceGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 
 @Autonomous
-public class BlueFrontAllSpikes extends LinearOpMode {
+public class RedFrontAllSpikes extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
-        Robot.runAutonomous(this, this::getAutoSequence, false);
+        Robot.runAutonomous(this, this::getAutoSequence, true);
     }
 
     private Command getAutoSequence() {
@@ -30,7 +31,7 @@ public class BlueFrontAllSpikes extends LinearOpMode {
                 follower.setMaxPowerScaling(0.6)
         ));
         paths.MidSpike.setCallbacks(new TemporalCallback(3, 0, () ->
-                follower.setMaxPowerScaling(1)
+            follower.setMaxPowerScaling(1)
         ));
         paths.FrontSpike.setCallbacks(new TemporalCallback(0, 0, () ->
                 follower.setMaxPowerScaling(0.6)
@@ -39,10 +40,10 @@ public class BlueFrontAllSpikes extends LinearOpMode {
                 follower.setMaxPowerScaling(0.4)
         ));
         paths.FrontSpike.setCallbacks(new TemporalCallback(2, 0, () ->
-                follower.setMaxPowerScaling(1)
+            follower.setMaxPowerScaling(1)
         ));
         paths.RearSpike.setCallbacks(new TemporalCallback(1, 0, () ->
-                follower.setMaxPowerScaling(0.5)
+                follower.setMaxPowerScaling(0.4)
         ));
         paths.RearSpike.setCallbacks(new TemporalCallback(2, 0, () ->
                 follower.setMaxPowerScaling(1)
@@ -143,56 +144,56 @@ public class BlueFrontAllSpikes extends LinearOpMode {
             MainChain = follower.pathBuilder()
                     .addPath(
                             new BezierLine(
-                                    new Pose(17.778, 119.914),
-                                    new Pose(59.700, 77.400)
+                                    new Pose(123.722, 119.914),
+                                    new Pose(81.800, 77.400)
                             )
                     )
-                    .setLinearHeadingInterpolation(Math.toRadians(143.7), Math.toRadians(180))
+                    .setLinearHeadingInterpolation(Math.toRadians(36.3), Math.toRadians(0))
                     .build();
 
             FrontSpike = follower.pathBuilder()
                     .addPath(
                             new BezierLine(
-                                    new Pose(59.700, 77.400),
-                                    new Pose(39.221, 82.503)
+                                    new Pose(81.800, 77.400),
+                                    new Pose(102.279, 82.503)
                             )
                     )
-                    .setConstantHeadingInterpolation(Math.toRadians(180))
+                    .setConstantHeadingInterpolation(Math.toRadians(0))
                     .addPath(
                             new BezierLine(
-                                    new Pose(39.221, 82.503),
-                                    new Pose(18.469, 82.255)
+                                    new Pose(102.279, 82.503),
+                                    new Pose(123.031, 82.255)
                             )
                     )
                     .setTangentHeadingInterpolation()
                     .addPath(
                             new BezierLine(
-                                    new Pose(18.469, 82.255),
-                                    new Pose(59.700, 77.400)
+                                    new Pose(123.031, 82.255),
+                                    new Pose(81.800, 77.400)
                             )
                     )
-                    .setConstantHeadingInterpolation(Math.toRadians(180))
+                    .setConstantHeadingInterpolation(Math.toRadians(0))
                     .build();
 
             RearSpike = follower.pathBuilder()
                     .addPath(
                             new BezierLine(
-                                    new Pose(59.700, 77.400),
-                                    new Pose(42.178, 35.341)
+                                    new Pose(81.800, 77.400),
+                                    new Pose(102.336, 34.707)
                             )
                     )
-                    .setConstantHeadingInterpolation(Math.toRadians(180))
+                    .setConstantHeadingInterpolation(Math.toRadians(0))
                     .addPath(
                             new BezierLine(
-                                    new Pose(42.178, 35.341),
-                                    new Pose(17.517, 34.865)
+                                    new Pose(102.336, 34.707),
+                                    new Pose(123.983, 34.865)
                             )
                     )
                     .setTangentHeadingInterpolation()
                     .addPath(
                             new BezierLine(
-                                    new Pose(17.517, 34.865),
-                                    new Pose(54.441, 110.187)
+                                    new Pose(123.983, 34.865),
+                                    new Pose(87.059, 110.187)
                             )
                     )
                     .setTangentHeadingInterpolation()
@@ -201,33 +202,33 @@ public class BlueFrontAllSpikes extends LinearOpMode {
             MidSpike = follower.pathBuilder()
                     .addPath(
                             new BezierLine(
-                                    new Pose(59.700, 77.400),
-                                    new Pose(39.817, 58.562)
+                                    new Pose(81.800, 77.400),
+                                    new Pose(101.683, 58.562)
                             )
                     )
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
                     .addPath(
                             new BezierLine(
-                                    new Pose(39.817, 58.562),
-                                    new Pose(10.809, 58.086)
+                                    new Pose(101.683, 58.562),
+                                    new Pose(130.691, 58.086)
                             )
                     )
-                    .setConstantHeadingInterpolation(Math.toRadians(180))
+                    .setConstantHeadingInterpolation(Math.toRadians(0))
                     .addPath(
                             new BezierCurve(
-                                    new Pose(10.809, 58.086),
-                                    new Pose(33.307, 61.938),
-                                    new Pose(19.221, 67.845)
+                                    new Pose(130.691, 58.086),
+                                    new Pose(107.717, 61.938),
+                                    new Pose(120.669, 67.845)
                             )
                     )
-                    .setConstantHeadingInterpolation(Math.toRadians(180))
+                    .setConstantHeadingInterpolation(Math.toRadians(0))
                     .addPath(
                             new BezierLine(
-                                    new Pose(19.221, 67.845),
-                                    new Pose(59.700, 77.400)
+                                    new Pose(120.669, 67.845),
+                                    new Pose(81.800, 77.400)
                             )
                     )
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
                     .build();
         }
     }

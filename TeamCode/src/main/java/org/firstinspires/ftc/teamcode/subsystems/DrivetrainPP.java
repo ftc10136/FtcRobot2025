@@ -85,12 +85,7 @@ public class DrivetrainPP extends SubsystemBase {
         }
 
         if (Robot.controls.resetPose()) {
-            var visionPose = Robot.vision.getVisionPose();
-            if (visionPose.isPresent()) {
-                Robot.opMode.telemetry.addLine("PedroPose: " + getPose());
-                Robot.opMode.telemetry.addLine("VisionPose: " + Robot.vision.getVisionPose());
-                setPose(visionPose.get());
-            }
+            resetPose();
         }
 
         Robot.logPacket(packet);
@@ -98,6 +93,15 @@ public class DrivetrainPP extends SubsystemBase {
 
     public void setPose(Pose pose) {
         follower.setPose(pose);
+    }
+
+    public void resetPose() {
+        var visionPose = Robot.vision.getVisionPose();
+        if (visionPose.isPresent()) {
+            Robot.opMode.telemetry.addLine("PedroPose: " + getPose());
+            Robot.opMode.telemetry.addLine("VisionPose: " + Robot.vision.getVisionPose());
+            setPose(visionPose.get());
+        }
     }
 
     public Command teleopDrive() {
@@ -147,6 +151,9 @@ public class DrivetrainPP extends SubsystemBase {
         public void execute() {
             //this logic mostly works without AprilTags, might break when the robot knows where it is...
             double Drive2 = Range.clip(Math.sqrt(Math.pow(Robot.controls.getDriveForward(), 2) + Math.pow(Robot.controls.getDriveRight(), 2)), 0, 1);
+            if(Robot.controls.slowModeActive()) {
+                Drive2 *= 0.3;
+            }
             double GamePadDegree = Math.atan2(-Math.pow(Robot.controls.getDriveForward(), 3), Math.pow(Robot.controls.getDriveRight(), 3)) / Math.PI * 180;
             double Movement = RobotUtil.inputModulus(GamePadDegree + Math.toDegrees(follower.getHeading()-headingZeroRad),0, 360);
             double Strafe = Math.cos(Movement / 180 * Math.PI) * Drive2;
@@ -216,7 +223,7 @@ public class DrivetrainPP extends SubsystemBase {
         //currently, we are always shooting at the back corner of the goals, at logo height to bounce off
         double goalX, goalY, tagX, tagY;
         if (Robot.IsRed) {
-            goalX = 144;
+            goalX = 140;
             tagX = 129;
             tagY = 131;
         } else {
@@ -229,6 +236,8 @@ public class DrivetrainPP extends SubsystemBase {
         //calculate the goal offsets
         double deltaX = goalX - results.TurretPoseX;
         double deltaY = goalY - results.TurretPoseY;
+        //double deltaX = goalX - robotPose.getX();
+        //double deltaY = goalY - robotPose.getY();
         results.GoalDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
         results.GoalAngle = Math.toDegrees(Math.atan(deltaX / deltaY));
 

@@ -55,6 +55,9 @@ public class Robot {
     private static LoggerCommandTimer logTimer;
     private static boolean isEnabled;
     private static boolean autonomous = false;
+    public static boolean fromAuto = false;
+    private static Pose endAutoPose;
+    static int heliHome = 0;
 
     public enum RobotTypeEnum {
         Competition,
@@ -67,24 +70,29 @@ public class Robot {
         isEnabled = false;
         CommandScheduler.getInstance().setBulkReading(opMode.hardwareMap, LynxModule.BulkCachingMode.AUTO);
         packet = new TelemetryPacket();
-        var pose = new Pose(72,72,Math.PI/2, PedroCoordinates.INSTANCE);
+
         //if we have already run, clear out the old running subsystems
         if (drivetrain != null) {
-            pose = drivetrain.getPose();
+            fromAuto = true;
+            turret.resetPid();
+            helidexer.setSensorHome(heliHome);
             CommandScheduler.getInstance().unregisterSubsystem(drivetrain, intake,
-                    helidexer, turret, shooter, hoodAngle, vision);
+                    shooter, hoodAngle, helidexer);
+        } else {
+            endAutoPose = new Pose(72,72,Math.PI/2, PedroCoordinates.INSTANCE);
+            vision = new Vision();
+            turret = new Turret();
         }
         controls = new Controls();
         drivetrain = new DrivetrainPP();
         intake = new Intake();
-        turret = new Turret();
-        helidexer = new Helidexer();
         shooter = new Shooter();
         hoodAngle = new HoodAngle();
-        vision = new Vision();
+        helidexer = new Helidexer();
+
         allianceLed = opMode.hardwareMap.get(Servo.class, "RGB-Alliance");
         setLed();
-        drivetrain.setPose(pose);
+        drivetrain.setPose(endAutoPose);
 
         //we ran before, clear out all the old stuff running in the schedule
         CommandScheduler.getInstance().cancelAll();
@@ -153,7 +161,10 @@ public class Robot {
         turret.setDefaultCommand(turret.centerTurretViaPosition().perpetually());
         shooter.setDefaultCommand(shooter.autoShotRpm().perpetually());
         hoodAngle.setDefaultCommand(hoodAngle.autoShotHood().perpetually());
-        helidexer.resetHome();
+        if(fromAuto == false) {
+            helidexer.resetHome();
+            heliHome = helidexer.getSensorHome();
+        }
 
         //button commands
         controls.floorLoadActive().toggleWhenActive(commandFloorLoad());
@@ -162,6 +173,7 @@ public class Robot {
         //controls.bumpSpindexerLeft().whileActiveContinuous(helidexer.shootAll());
         //controls.bumpSpindexerRight().whileActiveContinuous(helidexer.advanceBay());
         controls.shootMotif().toggleWhenActive(shootAllBalls(true));
+        controls.outtakeBalls().whileActiveContinuous(intake.runOuttake());
 
         controls.flipAlliance().whenActive(flipAlliance());
         controls.resetTurretAngle().whenActive(turret.resetZero());
@@ -185,8 +197,8 @@ public class Robot {
     }
 
     public static void runAutonomous(LinearOpMode opMode, Supplier<Command> autoSequence, boolean isRed) {
-        Robot.Init(opMode);
         Robot.IsRed = isRed;
+        Robot.Init(opMode);
         autonomous = true;
         var autoCommand = autoSequence.get();
 
@@ -200,9 +212,11 @@ public class Robot {
         CommandScheduler.getInstance().clearButtons();
         CommandScheduler.getInstance().schedule(autoCommand);
         Robot.isEnabled = true;
+        heliHome = helidexer.getSensorHome();
         //run while enabled
         while (!opMode.isStopRequested()) {
             Robot.Periodic();
+            endAutoPose = Robot.drivetrain.getPose();
         }
     }
 
@@ -217,7 +231,7 @@ public class Robot {
         public static long SPINDEXER_SHOT_DELAY = 120;
         /// How long must a ball be read before we update the bay status with a color
         public static double BALL_BAY_TIME_MS = 15;
-        public static double TURRET_OFFSET_DEG = -84.62;
+        public static double TURRET_OFFSET_DEG = -157.8;
         /// How much power do we need to start the motor from zero
         public static double SHOOTER_MOTOR_KS = 0.02;
         /// What is the power needed to get to certain RPMs
@@ -230,6 +244,10 @@ public class Robot {
         public static double HELIDEXER_P = 0.7;
 		public static double SHOOTER_RPM_SMOOTHER = 0.25;
         public static double CAMERA_SERVO_POS = 0.5;
+        public static double TURRET_KP = 0.0027;
+        public static double TURRET_KI = 0;
+        public static double TURRET_KD = 0;
+        public static double TURRET_KS = -1;
     }
 
     public static Command commandFloorLoad() {
@@ -372,13 +390,16 @@ public class Robot {
 
     public static Command presetShot(Pose shootingPose) {
         return new ParallelCommandGroup(
-                shooter.preShotRpm(shootingPose),
-                turret.preShotTurret(shootingPose),
-                hoodAngle.preShotHood(shootingPose)
+                shooter.preShotRpm(shootingPose).perpetually(),
+                turret.preShotTurret(shootingPose).perpetually(),
+                hoodAngle.preShotHood(shootingPose).perpetually()
         );
     }
 
     public static Command autoShootMotif() {
-        return shootAllBalls(true);
+        return new SequentialCommandGroup(
+                helidexer.primeForMotif(),
+                helidexer.shootAll()
+        );
     }
 }

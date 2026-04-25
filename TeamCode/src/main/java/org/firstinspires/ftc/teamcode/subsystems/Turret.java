@@ -45,7 +45,7 @@ public class Turret extends SubsystemBase {
         continuousVoltage = lastSensorVoltage;
         timer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
         //cannot have I term, as we don't reset the pids in continous modes
-        pid = new PIDController(0.0015, 0,0, 0.05);
+        pid = new PIDController(0.0027, 0,0, 0.05);
         resetPid();
 
         //zero the turret on startup
@@ -78,7 +78,11 @@ public class Turret extends SubsystemBase {
         estimatedAngle = -49.49*continuousVoltage - 73.04;
 
         packet.put("Turret/EstimatedAngle", getAngle());
+        packet.put("Turret/OffsetAngle", offsetAngle);
         packet.put("Turret/FeedbackVoltage", voltage);
+        packet.put("Turret/LastSensorVoltage", lastSensorVoltage);
+        packet.put("Turret/LastGoodVoltage", lastGoodVoltage);
+        packet.put("Turret/Rollovers", rollovers);
         packet.put("Turret/ContinuousVoltage", continuousVoltage);
         packet.put("Turret/Command", RobotUtil.getCommandName(getCurrentCommand()));
         packet.put("Turret/AtTarget", atTarget);
@@ -86,18 +90,28 @@ public class Turret extends SubsystemBase {
     }
 
     private void setAngle(double angleDeg) {
+        if (!Robot.IsRed) {
+            //if blue, adjust to make
+            angleDeg +=4;
+        } else {
+            angleDeg -=4;
+        }
         var clamp = MathUtil.clamp(angleDeg, -120., 120);
         long currentTime = System.nanoTime();
         double deltaTime = (currentTime - lastTime) / 1_000_000_000.;
-        boolean inRange = Math.abs(angleDeg - getAngle()) < 1.5;
+        double deltaAngle = Math.abs(angleDeg - getAngle());
+        boolean inRange = deltaAngle < 2;
+        if(deltaAngle > 15 || deltaTime > 0.2) {
+            resetPid();
+        }
 
         var output = pid.calculate(getAngle(), clamp, deltaTime);
         if(!Double.isNaN(output)) {
             //the servo doesn't run between 0.47-0.53, so bump up the requests
-            if(output < -0.01) {
-                output -= 0.05;
-            } else if (output > 0.01) {
-                output += 0.05;
+            if(output < -0.001) {
+                output -= 0.025;
+            } else if (output > 0.001) {
+                output += 0.025;
             } else {
                 output = 0;
             }
@@ -105,9 +119,9 @@ public class Turret extends SubsystemBase {
 
             //make soft limits for requests
             if(output < 0 && getAngle() < -120) {
-                output = 0;
+                //output = 0;
             } else if (output > 0 && getAngle() > 120) {
-                output = 0;
+                //output = 0;
             }
 
             if(inRange) {
@@ -129,9 +143,11 @@ public class Turret extends SubsystemBase {
         atTarget = timer.time() > 200;
     }
 
-    private void resetPid() {
+    public void resetPid() {
         pid.reset();
         lastTime = System.nanoTime();
+        turretSpin.setDirection(Servo.Direction.REVERSE);
+        turretSpin.setPosition(0.5);
     }
 
     public Command resetZero() {
@@ -255,6 +271,7 @@ public class Turret extends SubsystemBase {
 
         @Override
         public void execute() {
+            angle = DrivetrainPP.getGoalTarget(pose).GoalAngle - (90 - Math.toDegrees(pose.getHeading()));
             setAngle(angle);
         }
     }

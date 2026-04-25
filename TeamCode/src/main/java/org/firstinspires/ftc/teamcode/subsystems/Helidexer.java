@@ -107,6 +107,15 @@ public class Helidexer extends SubsystemBase {
         return Objects.requireNonNull(bays.get("Bay" + bay)).getState();
     }
 
+    public int getSensorHome() {
+        return sensorHome;
+    }
+
+    public void setSensorHome(int newHome) {
+        sensorHome = newHome;
+        helixMotor.setDirection(DcMotor.Direction.REVERSE);
+    }
+
     public BooleanSupplier hasBall(int bay) {
         return new BooleanSupplier() {
             @Override

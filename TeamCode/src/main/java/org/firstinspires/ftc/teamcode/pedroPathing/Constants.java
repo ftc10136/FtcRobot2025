@@ -64,7 +64,7 @@ public class Constants {
             .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED);
 
-    public static PathConstraints pathConstraints = new PathConstraints(0.97, 100, 1, 1);
+    public static PathConstraints pathConstraints = new PathConstraints(0.97, 0.1, 0.1, 0.007, 100, 1, 10, 1);
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)
