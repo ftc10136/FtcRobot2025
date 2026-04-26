@@ -20,9 +20,9 @@ public class Constants {
             .forwardZeroPowerAcceleration(-31.5309)
             .lateralZeroPowerAcceleration(-72.959)
             .predictiveBrakingCoefficients(new PredictiveBrakingCoefficients(
-                    0.10,
-                    0.09015,
-                    0.001467))
+                    0.08,
+                    0.0801,
+                    0.0008007))
             .centripetalScaling(0);
 
     public static PinpointConstants localizerConstantsHeli = new PinpointConstants()
@@ -52,8 +52,8 @@ public class Constants {
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     public static FollowerConstants followerConstantsProg = new FollowerConstants()
             .mass(15)  //in KG?
-            .forwardZeroPowerAcceleration(-42.3166)
-            .lateralZeroPowerAcceleration(-35.1215);
+            .forwardZeroPowerAcceleration(-30.47)
+            .lateralZeroPowerAcceleration(-76.04);
 
     public static PinpointConstants localizerConstantsProg = new PinpointConstants()
             .forwardPodY(-4.6875)  //forward pod 4, -4.6875
@@ -77,8 +77,8 @@ public class Constants {
             .rightFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
             .rightRearMotorDirection(DcMotorSimple.Direction.REVERSE)
             .useBrakeModeInTeleOp(false)
-            .xVelocity(63.15)       //forward velocity tuner
-            .yVelocity(43.11);      //lateral velocity tuner
+            .xVelocity(62.67)       //forward velocity tuner
+            .yVelocity(46.99);      //lateral velocity tuner
 
     public static Follower createFollower(HardwareMap hardwareMap) {
         if(Robot.RobotType == Robot.RobotTypeEnum.Helidexer) {
