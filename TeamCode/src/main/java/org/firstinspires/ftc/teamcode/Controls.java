@@ -138,4 +138,41 @@ public class Controls {
             }
         };
     }
+
+
+    public Trigger bumpHelidexerLeft() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad2.dpad_left;
+            }
+        };
+    }
+
+    public Trigger bumpHelidexerRight() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad2.dpad_right;
+            }
+        };
+    }
+
+    public Trigger bumpTurretLeft() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad2.left_bumper;
+            }
+        };
+    }
+
+    public Trigger bumpTurretRight() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad2.right_bumper;
+            }
+        };
+    }
 }

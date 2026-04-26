@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
+import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.command.WaitCommand;
@@ -58,7 +59,7 @@ public class Turret extends SubsystemBase {
     @Override
     public void periodic() {
         //enable this if you want to do zeroing of the turret easily
-        offsetAngle = Robot.RobotConfig.TURRET_OFFSET_DEG;
+        //offsetAngle = Robot.RobotConfig.TURRET_OFFSET_DEG;
         double voltage = turretEncoder.getVoltage();
 
         //sometimes on rollover, we catch 3.2, then 1.4, then 0.1 during the transition of rollover,
@@ -180,6 +181,12 @@ public class Turret extends SubsystemBase {
 
     public Command commandTurretAngle(double angleDeg) {
         return new CommandTurretAngle(angleDeg);
+    }
+
+    public Command bumpTurretHome(double angleDeg) {
+        return new InstantCommand(
+                () -> {offsetAngle = offsetAngle + angleDeg;}
+        );
     }
 
     public void setLed(double color) {

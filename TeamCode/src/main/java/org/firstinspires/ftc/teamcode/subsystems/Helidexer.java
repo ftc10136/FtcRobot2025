@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.ConditionalCommand;
+import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
@@ -116,6 +117,10 @@ public class Helidexer extends SubsystemBase {
         helixMotor.setDirection(DcMotor.Direction.REVERSE);
     }
 
+    public Command bumpHelidexer(int steps) {
+        return new InstantCommand(()->{sensorHome += steps;});
+    }
+
     public BooleanSupplier hasBall(int bay) {
         return new BooleanSupplier() {
             @Override
@@ -215,6 +220,8 @@ public class Helidexer extends SubsystemBase {
 
         @Override
         public void execute() {
+            pos = getBayPos(getCurrentBay()+1);
+            helixMotor.setTargetPosition(pos);
             if (overcurrent) {
                 if(timer.milliseconds() > 300) {
                     overcurrent = false;
@@ -256,7 +263,7 @@ public class Helidexer extends SubsystemBase {
         }
 
         @Override
-        public void initialize() {
+        public void execute() {
             pos = getBayPos(0);
             helixMotor.setTargetPosition(pos);
             helixMotor.setPower(-Robot.RobotConfig.HELIDEXER_P);
@@ -307,6 +314,12 @@ public class Helidexer extends SubsystemBase {
         }
 
         @Override
+        public void execute() {
+            helixMotor.setTargetPosition(pos);
+            helixMotor.setPower(Robot.RobotConfig.HELIDEXER_P);
+        }
+
+        @Override
         public boolean isFinished() {
             return Math.abs(helixMotor.getCurrentPosition() - pos) < Robot.RobotConfig.POSITION_TOLERANCE;
         }
@@ -346,6 +359,12 @@ public class Helidexer extends SubsystemBase {
         }
 
         @Override
+        public void execute() {
+            helixMotor.setTargetPosition(pos);
+            helixMotor.setPower(Robot.RobotConfig.HELIDEXER_P);
+        }
+
+        @Override
         public boolean isFinished() {
             return getBayState(targetBay + 1) != SpinBay.BayState.None;
         }
@@ -364,7 +383,7 @@ public class Helidexer extends SubsystemBase {
         }
 
         @Override
-        public void initialize() {
+        public void execute() {
             pos = getBayPos(getTargetBay());
             helixMotor.setTargetPosition(pos);
             helixMotor.setPower(Robot.RobotConfig.HELIDEXER_P);

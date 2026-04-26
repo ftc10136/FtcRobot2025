@@ -102,6 +102,10 @@ public class Robot {
         //buttons that run while disabled
         controls.flipAlliance().whenActive(flipAlliance());
         controls.resetTurretAngle().whenActive(turret.resetZero());
+        controls.bumpHelidexerLeft().whenActive(helidexer.bumpHelidexer(-RobotConfig.POSITION_TOLERANCE));
+        controls.bumpHelidexerRight().whenActive(helidexer.bumpHelidexer(RobotConfig.POSITION_TOLERANCE));
+        controls.bumpTurretLeft().whenActive(turret.bumpTurretHome(-2));
+        controls.bumpTurretRight().whenActive(turret.bumpTurretHome(2));
 
         logTimer = new LoggerCommandTimer("Shot Times");
     }
@@ -172,6 +176,10 @@ public class Robot {
         controls.shootActive().toggleWhenActive(shootAllBalls(false));
         //controls.bumpSpindexerLeft().whileActiveContinuous(helidexer.shootAll());
         //controls.bumpSpindexerRight().whileActiveContinuous(helidexer.advanceBay());
+        controls.bumpHelidexerLeft().whenActive(helidexer.bumpHelidexer(-RobotConfig.POSITION_TOLERANCE));
+        controls.bumpHelidexerRight().whenActive(helidexer.bumpHelidexer(RobotConfig.POSITION_TOLERANCE));
+        controls.bumpTurretLeft().whenActive(turret.bumpTurretHome(-2));
+        controls.bumpTurretRight().whenActive(turret.bumpTurretHome(2));
         controls.shootMotif().toggleWhenActive(shootAllBalls(true));
         controls.outtakeBalls().whileActiveContinuous(intake.runOuttake());
 
