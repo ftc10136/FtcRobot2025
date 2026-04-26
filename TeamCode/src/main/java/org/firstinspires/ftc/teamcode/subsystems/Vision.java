@@ -24,13 +24,13 @@ public class Vision extends SubsystemBase {
     private Limelight3A limelight;
     private final TelemetryPacket packet;
     private HuskyLens huskyLens;
-    private double turretError = 0;
     private double distToTarget = 0;
     private long lastReading = 0;
     private HuskyLens.Block[] blocks;
     private Servo limelightServo;
     private Motifs seenMotif;
     private Optional<Pose> visionPose;
+    private Optional<Double> targetX;
     private boolean hasMotifTag;
 
     public enum Motifs {
@@ -56,6 +56,7 @@ public class Vision extends SubsystemBase {
         blocks = new HuskyLens.Block[0];
 
         visionPose = Optional.empty();
+        targetX = Optional.empty();
         seenMotif = Motifs.Unknown;
     }
 
@@ -76,7 +77,7 @@ public class Vision extends SubsystemBase {
         packet.put("Vision/CameraConnected", isCameraConnected());
         packet.put("Vision/DistToTarget", distToTarget);
         packet.put("Vision/Motif", seenMotif.name());
-        packet.put("Vision/TurretError", getTurretError());
+        packet.put("Vision/TargetX", getTargetX());
 
         if (HUSKYLEN_ENABLED) {
             //blocks = huskyLens.blocks();
@@ -94,6 +95,9 @@ public class Vision extends SubsystemBase {
         var headingDeg = -Robot.drivetrain.getHeading() + 180;
         headingDeg = RobotUtil.inputModulus(headingDeg, -180, 180);
         limelight.updateRobotOrientation(headingDeg);
+        visionPose = Optional.empty();
+        targetX = Optional.empty();
+
         var result = limelight.getLatestResult();
         if (result != null) {
             var mt2Pose = result.getBotpose_MT2();
@@ -111,8 +115,8 @@ public class Vision extends SubsystemBase {
                     //convert to inches
                     distToTarget = dist * 39.37;
                     logPose(fiducialResult.getCameraPoseTargetSpace(), "CameraPoseTargetSpace");
-                    turretError = fiducialResult.getTargetXDegrees();
                     lastReading = System.nanoTime();
+                    targetX = Optional.of(fiducialResult.getTargetXDegrees());
                 }
 
                 if(tagId == 21) {
@@ -134,11 +138,7 @@ public class Vision extends SubsystemBase {
             if (hasLocatingTag) {
                 var pos = mt2Pose.getPosition().toUnit(DistanceUnit.INCH);
                 visionPose = Optional.of(new Pose(72 + pos.y, 72 - pos.x, result.getBotpose().getOrientation().getYaw(AngleUnit.RADIANS) - (Math.PI / 2), PedroCoordinates.INSTANCE));
-            } else {
-                visionPose = Optional.empty();
             }
-        } else {
-            visionPose = Optional.empty();
         }
     }
 
@@ -154,8 +154,8 @@ public class Vision extends SubsystemBase {
         return visionPose;
     }
 
-    public double getTurretError() {
-        return turretError;
+    public Optional<Double> getTargetX() {
+        return targetX;
     }
 
     public double getDistance() {

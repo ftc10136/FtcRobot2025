@@ -73,12 +73,8 @@ public class Robot {
         //if we have already run, clear out the old running subsystems
         if (drivetrain != null) {
             fromAuto = true;
-            turret.resetPid();
             CommandScheduler.getInstance().unregisterSubsystem(drivetrain, intake,
-                    shooter, hoodAngle, helidexer);
-        } else {
-            vision = new Vision();
-            turret = new Turret();
+                    shooter, hoodAngle, helidexer, turret, vision);
         }
         controls = new Controls();
         drivetrain = new DrivetrainPP();
@@ -86,6 +82,8 @@ public class Robot {
         shooter = new Shooter();
         hoodAngle = new HoodAngle();
         helidexer = new Helidexer();
+        turret = new Turret();
+        vision = new Vision();
 
         allianceLed = opMode.hardwareMap.get(Servo.class, "RGB-Alliance");
         setLed();
@@ -242,11 +240,12 @@ public class Robot {
         /// How much power do we add based on the amount of error we have
         public static double SHOOTER_MOTOR_KP = 0.00028;
         public static int INTAKE_SPEED = 1;
-        public static int COUNTS_PER_BAY = 433;
+        public static int COUNTS_PER_BAY = 448;
         public static int POSITION_TOLERANCE = 30;
         public static double HELIDEXER_P = 0.7;
 		public static double SHOOTER_RPM_SMOOTHER = 0.25;
         public static double CAMERA_SERVO_POS = 0.5;
+        public static double TURRET_CAMERA_AIM_P = 0.005;
         public static double TURRET_KP = 0.0027;
         public static double TURRET_KI = 0;
         public static double TURRET_KD = 0;

@@ -45,7 +45,7 @@ public class Turret extends SubsystemBase {
         continuousVoltage = lastSensorVoltage;
         timer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
         //cannot have I term, as we don't reset the pids in continous modes
-        pid = new PIDController(0.0027, 0,0, 0.05);
+        pid = new PIDController(Robot.RobotConfig.TURRET_KP, Robot.RobotConfig.TURRET_KI,Robot.RobotConfig.TURRET_KD, 0.05);
         resetPid();
 
         //zero the turret on startup
@@ -56,8 +56,6 @@ public class Turret extends SubsystemBase {
 
     @Override
     public void periodic() {
-        //enable this if you want to do zeroing of the turret easily
-        //of+fsetAngle = Robot.RobotConfig.TURRET_OFFSET_DEG;
         double voltage = turretEncoder.getVoltage();
 
         //sometimes on rollover, we catch 3.2, then 1.4, then 0.1 during the transition of rollover,
@@ -85,6 +83,10 @@ public class Turret extends SubsystemBase {
         packet.put("Turret/Command", RobotUtil.getCommandName(getCurrentCommand()));
         packet.put("Turret/AtTarget", atTarget);
         Robot.logPacket(packet);
+
+        pid.m_kp = Robot.RobotConfig.TURRET_KP;
+        pid.m_ki = Robot.RobotConfig.TURRET_KI;
+        pid.m_kd = Robot.RobotConfig.TURRET_KD;
     }
 
     private void setAngle(double angleDeg) {
@@ -94,7 +96,7 @@ public class Turret extends SubsystemBase {
         } else {
             angleDeg -=4;
         }
-        var clamp = MathUtil.clamp(angleDeg, -100., 100);
+        var clamp = MathUtil.clamp(angleDeg, -360., 0);
         long currentTime = System.nanoTime();
         double deltaTime = (currentTime - lastTime) / 1_000_000_000.;
         double deltaAngle = Math.abs(angleDeg - getAngle());
@@ -146,6 +148,32 @@ public class Turret extends SubsystemBase {
         lastTime = System.nanoTime();
         turretSpin.setDirection(Servo.Direction.REVERSE);
         turretSpin.setPosition(0.5);
+    }
+
+    public void aimWithLimelight(double X_Error) {
+        double GainFactor;
+        double CorrectionNeeded;
+
+        //X_Error is how many degrees off center the tag is
+        if (Math.abs(X_Error) < 0.8) {
+            GainFactor = 0;
+        } else if (Math.abs(X_Error) < 10) {
+            GainFactor = 0.8;
+        } else {
+            GainFactor = 1;
+        }
+        CorrectionNeeded = X_Error * Robot.RobotConfig.TURRET_CAMERA_AIM_P * GainFactor;
+
+        //make soft limits for requests
+        if(CorrectionNeeded > 0 && getAngle() < -360) {
+            CorrectionNeeded = 0;
+        } else if (CorrectionNeeded < 0 && getAngle() > 0) {
+            CorrectionNeeded = 0;
+        }
+
+        var outClamp = MathUtil.clamp(0.5 - CorrectionNeeded, 0.30, 0.70);
+        turretSpin.setPosition(outClamp);
+        packet.put("Turret/OutClamp", outClamp);
     }
 
     public Command resetZero() {
@@ -245,8 +273,15 @@ public class Turret extends SubsystemBase {
 
         @Override
         public void execute() {
-            double angle = Robot.drivetrain.getGoalAngle() - Robot.drivetrain.getHeading();
-            setAngle(angle);
+            var targetX = Robot.vision.getTargetX();
+
+            if (targetX.isPresent()) {
+                aimWithLimelight(targetX.get());
+            } else {
+                double angle = Robot.drivetrain.getGoalAngle() - Robot.drivetrain.getHeading();
+                setAngle(angle);
+            }
+            packet.put("Turret/UsingTag", targetX.isPresent());
         }
 
         @Override
@@ -257,6 +292,7 @@ public class Turret extends SubsystemBase {
         @Override
         public void end(boolean interrupted) {
             turretSpin.setPosition(0.5);
+            packet.put("Turret/UsingTag", false);
         }
     }
 

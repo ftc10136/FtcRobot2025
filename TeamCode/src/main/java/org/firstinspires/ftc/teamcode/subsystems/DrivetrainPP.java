@@ -87,7 +87,7 @@ public class DrivetrainPP extends SubsystemBase {
         }
 
         if (Robot.controls.resetPose()) {
-            resetPose();
+            //resetPose();
         }
 
         Robot.logPacket(packet);
