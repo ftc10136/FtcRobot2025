@@ -15,6 +15,7 @@ import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.Robot;
+import org.firstinspires.ftc.teamcode.RobotState;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.livoniawarriors.RobotUtil;
 
@@ -48,7 +49,7 @@ public class DrivetrainPP extends SubsystemBase {
     }
 
     public Pose getPose() {
-        return follower.getPose();
+        return RobotState.robotPose;
     }
 
     public void startTeleopDrive(boolean isTeleop) {
@@ -62,13 +63,14 @@ public class DrivetrainPP extends SubsystemBase {
     @Override
     public void periodic() {
         follower.update();
+        RobotState.robotPose = follower.getPose();
 
         packet.put("Drivetrain/Command", RobotUtil.getCommandName(getCurrentCommand()));
-        var pose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
+        var pose = RobotState.robotPose.getAsCoordinateSystem(FTCCoordinates.INSTANCE);
         packet.put("Drivetrain/Pose x", -pose.getX());
         packet.put("Drivetrain/Pose y", -pose.getY());
         packet.put("Drivetrain/Pose heading", pose.getHeading()+Math.PI);
-        var pedroPose = follower.getPose();
+        var pedroPose = RobotState.robotPose;
         packet.put("Drivetrain/PedroX", pedroPose.getX());
         packet.put("Drivetrain/PedroY", pedroPose.getY());
         packet.put("Drivetrain/PedroHeading", pedroPose.getHeading());
@@ -92,6 +94,7 @@ public class DrivetrainPP extends SubsystemBase {
     }
 
     public void setPose(Pose pose) {
+        RobotState.robotPose = pose;
         follower.setPose(pose);
     }
 
@@ -193,7 +196,7 @@ public class DrivetrainPP extends SubsystemBase {
     }
 
     public double getGoalDistance() {
-        return getGoalTarget(follower.getPose()).GoalDistance;
+        return getGoalTarget(RobotState.robotPose).GoalDistance;
     }
 
     public static class DistanceResults {
@@ -249,7 +252,7 @@ public class DrivetrainPP extends SubsystemBase {
     }
 
     public double getGoalAngle() {
-        return getGoalTarget(follower.getPose()).GoalAngle;
+        return getGoalTarget(RobotState.robotPose).GoalAngle;
     }
 
     //zero = look at goal side, clockwise positive

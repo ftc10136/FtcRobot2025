@@ -12,6 +12,7 @@ import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.Robot;
+import org.firstinspires.ftc.teamcode.RobotState;
 import org.livoniawarriors.GoBildaLedColors;
 import org.livoniawarriors.RobotUtil;
 
@@ -24,10 +25,10 @@ import edu.wpi.first.wpilibj.util.Color;
 public class Helidexer extends SubsystemBase {
     private final DcMotorEx helixMotor;
     private final TelemetryPacket packet;
-    private int sensorHome;
     private double motorCurrent;
     private final HashMap<SpinBay.BayState, Double> bayStateToLedCommands;
     private final HashMap<String, SpinBay> bays;
+    private int rawPosition;
 
     private int loops = 0;
     private int priorityBay = 1;
@@ -37,8 +38,8 @@ public class Helidexer extends SubsystemBase {
         helixMotor = Robot.opMode.hardwareMap.get(DcMotorEx.class, "Helidexer");
         helixMotor.setDirection(DcMotor.Direction.REVERSE);
         helixMotor.setTargetPositionTolerance((int)(Robot.RobotConfig.POSITION_TOLERANCE * 0.8));
-        sensorHome = helixMotor.getCurrentPosition();
-        helixMotor.setTargetPosition(sensorHome);
+        rawPosition = helixMotor.getCurrentPosition();
+        helixMotor.setTargetPosition(RobotState.helidexerOffset);
         helixMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         helixMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
@@ -56,6 +57,7 @@ public class Helidexer extends SubsystemBase {
 
     @Override
     public void periodic() {
+        rawPosition = helixMotor.getCurrentPosition();
         loops++;
         int currentBay = (getCurrentBay() % 3) + 1;
         priorityBay = (loops % 3) + 1;
@@ -89,7 +91,7 @@ public class Helidexer extends SubsystemBase {
         motorCurrent = helixMotor.getCurrent(CurrentUnit.AMPS);
         packet.put("Helidexer/Power", helixMotor.getPower());
         packet.put("Helidexer/Command", RobotUtil.getCommandName(getCurrentCommand()));
-        packet.put("Helidexer/Position", helixMotor.getCurrentPosition());
+        packet.put("Helidexer/Position", rawPosition);
         packet.put("Helidexer/CurrentBay", getCurrentBay());
         packet.put("Currents/Helidexer", helixMotor.getCurrent(CurrentUnit.AMPS));
         Robot.logPacket(packet);
@@ -108,17 +110,8 @@ public class Helidexer extends SubsystemBase {
         return Objects.requireNonNull(bays.get("Bay" + bay)).getState();
     }
 
-    public int getSensorHome() {
-        return sensorHome;
-    }
-
-    public void setSensorHome(int newHome) {
-        sensorHome = newHome;
-        helixMotor.setDirection(DcMotor.Direction.REVERSE);
-    }
-
     public Command bumpHelidexer(int steps) {
-        return new InstantCommand(()->{sensorHome += steps;});
+        return new InstantCommand(()->{RobotState.helidexerManualOffset += steps;});
     }
 
     public BooleanSupplier hasBall(int bay) {
@@ -130,33 +123,19 @@ public class Helidexer extends SubsystemBase {
         };
     }
 
-    public void resetHome() {
-        sensorHome = helixMotor.getCurrentPosition();
-    }
-
-    public Command resetHomeCommand() {
-        return new CommandBase() {
-            @Override
-            public void execute() {
-                resetHome();
-            }
-
-            @Override
-            public boolean isFinished() {
-                return true;
-            }
-        };
-    }
-
     /// Get how many counts to drive to a position at that bay, can be >3
     private int getBayPos(int bay) {
-        return sensorHome + (bay * Robot.RobotConfig.COUNTS_PER_BAY);
+        return RobotState.helidexerOffset + (bay * Robot.RobotConfig.COUNTS_PER_BAY) + RobotState.helidexerManualOffset;
     }
 
     /// Based on counts, what bay have we currently rotated to
     private int getCurrentBay() {
-        double estBay = (double)(helixMotor.getCurrentPosition() - sensorHome) / Robot.RobotConfig.COUNTS_PER_BAY;
+        double estBay = (double)(helixMotor.getCurrentPosition() - RobotState.helidexerOffset - RobotState.helidexerManualOffset) / Robot.RobotConfig.COUNTS_PER_BAY;
         return Math.toIntExact(Math.round(estBay));
+    }
+
+    public int getRawPosition() {
+        return rawPosition;
     }
 
     public boolean isMotifPossible() {

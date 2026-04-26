@@ -13,6 +13,7 @@ import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 
 import org.firstinspires.ftc.teamcode.Robot;
+import org.firstinspires.ftc.teamcode.RobotState;
 import org.livoniawarriors.RobotUtil;
 
 import edu.wpi.first.math.MathUtil;
@@ -28,10 +29,8 @@ public class Turret extends SubsystemBase {
     private double lastSensorVoltage;
     private double lastGoodVoltage;
     private double continuousVoltage;
-    private int rollovers;
     private final PIDController pid;
     private long lastTime;
-    private double offsetAngle;
     private final ElapsedTime timer;
 
     public Turret() {
@@ -51,15 +50,14 @@ public class Turret extends SubsystemBase {
 
         //zero the turret on startup
         double voltage = turretEncoder.getVoltage();
-        estimatedAngle = -49.49*continuousVoltage - 73.04;
-        offsetAngle = Robot.RobotConfig.TURRET_OFFSET_DEG;
+        estimatedAngle = -49.49*voltage - 73.04;
         turretSpin.setPosition(0.5);
     }
 
     @Override
     public void periodic() {
         //enable this if you want to do zeroing of the turret easily
-        //offsetAngle = Robot.RobotConfig.TURRET_OFFSET_DEG;
+        //of+fsetAngle = Robot.RobotConfig.TURRET_OFFSET_DEG;
         double voltage = turretEncoder.getVoltage();
 
         //sometimes on rollover, we catch 3.2, then 1.4, then 0.1 during the transition of rollover,
@@ -67,11 +65,11 @@ public class Turret extends SubsystemBase {
         if(Math.abs(lastSensorVoltage - voltage) < 0.9) {
             //voltage hops from 0 to 3.22v, then back to zero
             if (lastGoodVoltage > 2.2 && voltage < 1.1) {
-                rollovers++;
+                RobotState.turretRollovers++;
             } else if (voltage > 2.2 && lastGoodVoltage < 1.1) {
-                rollovers--;
+                RobotState.turretRollovers--;
             }
-            continuousVoltage = (3.296 * rollovers) + voltage;
+            continuousVoltage = (3.296 * RobotState.turretRollovers) + voltage;
             lastGoodVoltage = voltage;
         }
         lastSensorVoltage = voltage;
@@ -79,11 +77,10 @@ public class Turret extends SubsystemBase {
         estimatedAngle = -49.49*continuousVoltage - 73.04;
 
         packet.put("Turret/EstimatedAngle", getAngle());
-        packet.put("Turret/OffsetAngle", offsetAngle);
         packet.put("Turret/FeedbackVoltage", voltage);
         packet.put("Turret/LastSensorVoltage", lastSensorVoltage);
         packet.put("Turret/LastGoodVoltage", lastGoodVoltage);
-        packet.put("Turret/Rollovers", rollovers);
+        packet.put("Turret/Rollovers", RobotState.turretRollovers);
         packet.put("Turret/ContinuousVoltage", continuousVoltage);
         packet.put("Turret/Command", RobotUtil.getCommandName(getCurrentCommand()));
         packet.put("Turret/AtTarget", atTarget);
@@ -97,7 +94,7 @@ public class Turret extends SubsystemBase {
         } else {
             angleDeg -=4;
         }
-        var clamp = MathUtil.clamp(angleDeg, -120., 120);
+        var clamp = MathUtil.clamp(angleDeg, -100., 100);
         long currentTime = System.nanoTime();
         double deltaTime = (currentTime - lastTime) / 1_000_000_000.;
         double deltaAngle = Math.abs(angleDeg - getAngle());
@@ -164,7 +161,7 @@ public class Turret extends SubsystemBase {
     }
 
     public double getAngle() {
-        return estimatedAngle - offsetAngle;
+        return estimatedAngle - Robot.RobotConfig.TURRET_OFFSET_DEG - RobotState.turretManualOffset;
     }
 
     public Command centerTurretViaPosition() {
@@ -185,7 +182,8 @@ public class Turret extends SubsystemBase {
 
     public Command bumpTurretHome(double angleDeg) {
         return new InstantCommand(
-                () -> {offsetAngle = offsetAngle + angleDeg;}
+                () -> {
+                    RobotState.turretManualOffset += angleDeg;}
         );
     }
 
@@ -286,8 +284,8 @@ public class Turret extends SubsystemBase {
     private class ResetZero extends CommandBase {
         @Override
         public void execute() {
-            offsetAngle = estimatedAngle;
-            rollovers = 0;
+            RobotState.turretManualOffset = estimatedAngle;
+            RobotState.turretRollovers = 0;
         }
 
         @Override
@@ -314,7 +312,7 @@ public class Turret extends SubsystemBase {
         }
         @Override
         public void execute() {
-            rollovers += numRotations;
+            RobotState.turretRollovers += numRotations;
         }
 
         @Override

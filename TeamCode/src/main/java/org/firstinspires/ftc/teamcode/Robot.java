@@ -56,7 +56,6 @@ public class Robot {
     private static boolean isEnabled;
     private static boolean autonomous = false;
     public static boolean fromAuto = false;
-    private static Pose endAutoPose;
     static int heliHome = 0;
 
     public enum RobotTypeEnum {
@@ -75,11 +74,9 @@ public class Robot {
         if (drivetrain != null) {
             fromAuto = true;
             turret.resetPid();
-            helidexer.setSensorHome(heliHome);
             CommandScheduler.getInstance().unregisterSubsystem(drivetrain, intake,
                     shooter, hoodAngle, helidexer);
         } else {
-            endAutoPose = new Pose(72,72,Math.PI/2, PedroCoordinates.INSTANCE);
             vision = new Vision();
             turret = new Turret();
         }
@@ -92,7 +89,6 @@ public class Robot {
 
         allianceLed = opMode.hardwareMap.get(Servo.class, "RGB-Alliance");
         setLed();
-        drivetrain.setPose(endAutoPose);
 
         //we ran before, clear out all the old stuff running in the schedule
         CommandScheduler.getInstance().cancelAll();
@@ -108,6 +104,8 @@ public class Robot {
         controls.bumpTurretRight().whenActive(turret.bumpTurretHome(2));
 
         logTimer = new LoggerCommandTimer("Shot Times");
+        RobotState.initState();
+        drivetrain.setPose(RobotState.robotPose);
     }
 
     public static void Periodic() {
@@ -158,6 +156,7 @@ public class Robot {
         CommandScheduler.getInstance().cancelAll();
         CommandScheduler.getInstance().clearButtons();
         isEnabled = true;
+        RobotState.initRun();
 
         //default commands that run when the robot is idle
         drivetrain.startTeleopDrive(true);
@@ -165,10 +164,6 @@ public class Robot {
         turret.setDefaultCommand(turret.centerTurretViaPosition().perpetually());
         shooter.setDefaultCommand(shooter.autoShotRpm().perpetually());
         hoodAngle.setDefaultCommand(hoodAngle.autoShotHood().perpetually());
-        if(fromAuto == false) {
-            helidexer.resetHome();
-            heliHome = helidexer.getSensorHome();
-        }
 
         //button commands
         controls.floorLoadActive().toggleWhenActive(commandFloorLoad());
@@ -220,11 +215,11 @@ public class Robot {
         CommandScheduler.getInstance().clearButtons();
         CommandScheduler.getInstance().schedule(autoCommand);
         Robot.isEnabled = true;
-        heliHome = helidexer.getSensorHome();
+        RobotState.initRun();
+
         //run while enabled
         while (!opMode.isStopRequested()) {
             Robot.Periodic();
-            endAutoPose = Robot.drivetrain.getPose();
         }
     }
 
