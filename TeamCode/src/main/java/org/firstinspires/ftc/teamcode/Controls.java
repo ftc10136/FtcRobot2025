@@ -183,4 +183,22 @@ public class Controls {
             }
         };
     }
+
+    public Trigger shooterRpmIncrease() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad2.dpad_up;
+            }
+        };
+    }
+
+    public Trigger shooterRpmDecrease() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad2.dpad_down;
+            }
+        };
+    }
 }

@@ -10,6 +10,7 @@ import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.Robot;
+import org.firstinspires.ftc.teamcode.RobotState;
 import org.livoniawarriors.RobotUtil;
 
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
@@ -43,15 +44,15 @@ public class Shooter extends SubsystemBase {
         //also set HoodAngle.shootingTable for hood angles
         shootingTable = new InterpolatingDoubleTreeMap();
         shootingTable.put(35.35, 2785.);
-        shootingTable.put(47.93, 2850.);
-        shootingTable.put(60.1, 3000.);
-        shootingTable.put(67.59, 3100.); //48"
-        shootingTable.put(79.8, 3300.); //60"
-        shootingTable.put(92.09, 3550.); //72"
-        shootingTable.put(104.78, 3700.); //84
-        shootingTable.put(116.58, 3900.); //96
-        shootingTable.put(132.33, 4050.); //108
-        shootingTable.put(143.21, 4150.); //120
+        shootingTable.put(47.93, 2800.);
+        shootingTable.put(60.1, 2900.);
+        shootingTable.put(67.59, 3000.); //48"
+        shootingTable.put(79.8, 3200.); //60"
+        shootingTable.put(92.09, 3450.); //72"
+        shootingTable.put(104.78, 3600.); //84
+        shootingTable.put(116.58, 3800.); //96
+        shootingTable.put(132.33, 3950.); //108
+        shootingTable.put(143.21, 4050.); //120
         shootingTable.put(151.91, 4200.); //132
         shootingTable.put(164.51, 4400.); //144
         shootingTable.put(175.52, 4500.); //156
@@ -70,6 +71,7 @@ public class Shooter extends SubsystemBase {
         packet.put("Shooter/VelocityRpm1", veloRPM);
         packet.put("Shooter/VelocityRpm2", veloRPM2);
         packet.put("Shooter/SmoothRpm", smoothRpm);
+        packet.put("Shooter/RpmAdjust", RobotState.shooterRpmAdjust);
         //packet.put("Shooter/Voltage1", TurretShooterMotor.getPower());
         //packet.put("Shooter/Current1", TurretShooterMotor.getCurrent(CurrentUnit.AMPS));
         //packet.put("Shooter/Voltage2", TurretShooterMotor2.getPower());
@@ -179,7 +181,7 @@ public class Shooter extends SubsystemBase {
         public void execute() {
             double dist = Robot.drivetrain.getGoalDistance();
             var rpm = shootingTable.get(dist);
-            setRpmMotor(rpm);
+            setRpmMotor(rpm + RobotState.shooterRpmAdjust);
         }
     }
 
@@ -194,7 +196,7 @@ public class Shooter extends SubsystemBase {
         public void initialize() {
             double dist = DrivetrainPP.getGoalTarget(pose).GoalDistance;
             rpm = shootingTable.get(dist);
-            setRpmMotor(rpm);
+            setRpmMotor(rpm + RobotState.shooterRpmAdjust);
         }
         @Override
         public void execute() {

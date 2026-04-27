@@ -181,6 +181,8 @@ public class Robot {
         controls.resetTurretAngle().whenActive(turret.resetZero());
         //controls.bumpTurretRotationsLeft().whenActive(turret.bumpRotations(-1));
         //controls.bumpTurretRotationsRight().whenActive(turret.bumpRotations(1));
+        controls.shooterRpmDecrease().whenActive(()-> RobotState.shooterRpmAdjust -= 50);
+        controls.shooterRpmIncrease().whenActive(()-> RobotState.shooterRpmAdjust += 50);
 
         //test commands
         Trigger shootCalibration = new Trigger(() -> Robot.opMode.gamepad1.start);

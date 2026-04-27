@@ -12,6 +12,7 @@ public class RobotState {
     public static int helidexerManualOffset;
     public static double turretManualOffset;
     public static int turretRollovers;
+    public static int shooterRpmAdjust;
 
     public static void initState() {
         if(hasInit) {
@@ -25,6 +26,7 @@ public class RobotState {
         turretManualOffset = 0;
         turretRollovers = 0;
         headingZeroRad = 0;
+        shooterRpmAdjust = 0;
 
         hasInit = true;
     }
