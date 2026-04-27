@@ -175,6 +175,7 @@ public class Robot {
         controls.bumpTurretRight().whenActive(turret.bumpTurretHome(2));
         controls.shootMotif().toggleWhenActive(shootAllBalls(true));
         controls.outtakeBalls().whileActiveContinuous(intake.runOuttake());
+        controls.resetPoseTrigger().whileActiveOnce(resetRobotPose());
 
         controls.flipAlliance().whenActive(flipAlliance());
         controls.resetTurretAngle().whenActive(turret.resetZero());
@@ -268,10 +269,21 @@ public class Robot {
         ));
     }
 
+    public static Command resetRobotPose() {
+        return new SequentialCommandGroup(
+                new ParallelCommandGroup(
+                        shooter.setRpmWithFinished(100),
+                        turret.commandTurretAngle(0)
+                ),
+                drivetrain.resetPoseCommand(),
+                drivetrain.resetFieldOriented()
+        );
+    }
+
     public static Command calibrateShooter() {
         //drop balls in the HP hole and the robot shoots them
         return new ParallelCommandGroup(
-                //turret.commandTurretAngle(0),
+                turret.commandTurretAngle(0),
                 shooter.calibrateShot(),
                 hoodAngle.calibrateShot(),
                 intake.runIntake(),

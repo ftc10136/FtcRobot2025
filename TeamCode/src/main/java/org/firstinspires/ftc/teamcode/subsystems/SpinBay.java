@@ -96,6 +96,10 @@ public class SpinBay {
         return state;
     }
 
+    public void setState(SpinBay.BayState state) {
+        this.state = state;
+    }
+
     public Color getColor() {
         if(reading.color == null) {
             return Color.kBlack;

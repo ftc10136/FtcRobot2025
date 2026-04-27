@@ -52,9 +52,9 @@ public class Shooter extends SubsystemBase {
         shootingTable.put(116.58, 3900.); //96
         shootingTable.put(132.33, 4050.); //108
         shootingTable.put(143.21, 4150.); //120
-        shootingTable.put(151.91, 4250.); //132
-        shootingTable.put(164.51, 4500.); //144
-        shootingTable.put(175.52, 4800.); //156
+        shootingTable.put(151.91, 4200.); //132
+        shootingTable.put(164.51, 4400.); //144
+        shootingTable.put(175.52, 4500.); //156
     }
 
     @Override
@@ -131,6 +131,9 @@ public class Shooter extends SubsystemBase {
     public Command autoShotRpm() {
         return new AutoShotRpm();
     }
+    public Command setRpmWithFinished(double rpm) {
+        return new SetRpmWithFinished(rpm);
+    }
 
     public Command preShotRpm(Pose shootingPose) {
         return new PreShotRpm(shootingPose);
@@ -149,6 +152,22 @@ public class Shooter extends SubsystemBase {
         @Override
         public void end(boolean interrupted) {
             setRpmMotor(0);
+        }
+    }
+
+    private class SetRpmWithFinished extends CommandBase {
+        double rpm;
+        public SetRpmWithFinished(double rpm) {
+            this.rpm = rpm;
+            addRequirements(Robot.shooter);
+        }
+        @Override
+        public void execute() {
+            setRpmMotor(rpm);
+        }
+        @Override
+        public boolean isFinished() {
+            return atTarget;
         }
     }
 

@@ -130,6 +130,14 @@ public class Controls {
         return Robot.opMode.gamepad1.guide;
     }
 
+    public Trigger resetPoseTrigger() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return resetPose();
+            }
+        };
+    }
     public Trigger outtakeBalls() {
         return new Trigger() {
             @Override

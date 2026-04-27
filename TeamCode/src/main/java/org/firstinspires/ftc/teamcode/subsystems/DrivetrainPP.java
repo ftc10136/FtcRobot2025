@@ -24,7 +24,6 @@ import java.util.HashMap;
 public class DrivetrainPP extends SubsystemBase {
     public final Follower follower;
     private final TelemetryPacket packet;
-    private double headingZeroRad;
     private final GoBildaPinpointDriver odo;
 
     //for logging only
@@ -35,7 +34,7 @@ public class DrivetrainPP extends SubsystemBase {
         packet = new TelemetryPacket();
         follower = Constants.createFollower(Robot.opMode.hardwareMap);
         odo = Robot.opMode.hardwareMap.get(GoBildaPinpointDriver.class,"pinpoint");
-        headingZeroRad = 0;
+        RobotState.headingZeroRad = 0;
 
         motors = new HashMap<>();
         motors.put("leftFront", Robot.opMode.hardwareMap.get(DcMotorEx.class, "leftFront"));
@@ -98,13 +97,39 @@ public class DrivetrainPP extends SubsystemBase {
         follower.setPose(pose);
     }
 
-    public void resetPose() {
+    public boolean resetPose() {
         var visionPose = Robot.vision.getVisionPose();
         if (visionPose.isPresent()) {
             Robot.opMode.telemetry.addLine("PedroPose: " + getPose());
             Robot.opMode.telemetry.addLine("VisionPose: " + Robot.vision.getVisionPose());
             setPose(visionPose.get());
+            return true;
         }
+        return false;
+    }
+
+    public Command resetPoseCommand() {
+        return new CommandBase() {
+            boolean finished = false;
+            int loops = 0;
+
+            @Override
+            public void initialize() {
+                loops = 10;
+            }
+
+            @Override
+            public void execute() {
+                if(resetPose()) {
+                    loops--;
+                }
+            }
+
+            @Override
+            public boolean isFinished() {
+                return loops <= 0;
+            }
+        };
     }
 
     public Command teleopDrive() {
@@ -129,10 +154,10 @@ public class DrivetrainPP extends SubsystemBase {
         return new CommandBase() {
             @Override
             public void execute() {
-                headingZeroRad = follower.getHeading();
+                RobotState.headingZeroRad = follower.getHeading();
                 if(!Robot.IsRed) {
                     //if we are blue, the heading changes 180*
-                    headingZeroRad = Math.PI + headingZeroRad;
+                    RobotState.headingZeroRad += Math.PI;
                 }
             }
             @Override
@@ -158,7 +183,7 @@ public class DrivetrainPP extends SubsystemBase {
                 Drive2 *= 0.3;
             }
             double GamePadDegree = Math.atan2(-Math.pow(Robot.controls.getDriveForward(), 3), Math.pow(Robot.controls.getDriveRight(), 3)) / Math.PI * 180;
-            double Movement = RobotUtil.inputModulus(GamePadDegree + Math.toDegrees(follower.getHeading()-headingZeroRad),0, 360);
+            double Movement = RobotUtil.inputModulus(GamePadDegree + Math.toDegrees(follower.getHeading()-RobotState.headingZeroRad),0, 360);
             double Strafe = Math.cos(Movement / 180 * Math.PI) * Drive2;
             double Forward = Math.sin(Movement / 180 * Math.PI) * Drive2;
             var turn = Robot.controls.getDriveTurn();
@@ -265,7 +290,9 @@ public class DrivetrainPP extends SubsystemBase {
         return new DriveToBall();
     }
     class DriveToBall extends CommandBase {
+        boolean hasBalls;
         public DriveToBall() {
+            hasBalls = false;
             addRequirements(Robot.drivetrain);
         }
 
@@ -281,6 +308,7 @@ public class DrivetrainPP extends SubsystemBase {
                 } else {
                     turn = -0.2;
                 }
+                hasBalls = false;
             } else {
                 //find the most center block
                 var block = blocks[0];
@@ -291,11 +319,16 @@ public class DrivetrainPP extends SubsystemBase {
                 }
                 //the coordinates are 0-320 x, 0-240 y, where top left is 0,0
                 //for forward, the closer we are to a ball, drive slower
-                forward = (240-block.y) * 0.0025;
+                forward = (240-block.y) * 0.00416;
                 //for turn, we want to aim to put the center of the block at the center of the camera
-                turn = (160-block.x) * 0.005;
+                turn = (160-block.x) * 0.006;
+                hasBalls = true;
             }
             follower.setTeleOpDrive(forward, 0, turn, true);
+        }
+        @Override
+        public boolean isFinished() {
+            return hasBalls;
         }
     }
 

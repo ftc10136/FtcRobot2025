@@ -96,7 +96,7 @@ public class Turret extends SubsystemBase {
         } else {
             angleDeg -=4;
         }
-        var clamp = MathUtil.clamp(angleDeg, -360., 0);
+        var clamp = MathUtil.clamp(angleDeg, -180., 180);
         long currentTime = System.nanoTime();
         double deltaTime = (currentTime - lastTime) / 1_000_000_000.;
         double deltaAngle = Math.abs(angleDeg - getAngle());
@@ -165,15 +165,16 @@ public class Turret extends SubsystemBase {
         CorrectionNeeded = X_Error * Robot.RobotConfig.TURRET_CAMERA_AIM_P * GainFactor;
 
         //make soft limits for requests
-        if(CorrectionNeeded > 0 && getAngle() < -360) {
+        if(CorrectionNeeded > 0 && getAngle() < -180) {
             CorrectionNeeded = 0;
-        } else if (CorrectionNeeded < 0 && getAngle() > 0) {
+        } else if (CorrectionNeeded < 0 && getAngle() > 180) {
             CorrectionNeeded = 0;
         }
 
         var outClamp = MathUtil.clamp(0.5 - CorrectionNeeded, 0.30, 0.70);
         turretSpin.setPosition(outClamp);
         packet.put("Turret/OutClamp", outClamp);
+        atTarget = Math.abs(CorrectionNeeded) < 2;
     }
 
     public Command resetZero() {
@@ -262,6 +263,8 @@ public class Turret extends SubsystemBase {
     }
 
     private class CenterTurretViaPosition extends CommandBase {
+        int seenLoops;
+        double targetX;
         public CenterTurretViaPosition() {
             addRequirements(Robot.turret);
         }
@@ -269,19 +272,27 @@ public class Turret extends SubsystemBase {
         @Override
         public void initialize() {
             timer.reset();
+            seenLoops = 0;
         }
 
         @Override
         public void execute() {
-            var targetX = Robot.vision.getTargetX();
+            var targetInfo = Robot.vision.getTargetX();
 
-            if (targetX.isPresent()) {
-                aimWithLimelight(targetX.get());
+            if(targetInfo.isPresent()) {
+                targetX = targetInfo.get();
+                seenLoops = 3;
+            } else {
+                seenLoops--;
+            }
+
+            if (seenLoops >= 0) {
+                aimWithLimelight(targetX);
             } else {
                 double angle = Robot.drivetrain.getGoalAngle() - Robot.drivetrain.getHeading();
                 setAngle(angle);
             }
-            packet.put("Turret/UsingTag", targetX.isPresent());
+            packet.put("Turret/UsingTag", seenLoops >= 0);
         }
 
         @Override
@@ -320,7 +331,7 @@ public class Turret extends SubsystemBase {
     private class ResetZero extends CommandBase {
         @Override
         public void execute() {
-            RobotState.turretManualOffset = estimatedAngle;
+            RobotState.turretManualOffset = estimatedAngle - Robot.RobotConfig.TURRET_OFFSET_DEG;
             RobotState.turretRollovers = 0;
         }
 

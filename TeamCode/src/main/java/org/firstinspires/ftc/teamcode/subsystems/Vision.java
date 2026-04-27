@@ -17,9 +17,10 @@ import org.firstinspires.ftc.teamcode.Robot;
 import org.livoniawarriors.RobotUtil;
 
 import java.util.Optional;
+import java.util.function.BooleanSupplier;
 
 public class Vision extends SubsystemBase {
-    public final boolean HUSKYLEN_ENABLED = false;
+    public final boolean HUSKYLEN_ENABLED = true;
     public final boolean LIMELIGHT_ENABLED = true;
     private Limelight3A limelight;
     private final TelemetryPacket packet;
@@ -74,13 +75,16 @@ public class Vision extends SubsystemBase {
             packet.put("Vision/IsRunning", limelight.isRunning());
             updateLimeLight();
         }
+        if (seenMotif == null) {
+            seenMotif = Motifs.Unknown;
+        }
         packet.put("Vision/CameraConnected", isCameraConnected());
         packet.put("Vision/DistToTarget", distToTarget);
         packet.put("Vision/Motif", seenMotif.name());
         packet.put("Vision/TargetX", getTargetX());
 
         if (HUSKYLEN_ENABLED) {
-            //blocks = huskyLens.blocks();
+            blocks = huskyLens.blocks();
             for (int i = 0; i < blocks.length; i++) {
                 packet.put("Vision/Block/" + i + "/X", blocks[i].x);
                 packet.put("Vision/Block/" + i + "/Y", blocks[i].y);
@@ -99,7 +103,7 @@ public class Vision extends SubsystemBase {
         targetX = Optional.empty();
 
         var result = limelight.getLatestResult();
-        if (result != null) {
+        if (result != null && limelight.isConnected()) {
             var mt2Pose = result.getBotpose_MT2();
             logPose(result.getBotpose(), "BotPose");
             logPose(mt2Pose, "BotPose_MT2");

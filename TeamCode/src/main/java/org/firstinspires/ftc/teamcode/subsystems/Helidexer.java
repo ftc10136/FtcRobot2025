@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.subsystems;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
@@ -29,6 +30,8 @@ public class Helidexer extends SubsystemBase {
     private final HashMap<SpinBay.BayState, Double> bayStateToLedCommands;
     private final HashMap<String, SpinBay> bays;
     private int rawPosition;
+    private DigitalChannel greenIntake;
+    private DigitalChannel purpleIntake;
 
     private int loops = 0;
     private int priorityBay = 1;
@@ -36,6 +39,9 @@ public class Helidexer extends SubsystemBase {
     public Helidexer() {
         packet = new TelemetryPacket();
         helixMotor = Robot.opMode.hardwareMap.get(DcMotorEx.class, "Helidexer");
+        //Purple/Green
+        purpleIntake = Robot.opMode.hardwareMap.get(DigitalChannel.class, "Purple");
+        greenIntake = Robot.opMode.hardwareMap.get(DigitalChannel.class, "Green");
         helixMotor.setDirection(DcMotor.Direction.REVERSE);
         helixMotor.setTargetPositionTolerance((int)(Robot.RobotConfig.POSITION_TOLERANCE * 0.8));
         rawPosition = helixMotor.getCurrentPosition();
@@ -93,6 +99,8 @@ public class Helidexer extends SubsystemBase {
         packet.put("Helidexer/Command", RobotUtil.getCommandName(getCurrentCommand()));
         packet.put("Helidexer/Position", rawPosition);
         packet.put("Helidexer/CurrentBay", getCurrentBay());
+        packet.put("Helidexer/IntakePurple", purpleIntake.getState());
+        packet.put("Helidexer/IntakeGreen", greenIntake.getState());
         packet.put("Currents/Helidexer", helixMotor.getCurrent(CurrentUnit.AMPS));
         Robot.logPacket(packet);
     }
@@ -108,6 +116,10 @@ public class Helidexer extends SubsystemBase {
 
     public SpinBay.BayState getBayState(int bay) {
         return Objects.requireNonNull(bays.get("Bay" + bay)).getState();
+    }
+
+    public void setBayState(int bay, SpinBay.BayState state) {
+        Objects.requireNonNull(bays.get("Bay" + bay)).setState(state);
     }
 
     public Command bumpHelidexer(int steps) {
@@ -311,10 +323,14 @@ public class Helidexer extends SubsystemBase {
 
     public class CommandFloorLoadUntilBall extends CommandBase {
         int targetBay;
+        int bay;
         int pos;
+        private ElapsedTime timer;
 
         public CommandFloorLoadUntilBall(int bay) {
+            this.bay = bay;
             targetBay = bay-1;
+            timer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
             addRequirements(Robot.helidexer);
         }
 
@@ -335,17 +351,26 @@ public class Helidexer extends SubsystemBase {
             pos = getBayPos(outBay);
             helixMotor.setTargetPosition(pos);
             helixMotor.setPower(Robot.RobotConfig.HELIDEXER_P);
+            timer.reset();
         }
 
         @Override
         public void execute() {
             helixMotor.setTargetPosition(pos);
             helixMotor.setPower(Robot.RobotConfig.HELIDEXER_P);
+            boolean highColorSensor = purpleIntake.getState() || greenIntake.getState();
+            if (highColorSensor) {
+                if(timer.time() > 100) {
+                    setBayState(bay, SpinBay.BayState.Something);
+                }
+            } else {
+                timer.reset();
+            }
         }
 
         @Override
         public boolean isFinished() {
-            return getBayState(targetBay + 1) != SpinBay.BayState.None;
+            return getBayState(bay) != SpinBay.BayState.None;
         }
 
         @Override

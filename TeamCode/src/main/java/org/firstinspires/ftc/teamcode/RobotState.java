@@ -7,6 +7,7 @@ public class RobotState {
     private static boolean hasInit = false;
     private static boolean hasRun = false;
     public static Pose robotPose;
+    public static double headingZeroRad;
     public static int helidexerOffset;
     public static int helidexerManualOffset;
     public static double turretManualOffset;
@@ -23,6 +24,7 @@ public class RobotState {
         helidexerManualOffset = 0;
         turretManualOffset = 0;
         turretRollovers = 0;
+        headingZeroRad = 0;
 
         hasInit = true;
     }
