@@ -58,7 +58,7 @@ public class Controls {
         return new Trigger() {
             @Override
             public boolean get() {
-                return Robot.opMode.gamepad1.left_stick_button;
+                return Robot.opMode.gamepad1.start;
             }
         };
     }
@@ -68,6 +68,15 @@ public class Controls {
             @Override
             public boolean get() {
                 return Robot.opMode.gamepad1.back;
+            }
+        };
+    }
+
+    public Trigger shotCalibration() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad2.start;
             }
         };
     }

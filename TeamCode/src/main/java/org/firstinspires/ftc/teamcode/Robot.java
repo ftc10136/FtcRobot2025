@@ -185,9 +185,8 @@ public class Robot {
         controls.shooterRpmIncrease().whenActive(()-> RobotState.shooterRpmAdjust += 50);
 
         //test commands
-        Trigger shootCalibration = new Trigger(() -> Robot.opMode.gamepad1.start);
-        shootCalibration.toggleWhenActive(calibrateShooter());
-        /*shootCalibration.whileActiveContinuous(new ParallelDeadlineGroup(
+        controls.shotCalibration().toggleWhenActive(calibrateShooter());
+        /*controls.shotCalibration.whileActiveContinuous(new ParallelDeadlineGroup(
                 commandFloorLoad(),
                 drivetrain.driveToBall()
         ));*/

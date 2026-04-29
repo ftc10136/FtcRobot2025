@@ -325,12 +325,11 @@ public class Helidexer extends SubsystemBase {
         int targetBay;
         int bay;
         int pos;
-        private ElapsedTime timer;
+        int outBay;
 
         public CommandFloorLoadUntilBall(int bay) {
             this.bay = bay;
             targetBay = bay-1;
-            timer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
             addRequirements(Robot.helidexer);
         }
 
@@ -339,7 +338,6 @@ public class Helidexer extends SubsystemBase {
             int currentBay = getCurrentBay();
             int curRotations = currentBay / 3;
             int curBay = currentBay % 3;
-            int outBay;
 
             if (curBay == targetBay) {
                 outBay = currentBay;
@@ -351,7 +349,6 @@ public class Helidexer extends SubsystemBase {
             pos = getBayPos(outBay);
             helixMotor.setTargetPosition(pos);
             helixMotor.setPower(Robot.RobotConfig.HELIDEXER_P);
-            timer.reset();
         }
 
         @Override
@@ -359,12 +356,9 @@ public class Helidexer extends SubsystemBase {
             helixMotor.setTargetPosition(pos);
             helixMotor.setPower(Robot.RobotConfig.HELIDEXER_P);
             boolean highColorSensor = purpleIntake.getState() || greenIntake.getState();
-            if (highColorSensor) {
-                if(timer.time() > 100) {
-                    setBayState(bay, SpinBay.BayState.Something);
-                }
-            } else {
-                timer.reset();
+            boolean bayMatches = outBay == getCurrentBay();
+            if (bayMatches && highColorSensor) {
+                setBayState(bay, SpinBay.BayState.Something);
             }
         }
 
