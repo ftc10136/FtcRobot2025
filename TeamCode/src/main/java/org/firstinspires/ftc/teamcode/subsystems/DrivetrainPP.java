@@ -291,15 +291,24 @@ public class DrivetrainPP extends SubsystemBase {
     }
     class DriveToBall extends CommandBase {
         boolean hasBalls;
+        boolean inAuto;
         public DriveToBall() {
             hasBalls = false;
             addRequirements(Robot.drivetrain);
         }
 
         @Override
+        public void initialize() {
+            follower.breakFollowing();
+            follower.startTeleOpDrive(true);
+        }
+
+        @Override
         public void execute() {
-            double forward, turn;
+            double forward, turn, strafe;
             var blocks = Robot.vision.getBlocks();
+            strafe = 0;
+            turn = 0;
             if(blocks.length == 0) {
                 //if we don't see a ball, turn till we see one
                 forward = 0;
@@ -319,16 +328,40 @@ public class DrivetrainPP extends SubsystemBase {
                 }
                 //the coordinates are 0-320 x, 0-240 y, where top left is 0,0
                 //for forward, the closer we are to a ball, drive slower
-                forward = (240-block.y) * 0.00416;
-                //for turn, we want to aim to put the center of the block at the center of the camera
-                turn = (160-block.x) * 0.006;
+                forward = (240-block.y) * 0.00266;
+                var curPose = Robot.drivetrain.getPose();
+                if(curPose.getY() < 15) {
+                    if(Robot.IsRed) {
+                        strafe = (160 - block.x) * -0.004;
+                        if(curPose.getHeading() > Math.PI) {
+                            turn = 0.1;
+                        }
+                    } else {
+                        strafe = (160 - block.x) * 0.004;
+                        if(curPose.getHeading() > 6) {
+                            turn = -0.1;
+                        }
+                    }
+                    if(curPose.getY() < 10.5) {
+                        strafe = 0;
+                    }
+                } else {
+                    //for turn, we want to aim to put the center of the block at the center of the camera
+                    turn = (160 - block.x) * 0.004;
+                }
                 hasBalls = true;
             }
-            follower.setTeleOpDrive(forward, 0, turn, true);
+            follower.setTeleOpDrive(forward, strafe, turn, true);
+            packet.put("Drivetrain/BallFind/Forward", forward);
+            packet.put("Drivetrain/BallFind/Strafe", strafe);
+            packet.put("Drivetrain/BallFind/Turn", turn);
         }
         @Override
         public boolean isFinished() {
-            return hasBalls;
+            return !hasBalls;
+        }
+        @Override
+        public void end(boolean interrupted) {
         }
     }
 
@@ -366,7 +399,7 @@ public class DrivetrainPP extends SubsystemBase {
         public void execute() {}
         @Override
         public boolean isFinished() {
-            return follower.atPose(pose, 1, 1, 0.3);
+            return follower.atPose(pose, 2, 2);
         }
         @Override
         public void end(boolean interrupted) {

@@ -6,6 +6,7 @@ import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.pedropathing.paths.callbacks.TemporalCallback;
+import com.pedropathing.util.Timer;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelDeadlineGroup;
@@ -87,15 +88,66 @@ public class BlueFrontBase {
                 follower.setMaxPowerScaling(0.6)
         ));
         paths.MidSpike.setCallbacks(new TemporalCallback(2, 0, () ->
-                follower.setMaxPowerScaling(0.6)
-        ));
-        paths.MidSpike.setCallbacks(new TemporalCallback(3, 0, () ->
                 follower.setMaxPowerScaling(1)
-        ));return new SequentialCommandGroup(
+        ));
+        return new SequentialCommandGroup(
                 //get mid preset balls
                 new ParallelDeadlineGroup(
                         Robot.drivetrain.followPath(paths.MidSpike, false, 1),
                         Robot.commandFloorLoad(),
+                        Robot.turret.centerTurretViaPosition().perpetually(),
+                        Robot.shooter.preShotRpm(shotPose).perpetually(),
+                        Robot.hoodAngle.preShotHood(shotPose).perpetually()
+                ),
+                new ParallelDeadlineGroup(
+                        new WaitCommand(500),
+                        Robot.turret.centerTurretViaPosition().perpetually(),
+                        Robot.shooter.autoShotRpm().perpetually(),
+                        Robot.hoodAngle.autoShotHood().perpetually()
+                ),
+                //shoot balls
+                Robot.autoShootMotif()
+        );
+    }
+
+    public Command MidSpikeAndGate() {
+        var shotPose = paths.MainChain.endPose();
+        paths.MidSpikeAndGate.setCallbacks(new TemporalCallback(1, 0, () ->
+                follower.setMaxPowerScaling(0.6)
+        ));
+        paths.MidSpikeAndGate.setCallbacks(new TemporalCallback(2, 0, () ->
+                follower.setMaxPowerScaling(0.6)
+        ));
+        paths.MidSpikeAndGate.setCallbacks(new TemporalCallback(3, 0, () -> {
+            follower.setMaxPowerScaling(1);
+        }));return new SequentialCommandGroup(
+                //get mid preset balls
+                new ParallelDeadlineGroup(
+                        Robot.drivetrain.followPath(paths.MidSpikeAndGate, false, 1),
+                        Robot.commandFloorLoad(),
+                        Robot.turret.centerTurretViaPosition().perpetually(),
+                        Robot.shooter.preShotRpm(shotPose).perpetually(),
+                        Robot.hoodAngle.preShotHood(shotPose).perpetually()
+                ),
+                new ParallelDeadlineGroup(
+                        new WaitCommand(500),
+                        Robot.turret.centerTurretViaPosition().perpetually(),
+                        Robot.shooter.autoShotRpm().perpetually(),
+                        Robot.hoodAngle.autoShotHood().perpetually()
+                ),
+                //shoot balls
+                Robot.autoShootMotif()
+        );
+    }
+    public Command MidRamp() {
+        var shotPose = paths.MainChain.endPose();
+        return new SequentialCommandGroup(
+                //get mid ramp
+                Robot.drivetrain.followPath(paths.SpotToRamp, true, 1),
+                Robot.commandFloorLoad().withTimeout(5000),
+                //return to spot
+                new ParallelDeadlineGroup(
+                        Robot.drivetrain.followPath(paths.RampToSpot, true, 1),
                         Robot.turret.centerTurretViaPosition().perpetually(),
                         Robot.shooter.preShotRpm(shotPose).perpetually(),
                         Robot.hoodAngle.preShotHood(shotPose).perpetually()
@@ -119,9 +171,11 @@ public class BlueFrontBase {
         paths.FrontSpikeAndRamp.setCallbacks(new TemporalCallback(2, 0, () ->
                 follower.setMaxPowerScaling(0.6)
         ));
-        paths.FrontSpikeAndRamp.setCallbacks(new TemporalCallback(3, 0, () ->
-                follower.setMaxPowerScaling(1)
-        ));return new SequentialCommandGroup(
+        paths.FrontSpikeAndRamp.setCallbacks(new TemporalCallback(3, 0, () -> {
+            follower.setMaxPowerScaling(1);
+        }
+        ));
+        return new SequentialCommandGroup(
                 //get mid preset balls
                 new ParallelDeadlineGroup(
                         Robot.drivetrain.followPath(paths.FrontSpikeAndRamp, false, 1),
@@ -170,7 +224,7 @@ public class BlueFrontBase {
     }
 
     public Command LeaveShotSpot() {
-        return new InstantCommand();
+        return Robot.drivetrain.followPath(paths.LeaveShotSpot, false, 1);
     }
 
 
@@ -180,7 +234,11 @@ public class BlueFrontBase {
         public PathChain FrontSpike;
         public PathChain RearSpike;
         public PathChain MidSpike;
+        public PathChain MidSpikeAndGate;
         public PathChain FrontSpikeAndRamp;
+        public PathChain LeaveShotSpot;
+        public PathChain SpotToRamp;
+        public PathChain RampToSpot;
 
         public Paths(Follower follower) {
             MainChain = follower.pathBuilder()
@@ -259,14 +317,39 @@ public class BlueFrontBase {
                     .addPath(
                             new BezierCurve(
                                     new Pose(10.809, 58.086),
+                                    new Pose(31.889, 57.735),
+                                    new Pose(59.700, 77.400)
+                            )
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                    .build();
+
+            MidSpikeAndGate = follower.pathBuilder()
+                    .addPath(
+                            new BezierLine(
+                                    new Pose(59.700, 77.400),
+                                    new Pose(39.817, 58.562)
+                            )
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                    .addPath(
+                            new BezierLine(
+                                    new Pose(39.817, 58.562),
+                                    new Pose(10.809, 58.086)
+                            )
+                    )
+                    .setConstantHeadingInterpolation(Math.toRadians(180))
+                    .addPath(
+                            new BezierCurve(
+                                    new Pose(10.809, 58.086),
                                     new Pose(33.783, 61.938),
-                                    new Pose(18.200, 67.845)
+                                    new Pose(17.700, 67.845)
                             )
                     )
                     .setConstantHeadingInterpolation(Math.toRadians(180))
                     .addPath(
                             new BezierLine(
-                                    new Pose(18.200, 67.845),
+                                    new Pose(17.700, 67.845),
                                     new Pose(59.700, 77.400)
                             )
                     )
@@ -292,17 +375,61 @@ public class BlueFrontBase {
                             new BezierCurve(
                                     new Pose(18.400, 82.500),
                                     new Pose(26.100, 73.000),
-                                    new Pose(17.862, 71.841)
+                                    new Pose(17.700, 71.841)
                             )
                     )
                     .setConstantHeadingInterpolation(Math.toRadians(180))
                     .addPath(
                             new BezierLine(
-                                    new Pose(17.862, 71.841),
+                                    new Pose(17.700, 71.841),
                                     new Pose(59.700, 77.400)
                             )
                     )
                     .setConstantHeadingInterpolation(Math.toRadians(180))
+                    .build();
+
+            LeaveShotSpot = follower.pathBuilder()
+                    .addPath(
+                            new BezierLine(
+                                    new Pose(54.441, 110.187),
+                                    new Pose(59.700, 77.400)
+                            )
+                    )
+                    .setConstantHeadingInterpolation(Math.toRadians(180))
+                    .addPath(
+                            new BezierLine(
+                                    new Pose(59.700, 77.400),
+                                    new Pose(21.246, 64.335)
+                            )
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(134))
+                    .build();
+
+            SpotToRamp = follower.pathBuilder()
+                    .addPath(
+                            new BezierLine(
+                                    new Pose(21.246, 64.335),
+                                    new Pose(59.700, 77.400)
+                            )
+                    )
+                    .setConstantHeadingInterpolation(Math.toRadians(180))
+                    .addPath(
+                            new BezierLine(
+                                    new Pose(59.700, 77.400),
+                                    new Pose(8.400, 60.300)
+                            )
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(145.5))
+                    .build();
+
+            RampToSpot = follower.pathBuilder()
+                    .addPath(
+                            new BezierLine(
+                                    new Pose(8.400, 60.300),
+                                    new Pose(59.700, 77.400)
+                            )
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(145.5), Math.toRadians(180))
                     .build();
         }
     }

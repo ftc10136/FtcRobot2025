@@ -90,6 +90,8 @@ public class Vision extends SubsystemBase {
                 packet.put("Vision/Block/" + i + "/Y", blocks[i].y);
                 packet.put("Vision/Block/" + i + "/id", blocks[i].id);
             }
+            packet.put("Vision/Block/Length", blocks.length);
+            packet.put("Vision/SeesBalls", seesBalls());
         }
         Robot.logPacket(packet);
         Robot.opMode.telemetry.addData("Motif", seenMotif.name());

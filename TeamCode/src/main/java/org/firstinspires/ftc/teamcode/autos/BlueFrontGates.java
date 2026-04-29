@@ -6,6 +6,7 @@ import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 
 import org.firstinspires.ftc.teamcode.Robot;
+import org.livoniawarriors.LoggerCommandTimer;
 
 @Autonomous
 public class BlueFrontGates extends LinearOpMode {
@@ -15,12 +16,17 @@ public class BlueFrontGates extends LinearOpMode {
     }
 
     private Command getAutoSequence() {
+        var logTimer = new LoggerCommandTimer("Auto Times");
         var base = new BlueFrontBase();
         Robot.drivetrain.setPose(base.GetStartPose());
         return new SequentialCommandGroup(
+                logTimer.startLog(),
                 base.LeaveStartAndShoot(),
-                base.MidSpike(),
-                base.FrontSpikeAndGate()
+                logTimer.addEntry("LeaveStartAndShoot"),
+                base.MidSpikeAndGate(),
+                logTimer.addEntry("MidSpikeAndGate"),
+                base.FrontSpikeAndGate(),
+                logTimer.finishLog("FrontSpikeAndGate")
         );
     }
 }

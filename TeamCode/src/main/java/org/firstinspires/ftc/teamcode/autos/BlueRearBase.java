@@ -122,7 +122,7 @@ public class BlueRearBase {
     }
 
     public Command BackBall() {
-        Pose lookPose = new Pose(45, 11, Math.PI);
+        Pose lookPose = new Pose(45, 11, Math.toRadians(180));
         Pose shootPose = paths.MainChain.endPose();;
 
         return new SequentialCommandGroup(

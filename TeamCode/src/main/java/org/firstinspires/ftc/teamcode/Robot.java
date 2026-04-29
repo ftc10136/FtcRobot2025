@@ -67,7 +67,7 @@ public class Robot {
     public static void Init(OpMode inMode) {
         opMode = inMode;
         isEnabled = false;
-        CommandScheduler.getInstance().setBulkReading(opMode.hardwareMap, LynxModule.BulkCachingMode.AUTO);
+        CommandScheduler.getInstance().setBulkReading(opMode.hardwareMap, LynxModule.BulkCachingMode.MANUAL);
         packet = new TelemetryPacket();
 
         //if we have already run, clear out the old running subsystems
@@ -384,7 +384,9 @@ public class Robot {
             }
         }
         //show status
-        if (ready == false) {
+        if(isEnabled && autonomous) {
+            allianceLed.setPosition(GoBildaLedColors.Off);
+        } else if (ready == false) {
             allianceLed.setPosition(GoBildaLedColors.Yellow);
         } else if (readyToShoot().getAsBoolean()) {
             allianceLed.setPosition(GoBildaLedColors.Green);
