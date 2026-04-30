@@ -26,9 +26,7 @@ public class Turret extends SubsystemBase {
     private final Servo topLight;
     private double estimatedAngle;
     private boolean atTarget;
-    private double lastSensorVoltage;
     private double lastGoodVoltage;
-    private double continuousVoltage;
     private final PIDController pid;
     private long lastTime;
     private final ElapsedTime timer;
@@ -40,9 +38,6 @@ public class Turret extends SubsystemBase {
         turretSpin.setDirection(Servo.Direction.REVERSE);
         topLight = Robot.opMode.hardwareMap.get(Servo.class, "RGB_VisionAcquired");
         atTarget = false;
-        //start in middle of sensor range
-        lastSensorVoltage = 1.5;
-        continuousVoltage = lastSensorVoltage;
         timer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
         //cannot have I term, as we don't reset the pids in continous modes
         pid = new PIDController(Robot.RobotConfig.TURRET_KP, Robot.RobotConfig.TURRET_KI,Robot.RobotConfig.TURRET_KD, 0.05);
@@ -50,6 +45,7 @@ public class Turret extends SubsystemBase {
 
         //zero the turret on startup
         double voltage = turretEncoder.getVoltage();
+        lastGoodVoltage = voltage;
         estimatedAngle = -49.49*voltage - 73.04;
         turretSpin.setPosition(0.5);
     }
@@ -60,26 +56,26 @@ public class Turret extends SubsystemBase {
 
         //sometimes on rollover, we catch 3.2, then 1.4, then 0.1 during the transition of rollover,
         //this if check catches when we settle
-        if(Math.abs(lastSensorVoltage - voltage) < 0.9) {
+        if(Math.abs(RobotState.turretLastSensorVoltage - voltage) < 0.9) {
             //voltage hops from 0 to 3.22v, then back to zero
             if (lastGoodVoltage > 2.2 && voltage < 1.1) {
                 RobotState.turretRollovers++;
             } else if (voltage > 2.2 && lastGoodVoltage < 1.1) {
                 RobotState.turretRollovers--;
             }
-            continuousVoltage = (3.296 * RobotState.turretRollovers) + voltage;
+            RobotState.turretContinuousVoltage = (3.296 * RobotState.turretRollovers) + voltage;
             lastGoodVoltage = voltage;
         }
-        lastSensorVoltage = voltage;
+        RobotState.turretLastSensorVoltage = voltage;
 
-        estimatedAngle = -49.49*continuousVoltage - 73.04;
+        estimatedAngle = -49.49 * RobotState.turretContinuousVoltage - 73.04;
 
         packet.put("Turret/EstimatedAngle", getAngle());
         packet.put("Turret/FeedbackVoltage", voltage);
-        packet.put("Turret/LastSensorVoltage", lastSensorVoltage);
+        packet.put("Turret/LastSensorVoltage", RobotState.turretLastSensorVoltage);
         packet.put("Turret/LastGoodVoltage", lastGoodVoltage);
         packet.put("Turret/Rollovers", RobotState.turretRollovers);
-        packet.put("Turret/ContinuousVoltage", continuousVoltage);
+        packet.put("Turret/ContinuousVoltage", RobotState.turretContinuousVoltage);
         packet.put("Turret/Command", RobotUtil.getCommandName(getCurrentCommand()));
         packet.put("Turret/AtTarget", atTarget);
         Robot.logPacket(packet);
@@ -157,8 +153,11 @@ public class Turret extends SubsystemBase {
         //X_Error is how many degrees off center the tag is
         if (Math.abs(X_Error) < 0.8) {
             GainFactor = 0;
-        } else if (Math.abs(X_Error) < 10) {
-            GainFactor = 0.8;
+        } else if (Math.abs(X_Error) < Robot.RobotConfig.TURRET_CAMERA_ANGLE) {
+            GainFactor = Robot.RobotConfig.TURRET_CAMERA_GAIN;
+            if (Robot.drivetrain.getGoalDistance() > 130) {
+                GainFactor *= 2;
+            }
         } else {
             GainFactor = 1;
         }
@@ -172,8 +171,14 @@ public class Turret extends SubsystemBase {
         }
 
         var outClamp = MathUtil.clamp(0.5 - CorrectionNeeded, 0.30, 0.70);
+        if ((0.5 - Robot.RobotConfig.TURRET_KS) < outClamp && outClamp < 0.5) {
+            outClamp -= Robot.RobotConfig.TURRET_KS;
+        } else if (0.5 < outClamp && outClamp < (0.5 + Robot.RobotConfig.TURRET_KS)) {
+            outClamp += Robot.RobotConfig.TURRET_KS;
+        }
         turretSpin.setPosition(outClamp);
         packet.put("Turret/OutClamp", outClamp);
+        packet.put("Turret/XAngle", X_Error);
         atTarget = Math.abs(CorrectionNeeded) < 2;
     }
 

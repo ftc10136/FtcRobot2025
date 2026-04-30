@@ -12,21 +12,21 @@ import org.livoniawarriors.LoggerCommandTimer;
 public class ATest extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
-        Robot.runAutonomous(this, this::getAutoSequence, false);
+        Robot.runAutonomous(this, this::getAutoSequence, true);
     }
 
     private Command getAutoSequence() {
         var logTimer = new LoggerCommandTimer("Auto Times");
-        var base = new BlueRearBase();
+        var base = new RedRearBase();
         Robot.drivetrain.setPose(base.GetStartPose());
         return new SequentialCommandGroup(
                 logTimer.startLog(),
                 base.LeaveStartAndShoot(),
                 logTimer.addEntry("LeaveStartAndShoot"),
-                base.FrontSpike(),
-                logTimer.addEntry("FrontSpike"),
-                base.BackBall(),
-                logTimer.addEntry("BackBall"),
+                base.MidSpikeAndGate(),
+                logTimer.addEntry("MidSpikeAndGate"),
+                base.MidRamp(),
+                logTimer.addEntry("MidRamp"),
                 base.LeaveShotSpot(),
                 logTimer.finishLog("LeaveShotSpot")
         );

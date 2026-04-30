@@ -48,12 +48,12 @@ public class Robot {
     public static Vision vision;
     private static Servo allianceLed;
     public static Helidexer helidexer;
-    public static boolean IsRed = true;
     public static RobotTypeEnum RobotType = RobotTypeEnum.Helidexer;
     private static TelemetryPacket packet;
 
     private static LoggerCommandTimer logTimer;
     private static boolean isEnabled;
+    public static boolean IsRed = true;
     private static boolean autonomous = false;
     public static boolean fromAuto = false;
     static int heliHome = 0;
@@ -177,6 +177,8 @@ public class Robot {
         controls.shootMotif().toggleWhenActive(shootAllBalls(true));
         controls.outtakeBalls().whileActiveContinuous(intake.runOuttake());
         controls.resetPoseTrigger().whileActiveOnce(resetRobotPose());
+        controls.manualAim().whileActiveContinuous(manualAim());
+        controls.manualShot().whileActiveContinuous(manualShot());
 
         controls.flipAlliance().whenActive(flipAlliance());
         controls.resetTurretAngle().whenActive(turret.resetZero());
@@ -248,11 +250,14 @@ public class Robot {
         public static double HELIDEXER_P = 0.7;
 		public static double SHOOTER_RPM_SMOOTHER = 0.25;
         public static double CAMERA_SERVO_POS = 0.5;
-        public static double TURRET_CAMERA_AIM_P = 0.0052;
-        public static double TURRET_KP = 0.0027;
+        public static double TURRET_CAMERA_AIM_P = 0.0037;
+        public static double TURRET_KP = 0.0047;
         public static double TURRET_KI = 0;
         public static double TURRET_KD = 0;
-        public static double TURRET_KS = -1;
+        public static double TURRET_KS = 0.017;
+        public static double TURRET_CAMERA_GAIN = 0.7;
+        public static double TURRET_CAMERA_ANGLE = 8;
+
     }
 
     public static Command commandFloorLoad() {
@@ -295,6 +300,23 @@ public class Robot {
                         helidexer.advanceBay(),
                         helidexer.shootAll()
                 ))
+        );
+    }
+
+    public static Command manualAim() {
+        //manual aiming
+        return new ParallelCommandGroup(
+                turret.commandTurretAngle(0),
+                shooter.setRpm(3525),
+                hoodAngle.setHoodAngleCommand(0.325)
+        );
+    }
+
+    public static Command manualShot() {
+        //manual aiming
+        return new SequentialCommandGroup(
+                helidexer.primeForShot(),
+                helidexer.shootAll()
         );
     }
 

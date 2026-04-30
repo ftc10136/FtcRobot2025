@@ -12,6 +12,8 @@ public class RobotState {
     public static int helidexerManualOffset;
     public static double turretManualOffset;
     public static int turretRollovers;
+    public static double turretContinuousVoltage;
+    public static double turretLastSensorVoltage;
     public static int shooterRpmAdjust;
 
     public static void initState() {
@@ -26,7 +28,10 @@ public class RobotState {
         turretManualOffset = 0;
         turretRollovers = 0;
         headingZeroRad = 0;
-        shooterRpmAdjust = 0;
+        shooterRpmAdjust = 100;
+        //start in middle of sensor range
+        turretLastSensorVoltage = 1.5;
+        turretContinuousVoltage = turretLastSensorVoltage;
 
         hasInit = true;
     }

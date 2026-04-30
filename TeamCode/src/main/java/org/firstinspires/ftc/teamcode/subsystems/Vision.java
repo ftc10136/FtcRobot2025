@@ -47,7 +47,7 @@ public class Vision extends SubsystemBase {
             limelight = Robot.opMode.hardwareMap.get(Limelight3A.class, "limelight");
             limelight.start();
             // LimelightPipelines: 1=20/BlueAlliance, 2=24/RedAlliance, 3=20,21,22
-            limelight.pipelineSwitch(6);
+            limelight.pipelineSwitch(0);
             limelightServo = Robot.opMode.hardwareMap.get(Servo.class, "CameraServo");
         }
         if (HUSKYLEN_ENABLED) {

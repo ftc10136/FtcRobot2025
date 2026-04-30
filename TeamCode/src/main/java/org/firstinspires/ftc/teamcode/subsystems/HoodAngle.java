@@ -5,6 +5,7 @@ import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
+import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 import org.firstinspires.ftc.teamcode.Robot;
@@ -79,6 +80,9 @@ public class HoodAngle extends SubsystemBase {
         lastCommand = position;
     }
 
+    public Command setHoodAngleCommand(double position) {
+        return new InstantCommand(() -> setHoodAngle(position));
+    }
     public Command calibrateShot() {
         return new CalibrateShot();
     }

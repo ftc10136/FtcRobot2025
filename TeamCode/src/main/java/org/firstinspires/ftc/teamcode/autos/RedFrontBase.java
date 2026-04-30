@@ -82,7 +82,6 @@ public class RedFrontBase {
     }
 
     public Command MidSpike() {
-        //TODO remove Gate
         var shotPose = paths.MainChain.endPose();
         paths.MidSpike.setCallbacks(new TemporalCallback(1, 0, () ->
                 follower.setMaxPowerScaling(0.6)
@@ -114,16 +113,14 @@ public class RedFrontBase {
     }
 
     public Command MidSpikeAndGate() {
-        //TODO implement
-        return new InstantCommand();/*
         var shotPose = paths.MainChain.endPose();
-        paths.MidSpike.setCallbacks(new TemporalCallback(1, 0, () ->
+        paths.MidSpikeAndGate.setCallbacks(new TemporalCallback(1, 0, () ->
                 follower.setMaxPowerScaling(0.6)
         ));
-        paths.MidSpike.setCallbacks(new TemporalCallback(2, 0, () ->
+        paths.MidSpikeAndGate.setCallbacks(new TemporalCallback(2, 0, () ->
                 follower.setMaxPowerScaling(0.6)
         ));
-        paths.MidSpike.setCallbacks(new TemporalCallback(3, 0, () ->
+        paths.MidSpikeAndGate.setCallbacks(new TemporalCallback(3, 0, () ->
                 follower.setMaxPowerScaling(1)
         ));
         return new SequentialCommandGroup(
@@ -143,11 +140,9 @@ public class RedFrontBase {
                 ),
                 //shoot balls
                 Robot.autoShootMotif()
-        );*/
+        );
     }
     public Command MidRamp() {
-        //TODO implement
-        return new InstantCommand();/*
         var shotPose = paths.MainChain.endPose();
         return new SequentialCommandGroup(
                 //get mid ramp
@@ -168,11 +163,11 @@ public class RedFrontBase {
                 ),
                 //shoot balls
                 Robot.autoShootMotif()
-        );*/
+        );
     }
 
     public Command FrontSpikeAndGate() {
-        //TODO imprlemtn
+        //TODO implement
         return new InstantCommand();/*
         var shotPose = paths.MainChain.endPose();
         paths.FrontSpikeAndRamp.setCallbacks(new TemporalCallback(1, 0, () ->
@@ -234,8 +229,7 @@ public class RedFrontBase {
     }
 
     public Command LeaveShotSpot() {
-        //TODO FIX ME
-        return new InstantCommand();
+        return Robot.drivetrain.DriveToPose(new Pose(87, 110,Math.toRadians(135)));
     }
 
     /// START AUTO GENERATED CODE ------------------------------------------------------------------
@@ -243,7 +237,10 @@ public class RedFrontBase {
         public PathChain MainChain;
         public PathChain FrontSpike;
         public PathChain RearSpike;
+        public PathChain MidSpikeAndGate;
         public PathChain MidSpike;
+        public PathChain SpotToRamp;
+        public PathChain RampToSpot;
 
         public Paths(Follower follower) {
             MainChain = follower.pathBuilder()
@@ -304,7 +301,7 @@ public class RedFrontBase {
                     .setTangentHeadingInterpolation()
                     .build();
 
-            MidSpike = follower.pathBuilder()
+            MidSpikeAndGate = follower.pathBuilder()
                     .addPath(
                             new BezierLine(
                                     new Pose(81.800, 77.400),
@@ -334,6 +331,57 @@ public class RedFrontBase {
                             )
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
+                    .build();
+
+            MidSpike = follower.pathBuilder()
+                    .addPath(
+                            new BezierLine(
+                                    new Pose(81.800, 77.400),
+                                    new Pose(101.683, 58.562)
+                            )
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
+                    .addPath(
+                            new BezierLine(
+                                    new Pose(101.683, 58.562),
+                                    new Pose(130.691, 58.086)
+                            )
+                    )
+                    .setConstantHeadingInterpolation(Math.toRadians(0))
+                    .addPath(
+                            new BezierLine(
+                                    new Pose(130.691, 58.086),
+                                    new Pose(81.800, 77.400)
+                            )
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
+                    .build();
+
+            SpotToRamp = follower.pathBuilder()
+                    .addPath(
+                            new BezierLine(
+                                    new Pose(87.059, 110.187),
+                                    new Pose(81.800, 77.400)
+                            )
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
+                    .addPath(
+                            new BezierLine(
+                                    new Pose(81.800, 77.400),
+                                    new Pose(133.600, 58.000)
+                            )
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(34.5))
+                    .build();
+
+            RampToSpot = follower.pathBuilder()
+                    .addPath(
+                            new BezierLine(
+                                    new Pose(133.600, 58.000),
+                                    new Pose(81.800, 77.400)
+                            )
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(34.5), Math.toRadians(0))
                     .build();
         }
     }

@@ -210,4 +210,22 @@ public class Controls {
             }
         };
     }
+
+    public Trigger manualAim() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad2.b;
+            }
+        };
+    }
+
+    public Trigger manualShot() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad2.right_trigger > 0.7;
+            }
+        };
+    }
 }

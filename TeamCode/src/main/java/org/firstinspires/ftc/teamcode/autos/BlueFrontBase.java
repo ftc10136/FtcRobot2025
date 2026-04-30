@@ -7,7 +7,6 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.pedropathing.paths.callbacks.TemporalCallback;
 import com.seattlesolvers.solverslib.command.Command;
-import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelDeadlineGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
@@ -416,7 +415,7 @@ public class BlueFrontBase {
                     .addPath(
                             new BezierLine(
                                     new Pose(59.700, 77.400),
-                                    new Pose(8.400, 60.300)
+                                    new Pose(9.400, 58.000)
                             )
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(145.5))
@@ -425,7 +424,7 @@ public class BlueFrontBase {
             RampToSpot = follower.pathBuilder()
                     .addPath(
                             new BezierLine(
-                                    new Pose(8.400, 60.300),
+                                    new Pose(9.400, 58.000),
                                     new Pose(59.700, 77.400)
                             )
                     )

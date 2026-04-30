@@ -7,7 +7,7 @@ import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 
 import org.firstinspires.ftc.teamcode.Robot;
 
-@Autonomous
+//@Autonomous
 public class RedRearAllSpikes extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
@@ -17,7 +17,7 @@ public class RedRearAllSpikes extends LinearOpMode {
     private Command getAutoSequence() {
         var base = new RedRearBase();
         return new SequentialCommandGroup(
-                base.LeaveShotSpot(),
+                base.LeaveStartAndShoot(),
                 base.BackSpike(),
                 base.MidSpike(),
                 base.FrontSpike(),

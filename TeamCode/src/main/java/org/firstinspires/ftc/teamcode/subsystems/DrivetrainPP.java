@@ -57,6 +57,7 @@ public class DrivetrainPP extends SubsystemBase {
 
     public void startTeleopDrive(boolean isTeleop) {
         if(isTeleop) {
+            follower.breakFollowing();
             follower.startTeleopDrive(true);
         } else {
             follower.breakFollowing();
@@ -341,8 +342,8 @@ public class DrivetrainPP extends SubsystemBase {
             var curPose = Robot.drivetrain.getPose();
             if(curPose.getY() < 15) {
                 if(Robot.IsRed) {
-                    strafe = (160 - blockX) * -0.004;
-                    if(curPose.getHeading() > Math.PI) {
+                    strafe = (160 - blockX) * 0.004;
+                    if(curPose.getHeading() < Math.toRadians(0)) {
                         turn = 0.1;
                     }
                 } else {
@@ -370,7 +371,7 @@ public class DrivetrainPP extends SubsystemBase {
         }
         @Override
         public boolean isFinished() {
-            return stopTimer.getElapsedTimeSeconds() > 0.3;
+            return stopTimer.getElapsedTimeSeconds() > 0.4;
         }
         @Override
         public void end(boolean interrupted) {

@@ -22,7 +22,8 @@ public class BlueFrontGates extends LinearOpMode {
                 base.LeaveStartAndShoot(),
                 base.MidSpikeAndGate(),
                 base.MidRamp(),
-                base.FrontSpikeAndGate()
+                base.FrontSpike(),
+                base.LeaveShotSpot()
         );
     }
 }
