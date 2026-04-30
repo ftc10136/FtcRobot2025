@@ -130,7 +130,7 @@ public class BlueRearBase {
                 new ParallelDeadlineGroup(
                         Robot.commandFloorLoad(),
                         new RepeatCommand(new SequentialCommandGroup(
-                                Robot.drivetrain.driveToBall().interruptOn(()->!Robot.vision.seesBalls()),
+                                Robot.drivetrain.driveToBall(),
                                 Robot.drivetrain.DriveToPose(lookPose, false, 1).interruptOn(()->Robot.vision.seesBalls())
                         )),
                         Robot.turret.centerTurretViaPosition().perpetually(),

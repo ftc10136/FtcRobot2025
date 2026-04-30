@@ -16,17 +16,13 @@ public class BlueFrontGates extends LinearOpMode {
     }
 
     private Command getAutoSequence() {
-        var logTimer = new LoggerCommandTimer("Auto Times");
         var base = new BlueFrontBase();
         Robot.drivetrain.setPose(base.GetStartPose());
         return new SequentialCommandGroup(
-                logTimer.startLog(),
                 base.LeaveStartAndShoot(),
-                logTimer.addEntry("LeaveStartAndShoot"),
                 base.MidSpikeAndGate(),
-                logTimer.addEntry("MidSpikeAndGate"),
-                base.FrontSpikeAndGate(),
-                logTimer.finishLog("FrontSpikeAndGate")
+                base.MidRamp(),
+                base.FrontSpikeAndGate()
         );
     }
 }

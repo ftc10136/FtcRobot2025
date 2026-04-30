@@ -8,6 +8,7 @@ import com.pedropathing.paths.PathChain;
 import com.pedropathing.paths.callbacks.TemporalCallback;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.ParallelDeadlineGroup;
+import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 
@@ -120,10 +121,44 @@ public class RedRearBase {
         );
     }
 
+    public Command BackBall() {
+        Pose lookPose = new Pose(99, 11, Math.toRadians(0));
+        Pose shootPose = paths.MainChain.endPose();;
+
+        return new SequentialCommandGroup(
+                Robot.drivetrain.DriveToPose(lookPose, false, 1),
+                new ParallelDeadlineGroup(
+                        Robot.commandFloorLoad(),
+                        new RepeatCommand(new SequentialCommandGroup(
+                                Robot.drivetrain.driveToBall(),
+                                Robot.drivetrain.DriveToPose(lookPose, false, 1).interruptOn(()->Robot.vision.seesBalls())
+                        )),
+                        Robot.turret.centerTurretViaPosition().perpetually(),
+                        Robot.shooter.preShotRpm(shootPose).perpetually(),
+                        Robot.hoodAngle.preShotHood(shootPose).perpetually()
+                ).withTimeout(10000),
+                new ParallelDeadlineGroup(
+                        Robot.drivetrain.DriveToPose(shootPose, true,1),
+                        Robot.turret.centerTurretViaPosition().perpetually(),
+                        Robot.shooter.preShotRpm(shootPose).perpetually(),
+                        Robot.hoodAngle.preShotHood(shootPose).perpetually()
+                ),
+                new ParallelDeadlineGroup(
+                        new WaitCommand(500),
+                        Robot.turret.centerTurretViaPosition().perpetually(),
+                        Robot.shooter.autoShotRpm().perpetually(),
+                        Robot.hoodAngle.autoShotHood().perpetually()
+                ),
+                //shoot balls
+                Robot.autoShootMotif()
+        );
+    }
+
     public Command LeaveShotSpot() {
         return Robot.drivetrain.followPath(paths.End, false, 1);
     }
 
+    /// START AUTO GENERATED CODE ------------------------------------------------------------------
     public static class Paths {
         public PathChain MainChain;
         public PathChain BackSpike;
@@ -226,4 +261,5 @@ public class RedRearBase {
                     .build();
         }
     }
+    /// END AUTO GENERATED CODE --------------------------------------------------------------------
 }

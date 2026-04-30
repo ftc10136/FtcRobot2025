@@ -6,6 +6,8 @@ import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
+import com.pedropathing.util.Timer;
+import com.qualcomm.hardware.dfrobot.HuskyLens;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.util.Range;
@@ -20,6 +22,8 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.livoniawarriors.RobotUtil;
 
 import java.util.HashMap;
+
+import edu.wpi.first.math.MathUtil;
 
 public class DrivetrainPP extends SubsystemBase {
     public final Follower follower;
@@ -292,6 +296,7 @@ public class DrivetrainPP extends SubsystemBase {
     class DriveToBall extends CommandBase {
         boolean hasBalls;
         boolean inAuto;
+        Timer stopTimer;
         public DriveToBall() {
             hasBalls = false;
             addRequirements(Robot.drivetrain);
@@ -301,6 +306,7 @@ public class DrivetrainPP extends SubsystemBase {
         public void initialize() {
             follower.breakFollowing();
             follower.startTeleOpDrive(true);
+            stopTimer = new Timer();
         }
 
         @Override
@@ -309,56 +315,62 @@ public class DrivetrainPP extends SubsystemBase {
             var blocks = Robot.vision.getBlocks();
             strafe = 0;
             turn = 0;
+            int blockX, blockY;
+
             if(blocks.length == 0) {
-                //if we don't see a ball, turn till we see one
-                forward = 0;
-                if(Robot.IsRed) {
-                    turn = 0.2;
-                } else {
-                    turn = -0.2;
-                }
                 hasBalls = false;
+                blockX = 160;
+                blockY = 120;
             } else {
-                //find the most center block
+                hasBalls = true;
                 var block = blocks[0];
-                for(int i=0; i< blocks.length; i++) {
-                    if(Math.abs(block.x - 160) > Math.abs(blocks[i].x - 160)) {
+                //find the most center block
+                for (int i = 0; i < blocks.length; i++) {
+                    if (Math.abs(block.x - 160) > Math.abs(blocks[i].x - 160)) {
                         block = blocks[i];
                     }
                 }
-                //the coordinates are 0-320 x, 0-240 y, where top left is 0,0
-                //for forward, the closer we are to a ball, drive slower
-                forward = (240-block.y) * 0.00266;
-                var curPose = Robot.drivetrain.getPose();
-                if(curPose.getY() < 15) {
-                    if(Robot.IsRed) {
-                        strafe = (160 - block.x) * -0.004;
-                        if(curPose.getHeading() > Math.PI) {
-                            turn = 0.1;
-                        }
-                    } else {
-                        strafe = (160 - block.x) * 0.004;
-                        if(curPose.getHeading() > 6) {
-                            turn = -0.1;
-                        }
-                    }
-                    if(curPose.getY() < 10.5) {
-                        strafe = 0;
+                blockX = block.x;
+                blockY = block.y;
+            }
+
+            //the coordinates are 0-320 x, 0-240 y, where top left is 0,0
+            //for forward, the closer we are to a ball, drive slower
+            forward = (240-blockY) * 0.00266;
+            forward = MathUtil.clamp(forward, 0.2, 0.5);
+            var curPose = Robot.drivetrain.getPose();
+            if(curPose.getY() < 15) {
+                if(Robot.IsRed) {
+                    strafe = (160 - blockX) * -0.004;
+                    if(curPose.getHeading() > Math.PI) {
+                        turn = 0.1;
                     }
                 } else {
-                    //for turn, we want to aim to put the center of the block at the center of the camera
-                    turn = (160 - block.x) * 0.004;
+                    strafe = (160 - blockX) * 0.004;
+                    if(curPose.getHeading() > 6) {
+                        turn = -0.1;
+                    }
                 }
-                hasBalls = true;
+                if(curPose.getY() < 10.5) {
+                    strafe = 0;
+                }
+            } else {
+                //for turn, we want to aim to put the center of the block at the center of the camera
+                turn = (160 - blockX) * 0.004;
             }
+
             follower.setTeleOpDrive(forward, strafe, turn, true);
             packet.put("Drivetrain/BallFind/Forward", forward);
             packet.put("Drivetrain/BallFind/Strafe", strafe);
             packet.put("Drivetrain/BallFind/Turn", turn);
+
+            if(hasBalls) {
+                stopTimer.resetTimer();
+            }
         }
         @Override
         public boolean isFinished() {
-            return !hasBalls;
+            return stopTimer.getElapsedTimeSeconds() > 0.3;
         }
         @Override
         public void end(boolean interrupted) {

@@ -82,6 +82,7 @@ public class RedFrontBase {
     }
 
     public Command MidSpike() {
+        //TODO remove Gate
         var shotPose = paths.MainChain.endPose();
         paths.MidSpike.setCallbacks(new TemporalCallback(1, 0, () ->
                 follower.setMaxPowerScaling(0.6)
@@ -91,7 +92,8 @@ public class RedFrontBase {
         ));
         paths.MidSpike.setCallbacks(new TemporalCallback(3, 0, () ->
                 follower.setMaxPowerScaling(1)
-        ));return new SequentialCommandGroup(
+        ));
+        return new SequentialCommandGroup(
                 //get mid preset balls
                 new ParallelDeadlineGroup(
                         Robot.drivetrain.followPath(paths.MidSpike, false, 1),
@@ -109,6 +111,98 @@ public class RedFrontBase {
                 //shoot balls
                 Robot.autoShootMotif()
         );
+    }
+
+    public Command MidSpikeAndGate() {
+        //TODO implement
+        return new InstantCommand();/*
+        var shotPose = paths.MainChain.endPose();
+        paths.MidSpike.setCallbacks(new TemporalCallback(1, 0, () ->
+                follower.setMaxPowerScaling(0.6)
+        ));
+        paths.MidSpike.setCallbacks(new TemporalCallback(2, 0, () ->
+                follower.setMaxPowerScaling(0.6)
+        ));
+        paths.MidSpike.setCallbacks(new TemporalCallback(3, 0, () ->
+                follower.setMaxPowerScaling(1)
+        ));
+        return new SequentialCommandGroup(
+                //get mid preset balls
+                new ParallelDeadlineGroup(
+                        Robot.drivetrain.followPath(paths.MidSpikeAndGate, false, 1),
+                        Robot.commandFloorLoad(),
+                        Robot.turret.centerTurretViaPosition().perpetually(),
+                        Robot.shooter.preShotRpm(shotPose).perpetually(),
+                        Robot.hoodAngle.preShotHood(shotPose).perpetually()
+                ),
+                new ParallelDeadlineGroup(
+                        new WaitCommand(500),
+                        Robot.turret.centerTurretViaPosition().perpetually(),
+                        Robot.shooter.autoShotRpm().perpetually(),
+                        Robot.hoodAngle.autoShotHood().perpetually()
+                ),
+                //shoot balls
+                Robot.autoShootMotif()
+        );*/
+    }
+    public Command MidRamp() {
+        //TODO implement
+        return new InstantCommand();/*
+        var shotPose = paths.MainChain.endPose();
+        return new SequentialCommandGroup(
+                //get mid ramp
+                Robot.drivetrain.followPath(paths.SpotToRamp, true, 1),
+                Robot.commandFloorLoad().withTimeout(5000),
+                //return to spot
+                new ParallelDeadlineGroup(
+                        Robot.drivetrain.followPath(paths.RampToSpot, true, 1),
+                        Robot.turret.centerTurretViaPosition().perpetually(),
+                        Robot.shooter.preShotRpm(shotPose).perpetually(),
+                        Robot.hoodAngle.preShotHood(shotPose).perpetually()
+                ),
+                new ParallelDeadlineGroup(
+                        new WaitCommand(500),
+                        Robot.turret.centerTurretViaPosition().perpetually(),
+                        Robot.shooter.autoShotRpm().perpetually(),
+                        Robot.hoodAngle.autoShotHood().perpetually()
+                ),
+                //shoot balls
+                Robot.autoShootMotif()
+        );*/
+    }
+
+    public Command FrontSpikeAndGate() {
+        //TODO imprlemtn
+        return new InstantCommand();/*
+        var shotPose = paths.MainChain.endPose();
+        paths.FrontSpikeAndRamp.setCallbacks(new TemporalCallback(1, 0, () ->
+                follower.setMaxPowerScaling(0.6)
+        ));
+        paths.FrontSpikeAndRamp.setCallbacks(new TemporalCallback(2, 0, () ->
+                follower.setMaxPowerScaling(0.6)
+        ));
+        paths.FrontSpikeAndRamp.setCallbacks(new TemporalCallback(3, 0, () -> {
+            follower.setMaxPowerScaling(1);
+        }
+        ));
+        return new SequentialCommandGroup(
+                //get mid preset balls
+                new ParallelDeadlineGroup(
+                        Robot.drivetrain.followPath(paths.FrontSpikeAndRamp, false, 1),
+                        Robot.commandFloorLoad(),
+                        Robot.turret.centerTurretViaPosition().perpetually(),
+                        Robot.shooter.preShotRpm(shotPose).perpetually(),
+                        Robot.hoodAngle.preShotHood(shotPose).perpetually()
+                ),
+                new ParallelDeadlineGroup(
+                        new WaitCommand(500),
+                        Robot.turret.centerTurretViaPosition().perpetually(),
+                        Robot.shooter.autoShotRpm().perpetually(),
+                        Robot.hoodAngle.autoShotHood().perpetually()
+                ),
+                //shoot balls
+                Robot.autoShootMotif()
+        );*/
     }
 
     public Command BackSpike() {
@@ -140,6 +234,7 @@ public class RedFrontBase {
     }
 
     public Command LeaveShotSpot() {
+        //TODO FIX ME
         return new InstantCommand();
     }
 

@@ -127,6 +127,7 @@ public class Robot {
         opMode.telemetry.addData("TurretAngle", turret.getAngle());
         opMode.telemetry.addData("ShotDistance", drivetrain.getGoalDistance());
         opMode.telemetry.addData("Command TimeMs", deltaTime);
+        opMode.telemetry.addData("Pose", drivetrain.getPose());
         opMode.telemetry.addData("_RPM Ready", shooter.atTarget());
         opMode.telemetry.addData("_Turret Ready", turret.atTarget());
         opMode.telemetry.addData("_Hood Ready", hoodAngle.atTarget());
@@ -247,7 +248,7 @@ public class Robot {
         public static double HELIDEXER_P = 0.7;
 		public static double SHOOTER_RPM_SMOOTHER = 0.25;
         public static double CAMERA_SERVO_POS = 0.5;
-        public static double TURRET_CAMERA_AIM_P = 0.005;
+        public static double TURRET_CAMERA_AIM_P = 0.0052;
         public static double TURRET_KP = 0.0027;
         public static double TURRET_KI = 0;
         public static double TURRET_KD = 0;

@@ -6,7 +6,6 @@ import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.pedropathing.paths.callbacks.TemporalCallback;
-import com.pedropathing.util.Timer;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelDeadlineGroup;
@@ -120,7 +119,8 @@ public class BlueFrontBase {
         ));
         paths.MidSpikeAndGate.setCallbacks(new TemporalCallback(3, 0, () -> {
             follower.setMaxPowerScaling(1);
-        }));return new SequentialCommandGroup(
+        }));
+        return new SequentialCommandGroup(
                 //get mid preset balls
                 new ParallelDeadlineGroup(
                         Robot.drivetrain.followPath(paths.MidSpikeAndGate, false, 1),

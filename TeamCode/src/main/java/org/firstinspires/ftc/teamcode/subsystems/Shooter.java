@@ -83,7 +83,22 @@ public class Shooter extends SubsystemBase {
         Robot.logPacket(packet);
     }
 
+    private void setRpmQuiet() {
+        double rpm = 800;
+        packet.put("Shooter/TargetRpm", rpm);
+
+        //hardware based PID shots
+        double deltaRpm = rpm - smoothRpm;
+            TurretShooterMotor.setVelocity((28. / 60) * rpm);
+            TurretShooterMotor2.setVelocity((28. / 60) * rpm);
+        atTarget = Math.abs(deltaRpm) < 50;
+    }
+
     private void setRpmMotor(double rpm) {
+        //if(rpm > 1) {
+        //    setRpmQuiet();
+        //    return;
+        //}
         packet.put("Shooter/TargetRpm", rpm);
 
         //software based PID
