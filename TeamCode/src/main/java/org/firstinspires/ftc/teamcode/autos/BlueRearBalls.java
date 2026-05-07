@@ -7,6 +7,7 @@ import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 
 import org.firstinspires.ftc.teamcode.Robot;
+import org.livoniawarriors.TimerEvent;
 
 @Autonomous
 public class BlueRearBalls extends LinearOpMode {
@@ -18,10 +19,13 @@ public class BlueRearBalls extends LinearOpMode {
     private Command getAutoSequence() {
         var base = new BlueRearBase();
         Robot.drivetrain.setPose(base.GetStartPose());
+        TimerEvent timer = new TimerEvent();
         return new SequentialCommandGroup(
+                timer,
                 base.LeaveStartAndShoot(),
                 base.BackSpike(),
-                new RepeatCommand(base.BackBall())
+                new RepeatCommand(base.BackBall()).interruptOn(timer.onElapsed(28.5)),
+                base.LeaveShotSpot()
         );
     }
 }

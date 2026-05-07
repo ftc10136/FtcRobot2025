@@ -86,12 +86,6 @@ public class Turret extends SubsystemBase {
     }
 
     private void setAngle(double angleDeg) {
-        if (!Robot.IsRed) {
-            //if blue, adjust to make
-            angleDeg +=4;
-        } else {
-            angleDeg -=4;
-        }
         var clamp = MathUtil.clamp(angleDeg, -180., 180);
         long currentTime = System.nanoTime();
         double deltaTime = (currentTime - lastTime) / 1_000_000_000.;
@@ -105,9 +99,9 @@ public class Turret extends SubsystemBase {
         if(!Double.isNaN(output)) {
             //the servo doesn't run between 0.47-0.53, so bump up the requests
             if(output < -0.001) {
-                output -= 0.025;
+                output -= Robot.RobotConfig.TURRET_KS;
             } else if (output > 0.001) {
-                output += 0.025;
+                output += Robot.RobotConfig.TURRET_KS;
             } else {
                 output = 0;
             }
@@ -150,12 +144,13 @@ public class Turret extends SubsystemBase {
         double GainFactor;
         double CorrectionNeeded;
 
+        double dist = Robot.drivetrain.getGoalDistance();
         //X_Error is how many degrees off center the tag is
         if (Math.abs(X_Error) < 0.8) {
             GainFactor = 0;
         } else if (Math.abs(X_Error) < Robot.RobotConfig.TURRET_CAMERA_ANGLE) {
             GainFactor = Robot.RobotConfig.TURRET_CAMERA_GAIN;
-            if (Robot.drivetrain.getGoalDistance() > 130) {
+            if (dist > 130) {
                 GainFactor *= 2;
             }
         } else {

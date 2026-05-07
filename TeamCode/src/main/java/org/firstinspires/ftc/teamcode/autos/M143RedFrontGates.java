@@ -7,8 +7,8 @@ import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 
 import org.firstinspires.ftc.teamcode.Robot;
 
-//@Autonomous
-public class RedFrontAllSpikes extends LinearOpMode {
+@Autonomous
+public class M143RedFrontGates extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         Robot.runAutonomous(this, this::getAutoSequence, true);
@@ -19,8 +19,8 @@ public class RedFrontAllSpikes extends LinearOpMode {
         Robot.drivetrain.setPose(base.GetStartPose());
         return new SequentialCommandGroup(
                 base.LeaveStartAndShoot(),
-                base.MidSpike(),
-                base.FrontSpike(),
+                base.MidSpikeAndGate(),
+                base.FrontSpikeAndGate(),
                 base.LeaveShotSpot()
         );
     }

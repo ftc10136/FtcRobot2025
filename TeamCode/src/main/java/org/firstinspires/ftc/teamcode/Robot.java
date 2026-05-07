@@ -251,7 +251,7 @@ public class Robot {
 		public static double SHOOTER_RPM_SMOOTHER = 0.25;
         public static double CAMERA_SERVO_POS = 0.5;
         public static double TURRET_CAMERA_AIM_P = 0.0037;
-        public static double TURRET_KP = 0.0047;
+        public static double TURRET_KP = 0.0042;
         public static double TURRET_KI = 0;
         public static double TURRET_KD = 0;
         public static double TURRET_KS = 0.017;

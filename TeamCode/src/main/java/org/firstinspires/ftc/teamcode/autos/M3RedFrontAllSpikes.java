@@ -7,8 +7,8 @@ import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 
 import org.firstinspires.ftc.teamcode.Robot;
 
-//@Autonomous
-public class RedFrontAllSpikes extends LinearOpMode {
+@Autonomous
+public class M3RedFrontAllSpikes extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         Robot.runAutonomous(this, this::getAutoSequence, true);

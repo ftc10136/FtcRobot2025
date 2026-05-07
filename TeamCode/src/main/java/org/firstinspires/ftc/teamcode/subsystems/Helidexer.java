@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.pedropathing.util.Timer;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
@@ -326,10 +327,11 @@ public class Helidexer extends SubsystemBase {
         int bay;
         int pos;
         int outBay;
-
+        Timer finished;
         public CommandFloorLoadUntilBall(int bay) {
             this.bay = bay;
             targetBay = bay-1;
+            finished = new Timer();
             addRequirements(Robot.helidexer);
         }
 
@@ -349,6 +351,8 @@ public class Helidexer extends SubsystemBase {
             pos = getBayPos(outBay);
             helixMotor.setTargetPosition(pos);
             helixMotor.setPower(Robot.RobotConfig.HELIDEXER_P);
+            finished.resetTimer();
+
         }
 
         @Override
@@ -359,12 +363,14 @@ public class Helidexer extends SubsystemBase {
             boolean bayMatches = outBay == getCurrentBay();
             if (bayMatches && highColorSensor) {
                 setBayState(bay, SpinBay.BayState.Something);
+            } else {
+                finished.resetTimer();
             }
         }
 
         @Override
         public boolean isFinished() {
-            return getBayState(bay) != SpinBay.BayState.None;
+            return finished.getElapsedTimeSeconds() > 0.25 || (getBayState(bay) == SpinBay.BayState.Purple || getBayState(bay) == SpinBay.BayState.Green);
         }
 
         @Override
