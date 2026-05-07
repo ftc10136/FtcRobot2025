@@ -20,76 +20,92 @@ import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
 public class Vision extends SubsystemBase {
-    public final boolean CAMERA_ENABLED = false;
-    private final Limelight3A limelight;
+    public final boolean HUSKYLEN_ENABLED = true;
+    public final boolean LIMELIGHT_ENABLED = true;
+    private Limelight3A limelight;
     private final TelemetryPacket packet;
     private HuskyLens huskyLens;
-    private double turretError = 0;
     private double distToTarget = 0;
     private long lastReading = 0;
     private HuskyLens.Block[] blocks;
     private Servo limelightServo;
     private Motifs seenMotif;
     private Optional<Pose> visionPose;
+    private Optional<Double> targetX;
+    private boolean hasMotifTag;
 
     public enum Motifs {
+        Unknown,
         GPP, //21
         PGP, //22
         PPG  //23
     }
     public Vision() {
         packet = new TelemetryPacket();
-        limelight = Robot.opMode.hardwareMap.get(Limelight3A.class, "limelight");
-        limelight.start();
 
-        if (CAMERA_ENABLED) {
+        if (LIMELIGHT_ENABLED) {
+            limelight = Robot.opMode.hardwareMap.get(Limelight3A.class, "limelight");
+            limelight.start();
+            // LimelightPipelines: 1=20/BlueAlliance, 2=24/RedAlliance, 3=20,21,22
+            limelight.pipelineSwitch(0);
+            limelightServo = Robot.opMode.hardwareMap.get(Servo.class, "CameraServo");
+        }
+        if (HUSKYLEN_ENABLED) {
             huskyLens = Robot.opMode.hardwareMap.get(HuskyLens.class, "HuskyLens");
             huskyLens.selectAlgorithm(HuskyLens.Algorithm.COLOR_RECOGNITION);
         }
         blocks = new HuskyLens.Block[0];
 
-        // LimelightPipelines: 1=20/BlueAlliance, 2=24/RedAlliance, 3=20,21,22
-        limelight.pipelineSwitch(6);
         visionPose = Optional.empty();
-        seenMotif = Motifs.PPG;
-
-        limelightServo = Robot.opMode.hardwareMap.get(Servo.class, "CameraServo");
-        limelightServo.setPosition(0.4);
+        targetX = Optional.empty();
+        seenMotif = Motifs.Unknown;
     }
 
     @Override
     public void periodic() {
-        limelightServo.setPosition(0.4);
-
-        updateVision();
-        packet.put("Vision/IsConnected", limelight.isConnected());
-        packet.put("Vision/IsRunning", limelight.isRunning());
+        hasMotifTag = false;
+        if(LIMELIGHT_ENABLED) {
+            if(Robot.isEnabled()) {
+                limelightServo.setPosition(Robot.RobotConfig.CAMERA_SERVO_POS);
+            }
+            //if(!isCameraConnected()) {
+                //limelight.pipelineSwitch(6);
+            //}
+            packet.put("Vision/IsConnected", limelight.isConnected());
+            packet.put("Vision/IsRunning", limelight.isRunning());
+            updateLimeLight();
+        }
+        if (seenMotif == null) {
+            seenMotif = Motifs.Unknown;
+        }
         packet.put("Vision/CameraConnected", isCameraConnected());
         packet.put("Vision/DistToTarget", distToTarget);
         packet.put("Vision/Motif", seenMotif.name());
-        packet.put("Vision/TurretError", getTurretError());
+        packet.put("Vision/TargetX", getTargetX());
 
-        if (CAMERA_ENABLED) {
-            //blocks = huskyLens.blocks();
+        if (HUSKYLEN_ENABLED) {
+            blocks = huskyLens.blocks();
             for (int i = 0; i < blocks.length; i++) {
                 packet.put("Vision/Block/" + i + "/X", blocks[i].x);
                 packet.put("Vision/Block/" + i + "/Y", blocks[i].y);
                 packet.put("Vision/Block/" + i + "/id", blocks[i].id);
             }
+            packet.put("Vision/Block/Length", blocks.length);
+            packet.put("Vision/SeesBalls", seesBalls());
         }
         Robot.logPacket(packet);
-        if(!isCameraConnected()) {
-            limelight.pipelineSwitch(6);
-        }
         Robot.opMode.telemetry.addData("Motif", seenMotif.name());
     }
 
-    private void updateVision() {
+    private void updateLimeLight() {
         var headingDeg = -Robot.drivetrain.getHeading() + 180;
         headingDeg = RobotUtil.inputModulus(headingDeg, -180, 180);
         limelight.updateRobotOrientation(headingDeg);
+        visionPose = Optional.empty();
+        targetX = Optional.empty();
+
         var result = limelight.getLatestResult();
-        if (result != null) {
+        if (result != null && limelight.isConnected()) {
             var mt2Pose = result.getBotpose_MT2();
             logPose(result.getBotpose(), "BotPose");
             logPose(mt2Pose, "BotPose_MT2");
@@ -105,16 +121,19 @@ public class Vision extends SubsystemBase {
                     //convert to inches
                     distToTarget = dist * 39.37;
                     logPose(fiducialResult.getCameraPoseTargetSpace(), "CameraPoseTargetSpace");
-                    turretError = fiducialResult.getTargetXDegrees();
                     lastReading = System.nanoTime();
+                    targetX = Optional.of(fiducialResult.getTargetXDegrees());
                 }
 
                 if(tagId == 21) {
                     seenMotif = Motifs.GPP;
+                    hasMotifTag = true;
                 } else if(tagId == 22) {
                     seenMotif = Motifs.PGP;
+                    hasMotifTag = true;
                 } else if(tagId == 23) {
                     seenMotif = Motifs.PPG;
+                    hasMotifTag = true;
                 }
 
                 if(tagId == 20 || tagId == 24) {
@@ -125,19 +144,15 @@ public class Vision extends SubsystemBase {
             if (hasLocatingTag) {
                 var pos = mt2Pose.getPosition().toUnit(DistanceUnit.INCH);
                 visionPose = Optional.of(new Pose(72 + pos.y, 72 - pos.x, result.getBotpose().getOrientation().getYaw(AngleUnit.RADIANS) - (Math.PI / 2), PedroCoordinates.INSTANCE));
-            } else {
-                visionPose = Optional.empty();
             }
-        } else {
-            visionPose = Optional.empty();
         }
     }
 
     private void logPose(Pose3D pose, String name) {
         var pedroPose = new Pose(-pose.getPosition().y, pose.getPosition().x, pose.getOrientation().getYaw(AngleUnit.RADIANS), FTCCoordinates.INSTANCE).getAsCoordinateSystem(PedroCoordinates.INSTANCE);
 
-        packet.put("Vision/Pedro " + name + " x", pedroPose.getX()*39.37);
-        packet.put("Vision/Pedro " + name + " y", pedroPose.getY()*39.37);
+        packet.put("Vision/Pedro " + name + " x", pedroPose.getX());
+        packet.put("Vision/Pedro " + name + " y", pedroPose.getY());
         packet.put("Vision/Pedro " + name + " heading", pedroPose.getHeading()+Math.PI);
     }
 
@@ -145,64 +160,8 @@ public class Vision extends SubsystemBase {
         return visionPose;
     }
 
-    public void initScanning() {
-        var status = limelight.getStatus();
-        var result = limelight.getLatestResult();
-        if (result != null) {
-            // Access general information.
-            // Access fiducial results.
-            var fiducialResults = result.getFiducialResults();
-            for (LLResultTypes.FiducialResult fiducialResult_item : fiducialResults) {
-                var fiducialResult = fiducialResult_item;
-                //telemetry.addData("Fiducial", "ID: " + fiducialResult.getFiducialId() + ", Family: " + fiducialResult.getFamily() + ", X: " + JavaUtil.formatNumber(fiducialResult.getTargetXDegrees(), 2) + ", Y: " + JavaUtil.formatNumber(fiducialResult.getTargetYDegrees(), 2));
-                var AutonMode = fiducialResult.getFiducialId();
-                //telemetry.update();
-            }
-        } else {
-            //telemetry.addData("Limelight", "No data available");
-        }
-    }
-
-    public void teleopScanning() {
-        Pose3D botpose;
-        double captureLatency;
-        double targetingLatency;
-        double X_Error;
-        double GainFactor;
-        double CorrectionNeeded;
-
-        var status = limelight.getStatus();
-        var result = limelight.getLatestResult();
-        if (result != null) {
-            // Access general information.
-            var VisionAcquired = 1;
-            botpose = result.getBotpose();
-            captureLatency = result.getCaptureLatency();
-            targetingLatency = result.getTargetingLatency();
-            X_Error = result.getTx();
-            if (Math.abs(X_Error) < 0.8) {
-                GainFactor = 0;
-            } else if (Math.abs(X_Error) < 10) {
-                GainFactor = 0.8;
-            } else {
-                GainFactor = 1;
-            }
-            CorrectionNeeded = X_Error * -0.005 * GainFactor;
-            //if (TurretMode == 1) {
-            //    TurretSpin.setPosition(TurretSpin.getPosition() - CorrectionNeeded);
-            //}
-            // Access fiducial results.
-            var fiducialResults = result.getFiducialResults();
-            for (LLResultTypes.FiducialResult fiducialResult_item2 : fiducialResults) {
-                var fiducialResult = fiducialResult_item2;
-                //telemetry.addData("Fiducial", "ID: " + fiducialResult.getFiducialId() + ", Family: " + fiducialResult.getFamily() + ", X: " + JavaUtil.formatNumber(fiducialResult.getTargetXDegrees(), 2) + ", Y: " + JavaUtil.formatNumber(fiducialResult.getTargetYDegrees(), 2));
-            }
-        } else {
-        }
-    }
-
-    public double getTurretError() {
-        return turretError;
+    public Optional<Double> getTargetX() {
+        return targetX;
     }
 
     public double getDistance() {
@@ -214,23 +173,18 @@ public class Vision extends SubsystemBase {
     }
 
     public boolean isCameraConnected() {
-        return ((System.nanoTime() - lastReading) < 500_000_000) && limelight.isConnected();
+        if(LIMELIGHT_ENABLED) {
+            return ((System.nanoTime() - lastReading) < 500_000_000) && limelight.isConnected();
+        }
+        return false;
     }
 
     public HuskyLens.Block[] getBlocks() {
         return blocks;
     }
 
-    public boolean seeBalls() {
+    public boolean seesBalls() {
         return blocks.length > 0;
     }
-
-    public BooleanSupplier seesBalls() {
-        return new BooleanSupplier() {
-            @Override
-            public boolean getAsBoolean() {
-                return blocks.length > 0;
-            }
-        };
-    }
+    public boolean seesMotif() {return hasMotifTag;}
 }

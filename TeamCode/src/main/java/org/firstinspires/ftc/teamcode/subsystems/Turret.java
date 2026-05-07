@@ -7,11 +7,13 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandBase;
+import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 
 import org.firstinspires.ftc.teamcode.Robot;
+import org.firstinspires.ftc.teamcode.RobotState;
 import org.livoniawarriors.RobotUtil;
 
 import edu.wpi.first.math.MathUtil;
@@ -24,35 +26,28 @@ public class Turret extends SubsystemBase {
     private final Servo topLight;
     private double estimatedAngle;
     private boolean atTarget;
-    private double lastSensorVoltage;
     private double lastGoodVoltage;
-    private double continuousVoltage;
-    private int rollovers;
     private final PIDController pid;
     private long lastTime;
-    private double offsetAngle;
     private final ElapsedTime timer;
 
     public Turret() {
         packet = new TelemetryPacket();
         turretEncoder = Robot.opMode.hardwareMap.get(AnalogInput.class, "TurretEncoder");
         turretSpin = Robot.opMode.hardwareMap.get(Servo.class, "TurretSpin");
-        turretSpin.setDirection(Servo.Direction.FORWARD);
+        turretSpin.setDirection(Servo.Direction.REVERSE);
         topLight = Robot.opMode.hardwareMap.get(Servo.class, "RGB_VisionAcquired");
         atTarget = false;
-        //start in middle of sensor range
-        lastSensorVoltage = 1.5;
-        continuousVoltage = lastSensorVoltage;
-        offsetAngle = 0;
         timer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
         //cannot have I term, as we don't reset the pids in continous modes
-        pid = new PIDController(0.0025, 0,0, 0.05);
+        pid = new PIDController(Robot.RobotConfig.TURRET_KP, Robot.RobotConfig.TURRET_KI,Robot.RobotConfig.TURRET_KD, 0.05);
         resetPid();
 
         //zero the turret on startup
         double voltage = turretEncoder.getVoltage();
-        estimatedAngle = -38.58*voltage + 70.96;
-        offsetAngle = Robot.RobotConfig.TURRET_OFFSET_DEG;
+        lastGoodVoltage = voltage;
+        estimatedAngle = -49.49*voltage - 73.04;
+        turretSpin.setPosition(0.5);
     }
 
     @Override
@@ -61,57 +56,68 @@ public class Turret extends SubsystemBase {
 
         //sometimes on rollover, we catch 3.2, then 1.4, then 0.1 during the transition of rollover,
         //this if check catches when we settle
-        if(Math.abs(lastSensorVoltage - voltage) < 0.4) {
+        if(Math.abs(RobotState.turretLastSensorVoltage - voltage) < 0.9) {
             //voltage hops from 0 to 3.22v, then back to zero
-            if (lastGoodVoltage > 2.7 && voltage < 0.5) {
-                rollovers++;
-            } else if (voltage > 2.7 && lastGoodVoltage < 0.5) {
-                rollovers--;
+            if (lastGoodVoltage > 2.2 && voltage < 1.1) {
+                RobotState.turretRollovers++;
+            } else if (voltage > 2.2 && lastGoodVoltage < 1.1) {
+                RobotState.turretRollovers--;
             }
-            continuousVoltage = (3.22 * rollovers) + voltage;
+            RobotState.turretContinuousVoltage = (3.296 * RobotState.turretRollovers) + voltage;
             lastGoodVoltage = voltage;
         }
-        lastSensorVoltage = voltage;
+        RobotState.turretLastSensorVoltage = voltage;
 
-        estimatedAngle = -38.58*continuousVoltage + 70.96;
+        estimatedAngle = -49.49 * RobotState.turretContinuousVoltage - 73.04;
 
         packet.put("Turret/EstimatedAngle", getAngle());
         packet.put("Turret/FeedbackVoltage", voltage);
-        packet.put("Turret/ContinuousVoltage", continuousVoltage);
+        packet.put("Turret/LastSensorVoltage", RobotState.turretLastSensorVoltage);
+        packet.put("Turret/LastGoodVoltage", lastGoodVoltage);
+        packet.put("Turret/Rollovers", RobotState.turretRollovers);
+        packet.put("Turret/ContinuousVoltage", RobotState.turretContinuousVoltage);
         packet.put("Turret/Command", RobotUtil.getCommandName(getCurrentCommand()));
         packet.put("Turret/AtTarget", atTarget);
         Robot.logPacket(packet);
-        Robot.opMode.telemetry.addData("TurretFeedback", turretEncoder.getVoltage());
+
+        pid.m_kp = Robot.RobotConfig.TURRET_KP;
+        pid.m_ki = Robot.RobotConfig.TURRET_KI;
+        pid.m_kd = Robot.RobotConfig.TURRET_KD;
     }
 
     private void setAngle(double angleDeg) {
-        var clamp = MathUtil.clamp(angleDeg, -60., 300.);
+        var clamp = MathUtil.clamp(angleDeg, -180., 180);
         long currentTime = System.nanoTime();
         double deltaTime = (currentTime - lastTime) / 1_000_000_000.;
-        boolean inRange = Math.abs(angleDeg - getAngle()) < 1.5;
+        double deltaAngle = Math.abs(angleDeg - getAngle());
+        boolean inRange = deltaAngle < 2;
+        if(deltaAngle > 15 || deltaTime > 0.2) {
+            resetPid();
+        }
 
         var output = pid.calculate(getAngle(), clamp, deltaTime);
         if(!Double.isNaN(output)) {
             //the servo doesn't run between 0.47-0.53, so bump up the requests
-            if(output < -0.01) {
-                output -= 0.05;
-            } else if (output > 0.01) {
-                output += 0.05;
+            if(output < -0.001) {
+                output -= Robot.RobotConfig.TURRET_KS;
+            } else if (output > 0.001) {
+                output += Robot.RobotConfig.TURRET_KS;
             } else {
                 output = 0;
             }
+            output *= -1;
 
             //make soft limits for requests
-            if(output < 0 && getAngle() < -60) {
-                output = 0;
-            } else if (output > 0 && getAngle() > 300) {
-                output = 0;
+            if(output < 0 && getAngle() < -120) {
+                //output = 0;
+            } else if (output > 0 && getAngle() > 120) {
+                //output = 0;
             }
 
             if(inRange) {
                 output = 0;
             }
-            var outClamp = MathUtil.clamp(output + 0.5, 0.35, 0.65);
+            var outClamp = MathUtil.clamp(output + 0.5, 0.30, 0.70);
             turretSpin.setPosition(outClamp);
             packet.put("Turret/OutClamp", outClamp);
             lastTime = currentTime;
@@ -119,19 +125,56 @@ public class Turret extends SubsystemBase {
             pid.reset();
         }
 
-        packet.put("Turret/DeltaTime", deltaTime);
-        Robot.opMode.telemetry.addData("LoopTime", deltaTime);
         packet.put("Turret/RequestAngle", angleDeg);
 
         if(!inRange) {
             timer.reset();
         }
-        atTarget = timer.time() > 100;
+        atTarget = timer.time() > 200;
     }
 
-    private void resetPid() {
+    public void resetPid() {
         pid.reset();
         lastTime = System.nanoTime();
+        turretSpin.setDirection(Servo.Direction.REVERSE);
+        turretSpin.setPosition(0.5);
+    }
+
+    public void aimWithLimelight(double X_Error) {
+        double GainFactor;
+        double CorrectionNeeded;
+
+        double dist = Robot.drivetrain.getGoalDistance();
+        //X_Error is how many degrees off center the tag is
+        if (Math.abs(X_Error) < 0.8) {
+            GainFactor = 0;
+        } else if (Math.abs(X_Error) < Robot.RobotConfig.TURRET_CAMERA_ANGLE) {
+            GainFactor = Robot.RobotConfig.TURRET_CAMERA_GAIN;
+            if (dist > 130) {
+                GainFactor *= 2;
+            }
+        } else {
+            GainFactor = 1;
+        }
+        CorrectionNeeded = X_Error * Robot.RobotConfig.TURRET_CAMERA_AIM_P * GainFactor;
+
+        //make soft limits for requests
+        if(CorrectionNeeded > 0 && getAngle() < -180) {
+            CorrectionNeeded = 0;
+        } else if (CorrectionNeeded < 0 && getAngle() > 180) {
+            CorrectionNeeded = 0;
+        }
+
+        var outClamp = MathUtil.clamp(0.5 - CorrectionNeeded, 0.30, 0.70);
+        if ((0.5 - Robot.RobotConfig.TURRET_KS) < outClamp && outClamp < 0.5) {
+            outClamp -= Robot.RobotConfig.TURRET_KS;
+        } else if (0.5 < outClamp && outClamp < (0.5 + Robot.RobotConfig.TURRET_KS)) {
+            outClamp += Robot.RobotConfig.TURRET_KS;
+        }
+        turretSpin.setPosition(outClamp);
+        packet.put("Turret/OutClamp", outClamp);
+        packet.put("Turret/XAngle", X_Error);
+        atTarget = Math.abs(CorrectionNeeded) < 2;
     }
 
     public Command resetZero() {
@@ -147,7 +190,7 @@ public class Turret extends SubsystemBase {
     }
 
     public double getAngle() {
-        return estimatedAngle - offsetAngle;
+        return estimatedAngle - Robot.RobotConfig.TURRET_OFFSET_DEG - RobotState.turretManualOffset;
     }
 
     public Command centerTurretViaPosition() {
@@ -164,6 +207,13 @@ public class Turret extends SubsystemBase {
 
     public Command commandTurretAngle(double angleDeg) {
         return new CommandTurretAngle(angleDeg);
+    }
+
+    public Command bumpTurretHome(double angleDeg) {
+        return new InstantCommand(
+                () -> {
+                    RobotState.turretManualOffset += angleDeg;}
+        );
     }
 
     public void setLed(double color) {
@@ -192,6 +242,11 @@ public class Turret extends SubsystemBase {
         }
 
         @Override
+        public void initialize() {
+            timer.reset();
+        }
+
+        @Override
         public void execute() {
             setAngle(angle);
         }
@@ -208,6 +263,8 @@ public class Turret extends SubsystemBase {
     }
 
     private class CenterTurretViaPosition extends CommandBase {
+        int seenLoops;
+        double targetX;
         public CenterTurretViaPosition() {
             addRequirements(Robot.turret);
         }
@@ -215,12 +272,27 @@ public class Turret extends SubsystemBase {
         @Override
         public void initialize() {
             timer.reset();
+            seenLoops = 0;
         }
 
         @Override
         public void execute() {
-            double angle = Robot.drivetrain.getGoalAngle() - Robot.drivetrain.getHeading();
-            setAngle(angle);
+            var targetInfo = Robot.vision.getTargetX();
+
+            if(targetInfo.isPresent()) {
+                targetX = targetInfo.get();
+                seenLoops = 3;
+            } else {
+                seenLoops--;
+            }
+
+            if (seenLoops >= 0) {
+                aimWithLimelight(targetX);
+            } else {
+                double angle = Robot.drivetrain.getGoalAngle() - Robot.drivetrain.getHeading();
+                setAngle(angle);
+            }
+            packet.put("Turret/UsingTag", seenLoops >= 0);
         }
 
         @Override
@@ -231,6 +303,7 @@ public class Turret extends SubsystemBase {
         @Override
         public void end(boolean interrupted) {
             turretSpin.setPosition(0.5);
+            packet.put("Turret/UsingTag", false);
         }
     }
 
@@ -244,13 +317,13 @@ public class Turret extends SubsystemBase {
 
         @Override
         public void initialize() {
-            angle = DrivetrainPP.getGoalAngle(pose) - (90 - Math.toDegrees(pose.getHeading()));
+            angle = DrivetrainPP.getGoalTarget(pose).GoalAngle - (90 - Math.toDegrees(pose.getHeading()));
             timer.reset();
-            setAngle(angle);
         }
 
         @Override
         public void execute() {
+            angle = DrivetrainPP.getGoalTarget(pose).GoalAngle - (90 - Math.toDegrees(pose.getHeading()));
             setAngle(angle);
         }
     }
@@ -258,7 +331,8 @@ public class Turret extends SubsystemBase {
     private class ResetZero extends CommandBase {
         @Override
         public void execute() {
-            offsetAngle = estimatedAngle;
+            RobotState.turretManualOffset = estimatedAngle - Robot.RobotConfig.TURRET_OFFSET_DEG;
+            RobotState.turretRollovers = 0;
         }
 
         @Override
@@ -285,7 +359,7 @@ public class Turret extends SubsystemBase {
         }
         @Override
         public void execute() {
-            rollovers += numRotations;
+            RobotState.turretRollovers += numRotations;
         }
 
         @Override

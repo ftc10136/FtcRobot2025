@@ -27,15 +27,6 @@ public class Controls {
         return Robot.opMode.gamepad1.left_trigger >= 0.2;
     }
 
-    public Trigger hpLoadActive() {
-        return new Trigger() {
-            @Override
-            public boolean get() {
-                return Robot.opMode.gamepad1.x || Robot.opMode.gamepad2.x;
-            }
-        };
-    }
-
     public Trigger floorLoadActive() {
         return new Trigger() {
             @Override
@@ -67,7 +58,7 @@ public class Controls {
         return new Trigger() {
             @Override
             public boolean get() {
-                return Robot.opMode.gamepad1.left_stick_button;
+                return Robot.opMode.gamepad1.start;
             }
         };
     }
@@ -77,6 +68,15 @@ public class Controls {
             @Override
             public boolean get() {
                 return Robot.opMode.gamepad1.back;
+            }
+        };
+    }
+
+    public Trigger shotCalibration() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad2.start;
             }
         };
     }
@@ -137,5 +137,95 @@ public class Controls {
 
     public boolean resetPose() {
         return Robot.opMode.gamepad1.guide;
+    }
+
+    public Trigger resetPoseTrigger() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return resetPose();
+            }
+        };
+    }
+    public Trigger outtakeBalls() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad1.x;
+            }
+        };
+    }
+
+
+    public Trigger bumpHelidexerLeft() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad2.dpad_left;
+            }
+        };
+    }
+
+    public Trigger bumpHelidexerRight() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad2.dpad_right;
+            }
+        };
+    }
+
+    public Trigger bumpTurretLeft() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad2.left_bumper;
+            }
+        };
+    }
+
+    public Trigger bumpTurretRight() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad2.right_bumper;
+            }
+        };
+    }
+
+    public Trigger shooterRpmIncrease() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad2.dpad_up;
+            }
+        };
+    }
+
+    public Trigger shooterRpmDecrease() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad2.dpad_down;
+            }
+        };
+    }
+
+    public Trigger manualAim() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad2.b;
+            }
+        };
+    }
+
+    public Trigger manualShot() {
+        return new Trigger() {
+            @Override
+            public boolean get() {
+                return Robot.opMode.gamepad2.right_trigger > 0.7;
+            }
+        };
     }
 }

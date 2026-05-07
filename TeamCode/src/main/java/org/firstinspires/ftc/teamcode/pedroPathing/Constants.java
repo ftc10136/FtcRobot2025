@@ -15,15 +15,30 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.Robot;
 
 public class Constants {
+    public static FollowerConstants followerConstantsHeli = new FollowerConstants()
+            .mass(17.417)  //in KG, measured 4/19
+            .forwardZeroPowerAcceleration(-31.5309)
+            .lateralZeroPowerAcceleration(-72.959)
+            .predictiveBrakingCoefficients(new PredictiveBrakingCoefficients(
+                    0.08,
+                    0.0801,
+                    0.0008007))
+            .centripetalScaling(0);
+
+    public static PinpointConstants localizerConstantsHeli = new PinpointConstants()
+            .forwardPodY(-7.625)     //forward pod 2, -7.625
+            .strafePodX(0)   //strafe  pod 0, 7.5
+            .distanceUnit(DistanceUnit.INCH)
+            .hardwareMapName("pinpoint")
+            .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
+            .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
+            .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED);
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
     public static FollowerConstants followerConstantsComp = new FollowerConstants()
             .mass(13.38)  //in KG?, 29.5 lbs on 3/7/26
-            .forwardZeroPowerAcceleration(-28.58)
-            .lateralZeroPowerAcceleration(-61.1396)
-            .predictiveBrakingCoefficients(new PredictiveBrakingCoefficients(
-                    0.12,
-                    0.06432,
-                    0.001944))
-            .centripetalScaling(0);
+            .forwardZeroPowerAcceleration(-10.3166)
+            .lateralZeroPowerAcceleration(-8.1215);
 
     public static PinpointConstants localizerConstantsComp = new PinpointConstants()
             .forwardPodY(-5)     //forward pod 3.75, -5
@@ -37,8 +52,8 @@ public class Constants {
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     public static FollowerConstants followerConstantsProg = new FollowerConstants()
             .mass(15)  //in KG?
-            .forwardZeroPowerAcceleration(-42.3166)
-            .lateralZeroPowerAcceleration(-35.1215);
+            .forwardZeroPowerAcceleration(-30.47)
+            .lateralZeroPowerAcceleration(-76.04);
 
     public static PinpointConstants localizerConstantsProg = new PinpointConstants()
             .forwardPodY(-4.6875)  //forward pod 4, -4.6875
@@ -49,7 +64,7 @@ public class Constants {
             .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED);
 
-    public static PathConstraints pathConstraints = new PathConstraints(0.97, 100, 1, 1);
+    public static PathConstraints pathConstraints = new PathConstraints(0.97, 0.1, 0.1, 0.007, 100, 1, 10, 1);
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)
@@ -57,21 +72,27 @@ public class Constants {
             .rightRearMotorName("rightRear")
             .leftRearMotorName("leftRear")
             .leftFrontMotorName("leftFront")
-            .leftFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
-            .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
-            .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD)
+            .leftFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
+            .leftRearMotorDirection(DcMotorSimple.Direction.FORWARD)
+            .rightFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
+            .rightRearMotorDirection(DcMotorSimple.Direction.REVERSE)
             .useBrakeModeInTeleOp(false)
-            .xVelocity(56.9842)
-            .yVelocity(46.3710);
+            .xVelocity(62.67)       //forward velocity tuner
+            .yVelocity(46.99);      //lateral velocity tuner
 
     public static Follower createFollower(HardwareMap hardwareMap) {
-        if(Robot.RobotType == Robot.RobotTypeEnum.Competition) {
-            return new FollowerBuilder(followerConstantsComp, hardwareMap)
+        if(Robot.RobotType == Robot.RobotTypeEnum.Helidexer) {
+            return new FollowerBuilder(followerConstantsHeli, hardwareMap)
                     .pathConstraints(pathConstraints)
-                    .pinpointLocalizer(localizerConstantsComp)  //must be before mecanum!
+                    .pinpointLocalizer(localizerConstantsHeli)  //must be before mecanum!
                     .mecanumDrivetrain(driveConstants)
                     .build();
+        } else if(Robot.RobotType == Robot.RobotTypeEnum.Competition) {
+                return new FollowerBuilder(followerConstantsComp, hardwareMap)
+                        .pathConstraints(pathConstraints)
+                        .pinpointLocalizer(localizerConstantsComp)  //must be before mecanum!
+                        .mecanumDrivetrain(driveConstants)
+                        .build();
         } else {
             return new FollowerBuilder(followerConstantsProg, hardwareMap)
                     .pathConstraints(pathConstraints)

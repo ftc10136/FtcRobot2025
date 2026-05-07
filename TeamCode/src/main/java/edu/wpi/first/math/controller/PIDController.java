@@ -11,13 +11,13 @@ public class PIDController implements AutoCloseable {
     private static int instances;
 
     // Factor for "proportional" control
-    private double m_kp;
+    public double m_kp;
 
     // Factor for "integral" control
-    private double m_ki;
+    public double m_ki;
 
     // Factor for "derivative" control
-    private double m_kd;
+    public double m_kd;
 
     // The error range where "integral" control applies
     private double m_iZone = Double.POSITIVE_INFINITY;

@@ -14,11 +14,13 @@ import org.livoniawarriors.RobotUtil;
 public class Intake extends SubsystemBase {
     private final DcMotorEx Intake_Motor;
     private final TelemetryPacket packet;
+    private double lastPower;
 
     public Intake() {
         packet = new TelemetryPacket();
         Intake_Motor = Robot.opMode.hardwareMap.get(DcMotorEx.class, "Intake_Motor");
         Intake_Motor.setDirection(DcMotor.Direction.REVERSE);
+        lastPower = 0;
     }
 
     @Override
@@ -27,6 +29,15 @@ public class Intake extends SubsystemBase {
         packet.put("Intake/Command", RobotUtil.getCommandName(getCurrentCommand()));
         packet.put("Currents/Intake", Intake_Motor.getCurrent(CurrentUnit.AMPS));
         Robot.logPacket(packet);
+    }
+
+    private void setPower(double power) {
+        Intake_Motor.setPower(power);
+        lastPower = power;
+    }
+
+    public boolean isRunning() {
+        return Math.abs(lastPower) > 0.02;
     }
 
     public Command runIntake() {
@@ -43,11 +54,11 @@ public class Intake extends SubsystemBase {
         }
         @Override
         public void initialize() {
-            Intake_Motor.setPower(1);
+            setPower(Robot.RobotConfig.INTAKE_SPEED);
         }
         @Override
         public void end(boolean interrupted) {
-            Intake_Motor.setPower(0);
+            setPower(0);
         }
     }
 
@@ -57,11 +68,11 @@ public class Intake extends SubsystemBase {
         }
         @Override
         public void initialize() {
-            Intake_Motor.setPower(-1);
+            setPower(-Robot.RobotConfig.INTAKE_SPEED);
         }
         @Override
         public void end(boolean interrupted) {
-            Intake_Motor.setPower(0);
+            setPower(0);
         }
     }
 }
